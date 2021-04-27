@@ -7,6 +7,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.commands.ExampleAutoCommand;
 import frc.robot.subsystems.SwerveSubsystem;
 
@@ -18,9 +19,14 @@ import frc.robot.subsystems.SwerveSubsystem;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-  // The robot's subsystems and commands are defined here...
+  // Subsystems
   private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
 
+  // Controllers
+  private XboxController swerveXbox = new XboxController(0);
+  private XboxController mechXbox = new XboxController(1);
+
+  // Commands
   private final ExampleAutoCommand autoCommand = new ExampleAutoCommand(swerveSubsystem);
 
   /**
@@ -38,6 +44,13 @@ public class RobotContainer {
    * passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {
+    drivetrainBindings();
+  }
+
+  private void drivetrainBindings() {
+    swerveSubsystem.setDefaultCommand(new RunCommand(() -> {
+      swerveSubsystem.setDrivePowers(); // TODO
+    }, swerveSubsystem));
   }
 
   /**
