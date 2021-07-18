@@ -8,8 +8,12 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-import frc.robot.commands.ExampleAutoCommand;
-import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.commands.tank.DriveTankCommand;
+import frc.robot.commands.elevator.ElevatorUpCommand;
+import frc.robot.commands.elevator.ElevatorDownCommand;
+import frc.robot.subsystems.TankSubsystem;
+import frc.robot.subsystems.ElevatorSubsystem;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -20,14 +24,14 @@ import frc.robot.subsystems.SwerveSubsystem;
  */
 public class RobotContainer {
   // Subsystems
-  private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
+  private final TankSubsystem tankSubsystem = new TankSubsystem();
+  private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem();
 
   // Controllers
-  private XboxController swerveXbox = new XboxController(0);
-  private XboxController mechXbox = new XboxController(1);
+  private XboxController controlXbox = new XboxController(0);
 
   // Commands
-  private final ExampleAutoCommand autoCommand = new ExampleAutoCommand(swerveSubsystem);
+  private final DriveTankCommand tankCommand = new DriveTankCommand(tankSubsystem);
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -44,13 +48,20 @@ public class RobotContainer {
    * passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {
-    drivetrainBindings();
+    controllerBindings();
   }
 
-  private void drivetrainBindings() {
-    swerveSubsystem.setDefaultCommand(new RunCommand(() -> {
-      swerveSubsystem.setDrivePowers(); // TODO
-    }, swerveSubsystem));
+  private void controllerBindings() {
+    /** tankSubsystem.setDefaultCommand(new RunCommand(() -> {
+      tankSubsystem.setDrivePowers(); // TODO
+    }, tankSubsystem));
+    */
+
+    // when A is pressed, move elevator Up
+    new JoystickButton(controlXbox, 1).whenPressed(new ElevatorUpCommand(elevatorSubsystem));
+
+    // when B is pressed, move elevator down
+    new JoystickButton(controlXbox, 2).whenPressed(new ElevatorDownCommand(elevatorSubsystem));
   }
 
   /**
@@ -60,6 +71,6 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     // An ExampleCommand will run in autonomous
-    return autoCommand;
+    return tankCommand;
   }
 }

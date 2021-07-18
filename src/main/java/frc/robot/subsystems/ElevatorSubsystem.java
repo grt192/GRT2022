@@ -6,10 +6,18 @@ package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
-public class SwerveSubsystem extends SubsystemBase {
-  public SwerveSubsystem() {
+/** Add your docs here. */
+public class ElevatorSubsystem extends SubsystemBase {
+  
+
+  // Put methods for controlling this subsystem
+  // here. Call these from Commands.
+  public ElevatorSubsystem() {
     CommandScheduler.getInstance().registerSubsystem(this);
+
   }
 
   @Override
@@ -22,5 +30,11 @@ public class SwerveSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run during simulation
   }
 
-  public void setDrivePowers() {} // TODO
+  public void elevatorDownCommand() {
+    
+  }
+  
+  public void elevatorUpCommand() {
+
+  }
 }
