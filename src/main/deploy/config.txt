@@ -1,12 +1,12 @@
 # drive motors CAN IDs
-fLeft = 
-fRight = 
-bLeft =
-bRight = 
+fLeft = 3
+fRight = 1
+bLeft = 4
+bRight = 2
 
 #elevator motors CAN IDs
-mainId = 
-followId =
+mainId = 5
+followId = 6
 
 #elevator variables
 elevator_up_is_positive=true
@@ -25,8 +25,8 @@ right_master=4
 right_follower=14
 
 #elevator variables
-elevator_master=1
-elevator_follower=5
+elevator_master=5
+elevator_follower=6
 
 # speed and time of the ball dump/climb
 # speeds in % output of motors, times in ms
