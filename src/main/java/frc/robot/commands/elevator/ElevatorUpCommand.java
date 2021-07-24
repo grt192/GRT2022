@@ -8,19 +8,19 @@ import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.elevator.ElevatorSubsystem;
 
 /** Add your docs here. */
-public class ElevatorUpCommand extends CommandBase{
-    @SuppressWarnings({ "PMD.UnusedPrivateField", "PMD.SingularField" })
-    private final ElevatorSubsystem elevatorSubsystem;
+public class ElevatorUpCommand extends CommandBase {
+  @SuppressWarnings({ "PMD.UnusedPrivateField", "PMD.SingularField" })
+  private final ElevatorSubsystem elevatorSubsystem;
 
-    public ElevatorUpCommand(ElevatorSubsystem elevatorSubsystem) { // TODO add parameters
-        this.elevatorSubsystem = elevatorSubsystem;
+  public ElevatorUpCommand(ElevatorSubsystem elevatorSubsystem) { // TODO add parameters
+    this.elevatorSubsystem = elevatorSubsystem;
 
-        addRequirements(elevatorSubsystem);
-    }
+    addRequirements(elevatorSubsystem);
+  }
 
-    // TODO
+  // TODO
 
-    @Override
+  @Override
   public void initialize() {
     elevatorSubsystem.elevatorUpCommand(); // TODO: add parameters whenever the method is fixed
   }

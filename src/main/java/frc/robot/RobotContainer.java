@@ -13,6 +13,7 @@ import java.util.Properties;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.commands.tank.DriveTankCommand;
@@ -55,29 +56,24 @@ public class RobotContainer {
   public RobotContainer() {
     // Load the config file
     this.config = new Properties();
-    
+
     try {
       FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
-    config.load(stream); }
-    catch (IOException ie) {
+      config.load(stream);
+    } catch (IOException ie) {
       System.out.println("config file not found");
     }
 
-
     // Instantiate subsystems
-    tankSubsystem = new TankSubsystem(
-      Integer.parseInt(config.getProperty("fLeft")), 
-      Integer.parseInt(config.getProperty("bLeft")),
-      Integer.parseInt(config.getProperty("fRight")),
-      Integer.parseInt(config.getProperty("bRight")));
+    tankSubsystem = new TankSubsystem(Integer.parseInt(config.getProperty("fLeft")),
+        Integer.parseInt(config.getProperty("bLeft")), Integer.parseInt(config.getProperty("fRight")),
+        Integer.parseInt(config.getProperty("bRight")));
 
     elevatorSubsystem = new ElevatorSubsystem(Integer.parseInt(config.getProperty("elevator_master")),
-    Integer.parseInt(config.getProperty("elevator_follower")));
+        Integer.parseInt(config.getProperty("elevator_follower")));
 
     // Instantiate commands
     tankCommand = new DriveTankCommand(tankSubsystem, 0, 0);
-    tankSubsystem.setDefaultCommand(new DriveTankCommand(tankSubsystem, controlXbox.getY(),controlXbox.getRawAxis(1)));
-    elevatorSubsystem.setDefaultCommand(new ElevatorStopCommand(elevatorSubsystem));
 
     // Configure the button bindings
     configureButtonBindings();
@@ -99,14 +95,27 @@ public class RobotContainer {
      * tankSubsystem.setDrivePowers(); // TODO }, tankSubsystem));
      */
 
+    // controlXbox.
+
     // when A is pressed, move elevator Up
     new JoystickButton(controlXbox, 1).whenPressed(new ElevatorUpCommand(elevatorSubsystem));
 
     // when B is pressed, move elevator down
     new JoystickButton(controlXbox, 2).whenPressed(new ElevatorDownCommand(elevatorSubsystem));
 
+    // X stop
+    new JoystickButton(controlXbox, 3).whenPressed(new ElevatorStopCommand(elevatorSubsystem));
 
+    Runnable tank = () -> {
+      tankSubsystem.setDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
+      // System.out.println
+    };
+    tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
 
+    // tankSubsystem.setDefaultCommand(new RunCommand(tankSubsystem,
+    // controlXbox.getY(),controlXbox.getRawAxis(1)));
+    // elevatorSubsystem.setDefaultCommand(new
+    // ElevatorStopCommand(elevatorSubsystem));
   }
 
   /**
