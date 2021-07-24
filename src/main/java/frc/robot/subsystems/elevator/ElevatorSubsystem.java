@@ -51,15 +51,14 @@ public class ElevatorSubsystem extends SubsystemBase {
   }
 
   public void elevatorDownCommand() {
-    
-    
+    mainMotor.set(ControlMode.PercentOutput,-1);
   }
   
   public void elevatorUpCommand() {
-
+    mainMotor.set(ControlMode.PercentOutput,1);
   }
 
-  public void stopElevatorCommand(){
+  public void elevatorStopCommand(){
     mainMotor.set(ControlMode.PercentOutput, 0);
 
   }

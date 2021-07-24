@@ -5,7 +5,7 @@ bLeft =
 bRight = 
 
 #elevator motors CAN IDs
-maimId = 
+mainId = 
 followId =
 
 #elevator variables
