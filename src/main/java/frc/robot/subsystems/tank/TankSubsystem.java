@@ -5,24 +5,39 @@
 package frc.robot.subsystems.tank;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class TankSubsystem extends SubsystemBase {
-  private final TalonGroup left;
-  private final TalonGroup right;
-// TODO default drivetankcommand
+  private final TalonSRX leftMain;
+  private final TalonSRX leftFollow;
+
+  private final TalonSRX rightMain;
+  private final TalonSRX rightFollow;
+
   public TankSubsystem(int fLeftId, int bLeftId, int fRightId, int bRightId) {
     super();
 
-    left = new TalonGroup(new TalonSRX[] { new TalonSRX(fLeftId), new TalonSRX(bLeftId) });
-    left.setNeutralMode(NeutralMode.Brake);
+    leftMain = new TalonSRX(fLeftId);
+    leftMain.setNeutralMode(NeutralMode.Brake);
+    
+    leftFollow = new TalonSRX(bLeftId);
+    leftFollow.follow(leftMain);
+    leftFollow.setInverted(InvertType.FollowMaster);
+    leftFollow.setNeutralMode(NeutralMode.Brake);
 
-    // TODO determine if this really needs to be inverted
-    right = new TalonGroup(new TalonSRX[] { new TalonSRX(fRightId), new TalonSRX(bRightId) }, true); 
-    right.setNeutralMode(NeutralMode.Brake);
+    rightMain = new TalonSRX(fRightId);
+    rightMain.setInverted(true);
+    rightMain.setNeutralMode(NeutralMode.Brake);
+
+    
+    rightFollow = new TalonSRX(bRightId);
+    rightFollow.follow(rightMain);
+    rightFollow.setInverted(InvertType.FollowMaster);
+    rightFollow.setNeutralMode(NeutralMode.Brake);
   }
 
   @Override
@@ -48,6 +63,7 @@ public class TankSubsystem extends SubsystemBase {
   }
 
   public void setDrivePowers(double yScale, double angularScale, boolean squareInput) {
+
     // Square the input if needed for finer control
     if (squareInput) {
       yScale = Math.copySign(yScale * yScale, yScale);
@@ -57,13 +73,17 @@ public class TankSubsystem extends SubsystemBase {
     double leftPower = yScale + angularScale;
     double rightPower = yScale - angularScale;
 
-    double scale = 1.0 / Math.max(Math.abs(leftPower), Math.abs(rightPower));
+    // Scale powers greater than 1 back to 1 if needed
+    double largest_power = Math.max(Math.abs(leftPower), Math.abs(rightPower));
+    if (largest_power > 1.0) {
+      double scale = 1.0 / largest_power;
+  
+      leftPower *= scale;
+      rightPower *= scale;
+    }
 
-    leftPower *= scale;
-    rightPower *= scale;
-
-    left.set(ControlMode.PercentOutput, leftPower);
-    right.set(ControlMode.PercentOutput, rightPower);
+    leftMain.set(ControlMode.PercentOutput, leftPower);
+    rightMain.set(ControlMode.PercentOutput, rightPower);
   }
 
   public void followPathCommand() {

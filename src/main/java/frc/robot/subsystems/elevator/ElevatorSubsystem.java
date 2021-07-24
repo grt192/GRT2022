@@ -10,6 +10,7 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.DigitalInput;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 
 
@@ -29,11 +30,12 @@ public class ElevatorSubsystem extends SubsystemBase {
     //motor config??
     mainMotor = new TalonSRX(mainId);   
     mainMotor.setNeutralMode(NeutralMode.Brake);
+    mainMotor.setInverted(true);
+
     followMotor = new TalonSRX(followId);
     followMotor.setNeutralMode(NeutralMode.Brake);
-
-    //invert config
-    //UP_IS_POSITIVE = config.getBoolean("elevator_up_is_positive");
+    followMotor.follow(mainMotor);
+    followMotor.setInverted(InvertType.FollowMaster);
 
     //limit switch config
     topLimitSwitch = new DigitalInput(0);
@@ -60,6 +62,5 @@ public class ElevatorSubsystem extends SubsystemBase {
 
   public void elevatorStopCommand(){
     mainMotor.set(ControlMode.PercentOutput, 0);
-
   }
 }
