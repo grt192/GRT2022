@@ -1,0 +1,12 @@
+# drive motors CAN IDs
+fLeft = 
+fRight = 
+bLeft =
+bRight = 
+
+#elevator motors CAN IDs
+maimId = 
+followId =
+
+#elevator variables
+elevator_up_is_positive=true

@@ -4,6 +4,13 @@
 
 package frc.robot;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Properties;
+
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -11,8 +18,8 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.commands.tank.DriveTankCommand;
 import frc.robot.commands.elevator.ElevatorUpCommand;
 import frc.robot.commands.elevator.ElevatorDownCommand;
-import frc.robot.subsystems.TankSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
+import frc.robot.subsystems.tank.TankSubsystem;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 /**
@@ -23,20 +30,45 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
+  // Path of config file, relative to the deploy folder
+  private static final String CONFIG_PATH = "config.txt";
+
   // Subsystems
-  private final TankSubsystem tankSubsystem = new TankSubsystem();
-  private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem();
+  private final TankSubsystem tankSubsystem;
+  private final ElevatorSubsystem elevatorSubsystem;
 
   // Controllers
   private XboxController controlXbox = new XboxController(0);
 
   // Commands
-  private final DriveTankCommand tankCommand = new DriveTankCommand(tankSubsystem);
+  private final DriveTankCommand tankCommand;
+
+  // Helper field variables
+  Properties config;
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
+   * 
+   * @throws IOException
    */
-  public RobotContainer() {
+  public RobotContainer() throws IOException {
+    // Load the config file
+    this.config = new Properties();
+    FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
+    config.load(stream);
+
+    // Instantiate subsystems
+    tankSubsystem = new TankSubsystem(
+      Integer.parseInt(config.getProperty("fLeft")), 
+      Integer.parseInt(config.getProperty("bLeft")),
+      Integer.parseInt(config.getProperty("fRight")),
+      Integer.parseInt(config.getProperty("bRight")));
+
+    elevatorSubsystem = new ElevatorSubsystem();
+
+    // Instantiate commands
+    tankCommand = new DriveTankCommand(tankSubsystem, 0, 0);
+
     // Configure the button bindings
     configureButtonBindings();
   }
@@ -52,10 +84,10 @@ public class RobotContainer {
   }
 
   private void controllerBindings() {
-    /** tankSubsystem.setDefaultCommand(new RunCommand(() -> {
-      tankSubsystem.setDrivePowers(); // TODO
-    }, tankSubsystem));
-    */
+    /**
+     * tankSubsystem.setDefaultCommand(new RunCommand(() -> {
+     * tankSubsystem.setDrivePowers(); // TODO }, tankSubsystem));
+     */
 
     // when A is pressed, move elevator Up
     new JoystickButton(controlXbox, 1).whenPressed(new ElevatorUpCommand(elevatorSubsystem));

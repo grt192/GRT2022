@@ -2,21 +2,48 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.subsystems;
+package frc.robot.subsystems.elevator;
 
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import edu.wpi.first.wpilibj.DigitalInput;
+
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
+
 
 /** Add your docs here. */
 public class ElevatorSubsystem extends SubsystemBase {
+  private TalonSRX mainMotor;
+  private TalonSRX followMotor;
   
+  // limit switch variables
+  DigitalInput topLimitSwitch;
+  DigitalInput bottomLimitSwitch;
+
+  public ElevatorSubsystem(int mainId, int followId) {
+    super();
+
+    //motor config??
+    mainMotor = new TalonSRX(mainId);   
+    mainMotor.setNeutralMode(NeutralMode.Brake);
+    followMotor = new TalonSRX(followId);
+    followMotor.setNeutralMode(NeutralMode.Brake);
+
+    //invert config
+    //UP_IS_POSITIVE = config.getBoolean("elevator_up_is_positive");
+
+    //limit switch config
+    topLimitSwitch = new DigitalInput(0);
+    bottomLimitSwitch = new DigitalInput(1);
+  }
 
   // Put methods for controlling this subsystem
   // here. Call these from Commands.
   public ElevatorSubsystem() {
     CommandScheduler.getInstance().registerSubsystem(this);
+
 
   }
 
@@ -32,9 +59,15 @@ public class ElevatorSubsystem extends SubsystemBase {
 
   public void elevatorDownCommand() {
     
+    
   }
   
   public void elevatorUpCommand() {
+
+  }
+
+  public void stopElevatorCommand(){
+    mainMotor.set(ControlMode.PercentOutput, 0);
 
   }
 }
