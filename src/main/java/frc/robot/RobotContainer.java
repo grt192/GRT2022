@@ -65,7 +65,6 @@ public class RobotContainer {
    * @throws IOException
    */
   public RobotContainer() {
-
     // Load the config file
     /*
     this.config = new Properties();

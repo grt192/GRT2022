@@ -12,9 +12,6 @@ public class DriveTankCommand extends CommandBase {
   private double angularScale;
   private boolean squareInput;
 
- //TODO private Joystick leftJoystick = RobotContainer.getInstance().getJoystick1();
- // private Joystick rightJoystick = RobotContainer.getInstance().getJoystick2();
-
 
  //TODO can we concentrate this into one
   public DriveTankCommand(TankSubsystem tankSubsystem, double yScale, double angularScale) {
@@ -45,6 +42,6 @@ public class DriveTankCommand extends CommandBase {
   }
 
   public void end() {
-    //TODO STOP MOTORS
+    tankSubsystem.setDrivePowers(0,0, false);
   }
 }
