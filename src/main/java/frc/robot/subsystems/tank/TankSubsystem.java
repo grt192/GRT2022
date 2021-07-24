@@ -13,7 +13,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class TankSubsystem extends SubsystemBase {
   private final TalonGroup left;
   private final TalonGroup right;
-
+// TODO default drivetankcommand
   public TankSubsystem(int fLeftId, int bLeftId, int fRightId, int bRightId) {
     super();
 
@@ -64,5 +64,9 @@ public class TankSubsystem extends SubsystemBase {
 
     left.set(ControlMode.PercentOutput, leftPower);
     right.set(ControlMode.PercentOutput, rightPower);
+  }
+
+  public void followPathCommand() {
+
   }
 }
