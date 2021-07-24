@@ -23,7 +23,8 @@ public class ElevatorSubsystem extends SubsystemBase {
   DigitalInput bottomLimitSwitch;
 
   public ElevatorSubsystem(int mainId, int followId) {
-    super();
+  
+    CommandScheduler.getInstance().registerSubsystem(this);
 
     //motor config??
     mainMotor = new TalonSRX(mainId);   
@@ -37,14 +38,6 @@ public class ElevatorSubsystem extends SubsystemBase {
     //limit switch config
     topLimitSwitch = new DigitalInput(0);
     bottomLimitSwitch = new DigitalInput(1);
-  }
-
-  // Put methods for controlling this subsystem
-  // here. Call these from Commands.
-  public ElevatorSubsystem() {
-    CommandScheduler.getInstance().registerSubsystem(this);
-
-
   }
 
   @Override

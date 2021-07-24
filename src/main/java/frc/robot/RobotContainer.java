@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.commands.tank.DriveTankCommand;
 import frc.robot.commands.elevator.ElevatorUpCommand;
 import frc.robot.commands.elevator.ElevatorDownCommand;
-import frc.robot.subsystems.ElevatorSubsystem;
+import frc.robot.subsystems.elevator.ElevatorSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
@@ -64,10 +64,12 @@ public class RobotContainer {
       Integer.parseInt(config.getProperty("fRight")),
       Integer.parseInt(config.getProperty("bRight")));
 
-    elevatorSubsystem = new ElevatorSubsystem();
+    elevatorSubsystem = new ElevatorSubsystem(Integer.parseInt(config.getProperty("elevator_master")),
+    Integer.parseInt(config.getProperty("elevator_follower")));
 
     // Instantiate commands
     tankCommand = new DriveTankCommand(tankSubsystem, 0, 0);
+    tankSubsystem.setDefaultCommand(new DriveTankCommand(tankSubsystem, controlXbox.getY(),controlXbox.getRawAxis(1)));
 
     // Configure the button bindings
     configureButtonBindings();
@@ -94,6 +96,8 @@ public class RobotContainer {
 
     // when B is pressed, move elevator down
     new JoystickButton(controlXbox, 2).whenPressed(new ElevatorDownCommand(elevatorSubsystem));
+
+
   }
 
   /**

@@ -1,7 +1,7 @@
 package frc.robot.commands.tank;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import frc.robot.subsystems.TankSubsystem;
+import frc.robot.subsystems.tank.TankSubsystem;
 
 public class FollowPathCommand extends CommandBase {
     @SuppressWarnings({ "PMD.UnusedPrivateField", "PMD.SingularField" })
