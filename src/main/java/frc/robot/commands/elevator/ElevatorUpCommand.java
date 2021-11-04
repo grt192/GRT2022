@@ -12,17 +12,15 @@ public class ElevatorUpCommand extends CommandBase {
   @SuppressWarnings({ "PMD.UnusedPrivateField", "PMD.SingularField" })
   private final ElevatorSubsystem elevatorSubsystem;
 
-  public ElevatorUpCommand(ElevatorSubsystem elevatorSubsystem) { // TODO add parameters
+  public ElevatorUpCommand(ElevatorSubsystem elevatorSubsystem) {
     this.elevatorSubsystem = elevatorSubsystem;
 
     addRequirements(elevatorSubsystem);
   }
 
-  // TODO
-
   @Override
   public void initialize() {
-    elevatorSubsystem.elevatorUpCommand(); // TODO: add parameters whenever the method is fixed
+    elevatorSubsystem.setElevatorPower(1);
   }
 
   @Override
