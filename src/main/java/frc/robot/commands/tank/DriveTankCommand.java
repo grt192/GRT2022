@@ -12,8 +12,7 @@ public class DriveTankCommand extends CommandBase {
   private double angularScale;
   private boolean squareInput;
 
-
- //TODO can we concentrate this into one
+  // TODO can we concentrate this into one
   public DriveTankCommand(TankSubsystem tankSubsystem, double yScale, double angularScale) {
     this(tankSubsystem, yScale, angularScale, true);
   }
@@ -22,7 +21,7 @@ public class DriveTankCommand extends CommandBase {
     super();
 
     this.tankSubsystem = tankSubsystem;
-    
+
     addRequirements(tankSubsystem);
 
     this.yScale = yScale;
@@ -41,7 +40,8 @@ public class DriveTankCommand extends CommandBase {
     return true;
   }
 
-  public void end() {
-    tankSubsystem.setDrivePowers(0,0, false);
+  @Override
+  public void end(boolean interrupted) {
+    tankSubsystem.setDrivePowers(0, 0, false);
   }
 }
