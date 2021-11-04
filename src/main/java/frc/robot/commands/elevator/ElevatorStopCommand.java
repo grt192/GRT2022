@@ -7,22 +7,19 @@ package frc.robot.commands.elevator;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.elevator.ElevatorSubsystem;
 
-/** Add your docs here. */
-public class ElevatorStopCommand extends CommandBase{
-    @SuppressWarnings({ "PMD.UnusedPrivateField", "PMD.SingularField" })
-    private final ElevatorSubsystem elevatorSubsystem;
+public class ElevatorStopCommand extends CommandBase {
+  @SuppressWarnings({ "PMD.UnusedPrivateField", "PMD.SingularField" })
+  private final ElevatorSubsystem elevatorSubsystem;
 
-    public ElevatorStopCommand(ElevatorSubsystem elevatorSubsystem) { // TODO add parameters
-        this.elevatorSubsystem = elevatorSubsystem;
+  public ElevatorStopCommand(ElevatorSubsystem elevatorSubsystem) {
+    this.elevatorSubsystem = elevatorSubsystem;
 
-        addRequirements(elevatorSubsystem);
-    }
+    addRequirements(elevatorSubsystem);
+  }
 
-    // TODO
-
-    @Override
+  @Override
   public void initialize() {
-    elevatorSubsystem.elevatorStopCommand(); // TODO: add parameters whenever the method is fixed
+    elevatorSubsystem.setElevatorPower(0);
   }
 
   @Override

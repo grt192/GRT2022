@@ -21,8 +21,8 @@ public class TankSubsystem extends SubsystemBase {
   private final TalonSRX rightFollow;
 
   // motor power output states
-  private double leftPower;
-  private double rightPower;
+  private double yScale;
+  private double angularScale;
 
   public TankSubsystem() {
     super();
@@ -44,16 +44,16 @@ public class TankSubsystem extends SubsystemBase {
     rightFollow.setInverted(InvertType.FollowMaster);
     rightFollow.setNeutralMode(NeutralMode.Brake);
 
-    leftPower = 0;
-    rightPower = 0;
+    yScale = 0;
+    angularScale = 0;
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
     // TODO: odometry
-    leftMain.set(ControlMode.PercentOutput, leftPower);
-    rightMain.set(ControlMode.PercentOutput, rightPower);
+    leftMain.set(ControlMode.PercentOutput, yScale);
+    rightMain.set(ControlMode.PercentOutput, angularScale);
   }
 
   @Override
@@ -80,21 +80,21 @@ public class TankSubsystem extends SubsystemBase {
       angularScale = Math.copySign(angularScale * angularScale, angularScale);
     }
 
-    double leftPowerTemp = yScale + angularScale;
-    double rightPowerTemp = yScale - angularScale;
+    double leftPower = yScale + angularScale;
+    double rightPower = yScale - angularScale;
 
     // Scale powers greater than 1 back to 1 if needed
-    double largest_power = Math.max(Math.abs(leftPowerTemp), Math.abs(rightPowerTemp));
+    double largest_power = Math.max(Math.abs(leftPower), Math.abs(rightPower));
     if (largest_power > 1.0) {
       double scale = 1.0 / largest_power;
 
-      leftPowerTemp *= scale;
-      rightPowerTemp *= scale;
+      leftPower *= scale;
+      rightPower *= scale;
     }
 
     // set state with new motor powers
-    this.leftPower = leftPowerTemp;
-    this.rightPower = rightPowerTemp;
+    this.yScale = leftPower;
+    this.angularScale = rightPower;
   }
 
   public void followPathCommand() {

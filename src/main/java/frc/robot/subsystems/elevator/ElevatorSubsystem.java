@@ -25,7 +25,7 @@ public class ElevatorSubsystem extends SubsystemBase {
   DigitalInput bottomLimitSwitch;
 
   // main motor output state
-  private double mainMotorOutput;
+  private double motorOutput;
 
   public ElevatorSubsystem() {
 
@@ -36,7 +36,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     mainMotor.setNeutralMode(NeutralMode.Brake);
     mainMotor.setInverted(true);
 
-    mainMotorOutput = 0;
+    motorOutput = 0;
 
     followMotor = new TalonSRX(followMotorPort);
     followMotor.setNeutralMode(NeutralMode.Brake);
@@ -51,7 +51,7 @@ public class ElevatorSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    mainMotor.set(ControlMode.PercentOutput, (elevatorUpIsPositive ? mainMotorOutput : -mainMotorOutput));
+    mainMotor.set(ControlMode.PercentOutput, (elevatorUpIsPositive ? motorOutput : -motorOutput));
   }
 
   @Override
@@ -59,16 +59,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run during simulation
   }
 
-  public void elevatorDownCommand() {
-    mainMotorOutput = -1;
-  }
-
-  public void elevatorUpCommand() {
-    mainMotorOutput = 1;
-
-  }
-
-  public void elevatorStopCommand() {
-    mainMotorOutput = 0;
+  public void setElevatorPower(double newOutput) {
+    this.motorOutput = newOutput;
   }
 }
