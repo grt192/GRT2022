@@ -51,7 +51,7 @@ public class ElevatorSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    mainMotor.set(ControlMode.PercentOutput, mainMotorOutput);
+    mainMotor.set(ControlMode.PercentOutput, (elevatorUpIsPositive ? mainMotorOutput : -mainMotorOutput));
   }
 
   @Override
@@ -61,19 +61,10 @@ public class ElevatorSubsystem extends SubsystemBase {
 
   public void elevatorDownCommand() {
     mainMotorOutput = -1;
-
-    if (!elevatorUpIsPositive) {
-      mainMotorOutput = -mainMotorOutput;
-    }
-
   }
 
   public void elevatorUpCommand() {
     mainMotorOutput = 1;
-
-    if (!elevatorUpIsPositive) {
-      mainMotorOutput = -mainMotorOutput;
-    }
 
   }
 
