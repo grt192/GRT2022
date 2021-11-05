@@ -4,6 +4,12 @@
 
 package frc.robot;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
+
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
@@ -25,6 +31,10 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
+  // Path of config file, relative to the deploy folder
+  private static final String CONFIG_PATH = "config.txt";
+  // config file
+  private Properties config;
 
   // Subsystems
   private final TankSubsystem tankSubsystem;
@@ -41,6 +51,26 @@ public class RobotContainer {
    * 
    */
   public RobotContainer() {
+
+    // Load the config file
+    this.config = new Properties();
+
+    try {
+      FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
+      config.load(stream);
+    } catch (IOException ie) {
+      System.out.println("config file not found");
+    }
+
+    // tankSubsystem = new
+    // TankSubsystem(Integer.parseInt(config.getProperty("fLeft")),
+    // Integer.parseInt(config.getProperty("bLeft")),
+    // Integer.parseInt(config.getProperty("fRight")),
+    // Integer.parseInt(config.getProperty("bRight")));
+
+    // elevatorSubsystem = new
+    // ElevatorSubsystem(Integer.parseInt(config.getProperty("elevator_master")),
+    // Integer.parseInt(config.getProperty("elevator_follower")));
 
     // Instantiate subsystems
     tankSubsystem = new TankSubsystem();
