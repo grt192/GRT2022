@@ -26,6 +26,7 @@ public class TankSubsystem extends SubsystemBase {
   // Motor power output states
   private double yScale;
   private double angularScale;
+  private boolean squareInput;
 
   public TankSubsystem() {
     // Init left main and follower motors
@@ -59,7 +60,7 @@ public class TankSubsystem extends SubsystemBase {
   public void periodic() {
     // This method will be called once per scheduler run
     // TODO: odometry
-    differentialDrive.tankDrive(yScale, angularScale);
+    differentialDrive.tankDrive(yScale, angularScale, squareInput);
   }
 
   @Override
@@ -80,12 +81,6 @@ public class TankSubsystem extends SubsystemBase {
 
   public void setDrivePowers(double yScale, double angularScale, boolean squareInput) {
 
-    // Square the input if needed for finer control
-    if (squareInput) {
-      yScale = Math.copySign(yScale * yScale, yScale);
-      angularScale = Math.copySign(angularScale * angularScale, angularScale);
-    }
-
     double leftPower = yScale + angularScale;
     double rightPower = yScale - angularScale;
 
@@ -101,5 +96,6 @@ public class TankSubsystem extends SubsystemBase {
     // set state with new motor powers
     this.yScale = leftPower;
     this.angularScale = rightPower;
+    this.squareInput = squareInput;
   }
 }
