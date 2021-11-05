@@ -11,6 +11,8 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import static frc.robot.Constants.TankConstants.*;
+
 public class TankSubsystem extends SubsystemBase {
   private final TalonSRX leftMain;
   private final TalonSRX leftFollow;
@@ -18,32 +20,40 @@ public class TankSubsystem extends SubsystemBase {
   private final TalonSRX rightMain;
   private final TalonSRX rightFollow;
 
-  public TankSubsystem(int fLeftId, int bLeftId, int fRightId, int bRightId) {
+  // motor power output states
+  private double yScale;
+  private double angularScale;
+
+  public TankSubsystem() {
     super();
 
-    leftMain = new TalonSRX(fLeftId);
+    leftMain = new TalonSRX(fLeftMotorPort);
     leftMain.setNeutralMode(NeutralMode.Brake);
-    
-    leftFollow = new TalonSRX(bLeftId);
+
+    leftFollow = new TalonSRX(bLeftMotorPort);
     leftFollow.follow(leftMain);
     leftFollow.setInverted(InvertType.FollowMaster);
     leftFollow.setNeutralMode(NeutralMode.Brake);
 
-    rightMain = new TalonSRX(fRightId);
+    rightMain = new TalonSRX(fRightMotorPort);
     rightMain.setInverted(true);
     rightMain.setNeutralMode(NeutralMode.Brake);
 
-    
-    rightFollow = new TalonSRX(bRightId);
+    rightFollow = new TalonSRX(bRightMotorPort);
     rightFollow.follow(rightMain);
     rightFollow.setInverted(InvertType.FollowMaster);
     rightFollow.setNeutralMode(NeutralMode.Brake);
+
+    yScale = 0;
+    angularScale = 0;
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
     // TODO: odometry
+    leftMain.set(ControlMode.PercentOutput, yScale);
+    rightMain.set(ControlMode.PercentOutput, angularScale);
   }
 
   @Override
@@ -77,13 +87,14 @@ public class TankSubsystem extends SubsystemBase {
     double largest_power = Math.max(Math.abs(leftPower), Math.abs(rightPower));
     if (largest_power > 1.0) {
       double scale = 1.0 / largest_power;
-  
+
       leftPower *= scale;
       rightPower *= scale;
     }
 
-    leftMain.set(ControlMode.PercentOutput, leftPower);
-    rightMain.set(ControlMode.PercentOutput, rightPower);
+    // set state with new motor powers
+    this.yScale = leftPower;
+    this.angularScale = rightPower;
   }
 
   public void followPathCommand() {

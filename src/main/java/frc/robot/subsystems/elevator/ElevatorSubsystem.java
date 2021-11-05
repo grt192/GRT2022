@@ -13,31 +13,37 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 
+import static frc.robot.Constants.ElevatorConstants.*;
 
 /** Add your docs here. */
 public class ElevatorSubsystem extends SubsystemBase {
   private TalonSRX mainMotor;
   private TalonSRX followMotor;
-  
+
   // limit switch variables
   DigitalInput topLimitSwitch;
   DigitalInput bottomLimitSwitch;
 
-  public ElevatorSubsystem(int mainId, int followId) {
-  
+  // main motor output state
+  private double motorOutput;
+
+  public ElevatorSubsystem() {
+
     CommandScheduler.getInstance().registerSubsystem(this);
 
-    //motor config??
-    mainMotor = new TalonSRX(mainId);   
+    // motor config??
+    mainMotor = new TalonSRX(mainMotorPort);
     mainMotor.setNeutralMode(NeutralMode.Brake);
     mainMotor.setInverted(true);
 
-    followMotor = new TalonSRX(followId);
+    motorOutput = 0;
+
+    followMotor = new TalonSRX(followMotorPort);
     followMotor.setNeutralMode(NeutralMode.Brake);
     followMotor.follow(mainMotor);
     followMotor.setInverted(InvertType.FollowMaster);
 
-    //limit switch config
+    // limit switch config
     topLimitSwitch = new DigitalInput(0);
     bottomLimitSwitch = new DigitalInput(1);
   }
@@ -45,6 +51,7 @@ public class ElevatorSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+    mainMotor.set(ControlMode.PercentOutput, (elevatorUpIsPositive ? motorOutput : -motorOutput));
   }
 
   @Override
@@ -52,15 +59,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run during simulation
   }
 
-  public void elevatorDownCommand() {
-    mainMotor.set(ControlMode.PercentOutput,-1);
-  }
-  
-  public void elevatorUpCommand() {
-    mainMotor.set(ControlMode.PercentOutput,1);
-  }
-
-  public void elevatorStopCommand(){
-    mainMotor.set(ControlMode.PercentOutput, 0);
+  public void setElevatorPower(double newOutput) {
+    this.motorOutput = newOutput;
   }
 }
