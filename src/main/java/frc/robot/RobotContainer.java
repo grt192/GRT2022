@@ -79,6 +79,26 @@ public class RobotContainer {
     // Instantiate the Jetson connection
     jetson = new JetsonConnection();
 
+    // Load the config file
+    this.config = new Properties();
+
+    try {
+      FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
+      config.load(stream);
+    } catch (IOException ie) {
+      System.out.println("config file not found");
+    }
+
+    // tankSubsystem = new
+    // TankSubsystem(Integer.parseInt(config.getProperty("fLeft")),
+    // Integer.parseInt(config.getProperty("bLeft")),
+    // Integer.parseInt(config.getProperty("fRight")),
+    // Integer.parseInt(config.getProperty("bRight")));
+
+    // elevatorSubsystem = new
+    // ElevatorSubsystem(Integer.parseInt(config.getProperty("elevator_master")),
+    // Integer.parseInt(config.getProperty("elevator_follower")));
+
     // Instantiate subsystems
     //tankSubsystem = new TankSubsystem();
     turretSubsystem = new TurretSubsystem(jetson);
