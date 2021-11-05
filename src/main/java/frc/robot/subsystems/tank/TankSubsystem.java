@@ -7,42 +7,49 @@ package frc.robot.subsystems.tank;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static frc.robot.Constants.TankConstants.*;
 
 public class TankSubsystem extends SubsystemBase {
-  private final TalonSRX leftMain;
-  private final TalonSRX leftFollow;
+  private final WPI_TalonSRX leftMain;
+  private final WPI_TalonSRX leftFollow;
 
-  private final TalonSRX rightMain;
-  private final TalonSRX rightFollow;
+  private final WPI_TalonSRX rightMain;
+  private final WPI_TalonSRX rightFollow;
 
-  // motor power output states
+  private final DifferentialDrive differentialDrive;
+
+  // Motor power output states
   private double yScale;
   private double angularScale;
 
   public TankSubsystem() {
-    super();
-
-    leftMain = new TalonSRX(fLeftMotorPort);
+    // Init left main and follower motors
+    leftMain = new WPI_TalonSRX(fLeftMotorPort);
     leftMain.setNeutralMode(NeutralMode.Brake);
 
-    leftFollow = new TalonSRX(bLeftMotorPort);
+    leftFollow = new WPI_TalonSRX(bLeftMotorPort);
     leftFollow.follow(leftMain);
     leftFollow.setInverted(InvertType.FollowMaster);
     leftFollow.setNeutralMode(NeutralMode.Brake);
 
-    rightMain = new TalonSRX(fRightMotorPort);
-    rightMain.setInverted(true);
+    // Init right main and follower motors
+    // Right motors are default inverted; see https://docs.wpilib.org/en/stable/docs/software/actuators/wpi-drive-classes.html#motor-inversion
+    rightMain = new WPI_TalonSRX(fRightMotorPort);
     rightMain.setNeutralMode(NeutralMode.Brake);
 
-    rightFollow = new TalonSRX(bRightMotorPort);
+    rightFollow = new WPI_TalonSRX(bRightMotorPort);
     rightFollow.follow(rightMain);
     rightFollow.setInverted(InvertType.FollowMaster);
     rightFollow.setNeutralMode(NeutralMode.Brake);
+
+    // Class for driving differential (tank) drive systems
+    // See https://first.wpi.edu/FRC/roborio/release/docs/java/edu/wpi/first/wpilibj/drive/DifferentialDrive.html
+    differentialDrive = new DifferentialDrive(leftMain, rightMain);
 
     yScale = 0;
     angularScale = 0;
@@ -52,8 +59,7 @@ public class TankSubsystem extends SubsystemBase {
   public void periodic() {
     // This method will be called once per scheduler run
     // TODO: odometry
-    leftMain.set(ControlMode.PercentOutput, yScale);
-    rightMain.set(ControlMode.PercentOutput, angularScale);
+    differentialDrive.tankDrive(yScale, angularScale);
   }
 
   @Override
@@ -95,9 +101,5 @@ public class TankSubsystem extends SubsystemBase {
     // set state with new motor powers
     this.yScale = leftPower;
     this.angularScale = rightPower;
-  }
-
-  public void followPathCommand() {
-
   }
 }
