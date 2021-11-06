@@ -34,10 +34,4 @@ public final class Constants {
         public static final String jetsonAddress = "10.1.92.14";
 
     }
-
-    public static final class JetsonConstants {
-        public static final int jetsonCameraPort = 1337;
-        public static final String jetsonAddress = "10.1.92.14";
-
-    }
 }
