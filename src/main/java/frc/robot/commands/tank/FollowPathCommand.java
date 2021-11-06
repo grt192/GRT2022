@@ -17,7 +17,7 @@ public class FollowPathCommand extends CommandBase {
 
     @Override
     public void initialize() {
-      //tankSubsystem.followPathCommand(); // TODO: add parameters whenever the method is fixed
+      // TODO
     }
   
     @Override
