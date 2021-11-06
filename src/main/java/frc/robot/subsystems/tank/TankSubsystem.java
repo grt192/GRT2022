@@ -9,7 +9,6 @@ import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
-import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static frc.robot.Constants.TankConstants.*;
@@ -23,12 +22,9 @@ public class TankSubsystem extends SubsystemBase {
   private final WPI_TalonSRX rightMiddle;
   private final WPI_TalonSRX rightBack;
 
-  private final DifferentialDrive differentialDrive;
-
   // Motor power output states
   private double yScale;
   private double angularScale;
-  private boolean squareInput;
 
   public TankSubsystem() {
     // Init left main and follower motors
@@ -46,8 +42,8 @@ public class TankSubsystem extends SubsystemBase {
     leftBack.setNeutralMode(NeutralMode.Brake);
 
     // Init right main and follower motors
-    // Right motors are default inverted; see https://docs.wpilib.org/en/stable/docs/software/actuators/wpi-drive-classes.html#motor-inversion
     rightMain = new WPI_TalonSRX(fRightMotorPort);
+    rightMain.setInverted(true);
     rightMain.setNeutralMode(NeutralMode.Brake);
 
     rightMiddle = new WPI_TalonSRX(mRightMotorPort);
@@ -60,10 +56,6 @@ public class TankSubsystem extends SubsystemBase {
     rightBack.setInverted(InvertType.FollowMaster);
     rightBack.setNeutralMode(NeutralMode.Brake);
 
-    // Class for driving differential (tank) drive systems
-    // See https://first.wpi.edu/FRC/roborio/release/docs/java/edu/wpi/first/wpilibj/drive/DifferentialDrive.html
-    differentialDrive = new DifferentialDrive(leftMain, rightMain);
-
     yScale = 0;
     angularScale = 0;
   }
@@ -72,7 +64,8 @@ public class TankSubsystem extends SubsystemBase {
   public void periodic() {
     // This method will be called once per scheduler run
     // TODO: odometry
-    differentialDrive.tankDrive(yScale, angularScale, squareInput);
+    leftMain.set(ControlMode.PercentOutput, yScale);
+    rightMain.set(ControlMode.PercentOutput, angularScale);
   }
 
   @Override
@@ -93,6 +86,12 @@ public class TankSubsystem extends SubsystemBase {
 
   public void setDrivePowers(double yScale, double angularScale, boolean squareInput) {
 
+    // Square the input if needed for finer control
+    if (squareInput) {
+      yScale = Math.copySign(yScale * yScale, yScale);
+      angularScale = Math.copySign(angularScale * angularScale, angularScale);
+    }
+
     double leftPower = yScale + angularScale;
     double rightPower = yScale - angularScale;
 
@@ -108,6 +107,5 @@ public class TankSubsystem extends SubsystemBase {
     // set state with new motor powers
     this.yScale = leftPower;
     this.angularScale = rightPower;
-    this.squareInput = squareInput;
   }
 }
