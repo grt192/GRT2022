@@ -15,12 +15,10 @@ import static frc.robot.Constants.TankConstants.*;
 
 public class TankSubsystem extends SubsystemBase {
   private final WPI_TalonSRX leftMain;
-  private final WPI_TalonSRX leftMiddle;
-  private final WPI_TalonSRX leftBack;
+  private final WPI_TalonSRX leftFollow;
 
   private final WPI_TalonSRX rightMain;
-  private final WPI_TalonSRX rightMiddle;
-  private final WPI_TalonSRX rightBack;
+  private final WPI_TalonSRX rightFollow;
 
   // Motor power output states
   private double yScale;
@@ -31,30 +29,20 @@ public class TankSubsystem extends SubsystemBase {
     leftMain = new WPI_TalonSRX(fLeftMotorPort);
     leftMain.setNeutralMode(NeutralMode.Brake);
 
-    leftMiddle = new WPI_TalonSRX(mLeftMotorPort);
-    leftMiddle.follow(leftMain);
-    leftMiddle.setInverted(InvertType.FollowMaster);
-    leftMiddle.setNeutralMode(NeutralMode.Brake);
-
-    leftBack = new WPI_TalonSRX(bLeftMotorPort);
-    leftBack.follow(leftMain);
-    leftBack.setInverted(InvertType.FollowMaster);
-    leftBack.setNeutralMode(NeutralMode.Brake);
+    leftFollow = new WPI_TalonSRX(bLeftMotorPort);
+    leftFollow.follow(leftMain);
+    leftFollow.setInverted(InvertType.FollowMaster);
+    leftFollow.setNeutralMode(NeutralMode.Brake);
 
     // Init right main and follower motors
     rightMain = new WPI_TalonSRX(fRightMotorPort);
     rightMain.setInverted(true);
     rightMain.setNeutralMode(NeutralMode.Brake);
 
-    rightMiddle = new WPI_TalonSRX(mRightMotorPort);
-    rightMiddle.follow(rightMain);
-    rightMiddle.setInverted(InvertType.FollowMaster);
-    rightMiddle.setNeutralMode(NeutralMode.Brake);
-
-    rightBack = new WPI_TalonSRX(bRightMotorPort);
-    rightBack.follow(rightMain);
-    rightBack.setInverted(InvertType.FollowMaster);
-    rightBack.setNeutralMode(NeutralMode.Brake);
+    rightFollow = new WPI_TalonSRX(bRightMotorPort);
+    rightFollow.follow(rightMain);
+    rightFollow.setInverted(InvertType.FollowMaster);
+    rightFollow.setNeutralMode(NeutralMode.Brake);
 
     yScale = 0;
     angularScale = 0;
