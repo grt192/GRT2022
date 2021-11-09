@@ -11,6 +11,7 @@ import java.util.Properties;
 
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -43,6 +44,10 @@ public class RobotContainer {
   // Controllers
   private XboxController controlXbox = new XboxController(0);
 
+  // Joysticks
+  private Joystick joystickLeft = new Joystick(1);
+  private Joystick joystickRight = new Joystick(2);
+
   // Commands
   private final DriveTankCommand tankCommand;
 
@@ -61,16 +66,6 @@ public class RobotContainer {
     } catch (IOException ie) {
       System.out.println("config file not found");
     }
-
-    // tankSubsystem = new
-    // TankSubsystem(Integer.parseInt(config.getProperty("fLeft")),
-    // Integer.parseInt(config.getProperty("bLeft")),
-    // Integer.parseInt(config.getProperty("fRight")),
-    // Integer.parseInt(config.getProperty("bRight")));
-
-    // elevatorSubsystem = new
-    // ElevatorSubsystem(Integer.parseInt(config.getProperty("elevator_master")),
-    // Integer.parseInt(config.getProperty("elevator_follower")));
 
     // Instantiate subsystems
     tankSubsystem = new TankSubsystem();
@@ -106,8 +101,8 @@ public class RobotContainer {
     new JoystickButton(controlXbox, 3).whenPressed(new ElevatorStopCommand(elevatorSubsystem));
 
     Runnable tank = () -> {
-      tankSubsystem.setDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
-
+      tankSubsystem.setDrivePowers(-controlXbox.getY(Hand.kLeft) - joystickLeft.getY(),
+          controlXbox.getX(Hand.kRight) + joystickRight.getX());
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }
