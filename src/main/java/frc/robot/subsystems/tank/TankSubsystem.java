@@ -21,8 +21,13 @@ public class TankSubsystem extends SubsystemBase {
   private final WPI_TalonSRX rightFollow;
 
   // Motor power output states
-  private double yScale;
-  private double angularScale;
+  // Car drive:
+  private double yScalePower;
+  private double angularScalePower;
+
+  // Tank drive:
+  private double leftTankPower;
+  private double rightTankPower;
 
   public TankSubsystem() {
     // Init left main and follower motors
@@ -44,16 +49,34 @@ public class TankSubsystem extends SubsystemBase {
     rightFollow.setInverted(InvertType.FollowMaster);
     rightFollow.setNeutralMode(NeutralMode.Brake);
 
-    yScale = 0;
-    angularScale = 0;
+    // Initialize power values
+    yScalePower = 0;
+    angularScalePower = 0;
+
+    leftTankPower = 0;
+    rightTankPower = 0;
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
     // TODO: odometry
-    leftMain.set(ControlMode.PercentOutput, yScale);
-    rightMain.set(ControlMode.PercentOutput, angularScale);
+
+    double tempLeftPower = yScalePower + leftTankPower;
+    double tempRightPower = angularScalePower + rightTankPower;
+
+    // Scale powers greater than 1 back to 1 if needed
+    double largest_power = Math.max(Math.abs(tempLeftPower), Math.abs(tempRightPower));
+    if (largest_power > 1.0) {
+      double scale = 1.0 / largest_power;
+
+      tempLeftPower *= scale;
+      tempRightPower *= scale;
+    }
+
+    // Sums the powers from the car drive and the tank drive
+    leftMain.set(ControlMode.PercentOutput, tempLeftPower);
+    rightMain.set(ControlMode.PercentOutput, tempRightPower);
   }
 
   @Override
@@ -62,18 +85,17 @@ public class TankSubsystem extends SubsystemBase {
   }
 
   /**
-   * Drive the system with the given power scales.
+   * Drive the system with the given power scales using the car system.
    * 
    * @param yScale       Scale in the forward/backward direction, from 1 to -1.
    * @param angularScale Scale in the rotational direction, from 1 to -1,
    *                     clockwise to counterclockwise.
    */
-  public void setDrivePowers(double yScale, double angularScale) {
-    setDrivePowers(yScale, angularScale, true);
+  public void setCarDrivePowers(double yScale, double angularScale) {
+    setCarDrivePowers(yScale, angularScale, true);
   }
 
-  public void setDrivePowers(double yScale, double angularScale, boolean squareInput) {
-
+  public void setCarDrivePowers(double yScale, double angularScale, boolean squareInput) {
     // Square the input if needed for finer control
     if (squareInput) {
       yScale = Math.copySign(yScale * yScale, yScale);
@@ -83,17 +105,23 @@ public class TankSubsystem extends SubsystemBase {
     double leftPower = yScale + angularScale;
     double rightPower = yScale - angularScale;
 
-    // Scale powers greater than 1 back to 1 if needed
-    double largest_power = Math.max(Math.abs(leftPower), Math.abs(rightPower));
-    if (largest_power > 1.0) {
-      double scale = 1.0 / largest_power;
+    // Set motor output state
+    this.yScalePower = leftPower;
+    this.angularScalePower = rightPower;
+  }
 
-      leftPower *= scale;
-      rightPower *= scale;
-    }
+  /**
+   * Drive the system with the given power scales using the tank system.
+   * 
+   * @param leftScale  Scale in the forward/backward direction of the left motor,
+   *                   from -1 to 1.
+   * @param rightScale Scale in the forward/backward direction of the right motor,
+   *                   from -1 to 1.
+   */
+  public void setTankDrivePowers(double leftScale, double rightScale) {
 
-    // set state with new motor powers
-    this.yScale = leftPower;
-    this.angularScale = rightPower;
+    // Set motor output state
+    this.leftTankPower = leftScale;
+    this.rightTankPower = rightScale;
   }
 }

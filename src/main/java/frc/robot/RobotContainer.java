@@ -101,8 +101,8 @@ public class RobotContainer {
     new JoystickButton(controlXbox, 3).whenPressed(new ElevatorStopCommand(elevatorSubsystem));
 
     Runnable tank = () -> {
-      tankSubsystem.setDrivePowers(-controlXbox.getY(Hand.kLeft) - joystickLeft.getY(),
-          controlXbox.getX(Hand.kRight) + joystickRight.getX());
+      tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
+      tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }
