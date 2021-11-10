@@ -21,13 +21,8 @@ public class TankSubsystem extends SubsystemBase {
   private final WPI_TalonSRX rightFollow;
 
   // Motor power output states
-  // Car drive:
-  private double yScalePower;
-  private double angularScalePower;
-
-  // Tank drive:
-  private double leftTankPower;
-  private double rightTankPower;
+  private double leftPower;
+  private double rightPower;
 
   public TankSubsystem() {
     // Init left main and follower motors
@@ -50,11 +45,8 @@ public class TankSubsystem extends SubsystemBase {
     rightFollow.setNeutralMode(NeutralMode.Brake);
 
     // Initialize power values
-    yScalePower = 0;
-    angularScalePower = 0;
-
-    leftTankPower = 0;
-    rightTankPower = 0;
+    leftPower = 0;
+    rightPower = 0;
   }
 
   @Override
@@ -62,21 +54,8 @@ public class TankSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
     // TODO: odometry
 
-    double tempLeftPower = yScalePower + leftTankPower;
-    double tempRightPower = angularScalePower + rightTankPower;
-
-    // Scale powers greater than 1 back to 1 if needed
-    double largest_power = Math.max(Math.abs(tempLeftPower), Math.abs(tempRightPower));
-    if (largest_power > 1.0) {
-      double scale = 1.0 / largest_power;
-
-      tempLeftPower *= scale;
-      tempRightPower *= scale;
-    }
-
-    // Sums the powers from the car drive and the tank drive
-    leftMain.set(ControlMode.PercentOutput, tempLeftPower);
-    rightMain.set(ControlMode.PercentOutput, tempRightPower);
+    leftMain.set(ControlMode.PercentOutput, leftPower);
+    rightMain.set(ControlMode.PercentOutput, rightPower);
   }
 
   @Override
@@ -102,12 +81,22 @@ public class TankSubsystem extends SubsystemBase {
       angularScale = Math.copySign(angularScale * angularScale, angularScale);
     }
 
-    double leftPower = yScale + angularScale;
-    double rightPower = yScale - angularScale;
+    // Set motor output state
+    double leftPowerTemp = yScale + angularScale;
+    double rightPowerTemp = yScale - angularScale;
+
+    // Scale powers greater than 1 back to 1 if needed
+    double largest_power = Math.max(Math.abs(leftPowerTemp), Math.abs(rightPowerTemp));
+    if (largest_power > 1.0) {
+      double scale = 1.0 / largest_power;
+
+      leftPowerTemp *= scale;
+      rightPowerTemp *= scale;
+    }
 
     // Set motor output state
-    this.yScalePower = leftPower;
-    this.angularScalePower = rightPower;
+    this.leftPower = leftPowerTemp;
+    this.rightPower = rightPowerTemp;
   }
 
   /**
@@ -121,7 +110,7 @@ public class TankSubsystem extends SubsystemBase {
   public void setTankDrivePowers(double leftScale, double rightScale) {
 
     // Set motor output state
-    this.leftTankPower = leftScale;
-    this.rightTankPower = rightScale;
+    this.leftPower = leftScale;
+    this.leftPower = rightScale;
   }
 }

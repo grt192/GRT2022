@@ -101,8 +101,17 @@ public class RobotContainer {
     new JoystickButton(controlXbox, 3).whenPressed(new ElevatorStopCommand(elevatorSubsystem));
 
     Runnable tank = () -> {
-      tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
-      tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
+
+      // Check which controller is being used
+      boolean isXbox = (Math.abs(controlXbox.getY(Hand.kLeft))
+          + controlXbox.getX(Hand.kRight)) > (Math.abs(joystickLeft.getY()) + Math.abs(joystickRight.getY()));
+
+      // Set the drive powers based on which controller is being used
+      if (isXbox) {
+        tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
+      } else {
+        tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
+      }
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }
