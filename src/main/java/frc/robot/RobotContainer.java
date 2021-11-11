@@ -39,7 +39,6 @@ public class RobotContainer {
 
   // Subsystems
   private final TankSubsystem tankSubsystem;
-  private final ElevatorSubsystem elevatorSubsystem;
 
   // Controllers
   private XboxController controlXbox = new XboxController(0);
@@ -70,8 +69,6 @@ public class RobotContainer {
     // Instantiate subsystems
     tankSubsystem = new TankSubsystem();
 
-    elevatorSubsystem = new ElevatorSubsystem();
-
     // Instantiate commands
     tankCommand = new DriveTankCommand(tankSubsystem, 0, 0);
 
@@ -90,21 +87,11 @@ public class RobotContainer {
   }
 
   private void controllerBindings() {
-
-    // when A is pressed, move elevator Up
-    new JoystickButton(controlXbox, 1).whenPressed(new ElevatorUpCommand(elevatorSubsystem));
-
-    // when B is pressed, move elevator down
-    new JoystickButton(controlXbox, 2).whenPressed(new ElevatorDownCommand(elevatorSubsystem));
-
-    // X stop
-    new JoystickButton(controlXbox, 3).whenPressed(new ElevatorStopCommand(elevatorSubsystem));
-
     Runnable tank = () -> {
 
       // Check which controller is being used
       boolean isXbox = (Math.abs(controlXbox.getY(Hand.kLeft))
-          + controlXbox.getX(Hand.kRight)) > (Math.abs(joystickLeft.getY()) + Math.abs(joystickRight.getY()));
+          + Math.abs(controlXbox.getX(Hand.kRight))) > (Math.abs(joystickLeft.getY()) + Math.abs(joystickRight.getY()));
 
       // Set the drive powers based on which controller is being used
       if (isXbox) {

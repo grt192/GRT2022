@@ -107,10 +107,18 @@ public class TankSubsystem extends SubsystemBase {
    * @param rightScale Scale in the forward/backward direction of the right motor,
    *                   from -1 to 1.
    */
-  public void setTankDrivePowers(double leftScale, double rightScale) {
+  public void setTankDrivePowers(double leftScale, double rightScale, boolean squareInput) {
+    if (squareInput) {
+      leftScale = Math.copySign(leftScale * leftScale, leftScale);
+      rightScale = Math.copySign(rightScale * rightScale, rightScale);
+    }
 
     // Set motor output state
     this.leftPower = leftScale;
     this.leftPower = rightScale;
+  }
+
+  public void setTankDrivePowers(double leftScale, double rightScale) {
+    setTankDrivePowers(leftScale, rightScale, false);
   }
 }
