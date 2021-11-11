@@ -7,53 +7,55 @@ package frc.robot.subsystems.tank;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static frc.robot.Constants.TankConstants.*;
 
 public class TankSubsystem extends SubsystemBase {
-  private final TalonSRX leftMain;
-  private final TalonSRX leftFollow;
+  private final WPI_TalonSRX leftMain;
+  private final WPI_TalonSRX leftFollow;
 
-  private final TalonSRX rightMain;
-  private final TalonSRX rightFollow;
+  private final WPI_TalonSRX rightMain;
+  private final WPI_TalonSRX rightFollow;
 
-  // motor power output states
-  private double yScale;
-  private double angularScale;
+  // Motor power output states
+  private double leftPower;
+  private double rightPower;
 
   public TankSubsystem() {
-    super();
-
-    leftMain = new TalonSRX(fLeftMotorPort);
+    // Init left main and follower motors
+    leftMain = new WPI_TalonSRX(fLeftMotorPort);
     leftMain.setNeutralMode(NeutralMode.Brake);
 
-    leftFollow = new TalonSRX(bLeftMotorPort);
+    leftFollow = new WPI_TalonSRX(bLeftMotorPort);
     leftFollow.follow(leftMain);
     leftFollow.setInverted(InvertType.FollowMaster);
     leftFollow.setNeutralMode(NeutralMode.Brake);
 
-    rightMain = new TalonSRX(fRightMotorPort);
+    // Init right main and follower motors
+    rightMain = new WPI_TalonSRX(fRightMotorPort);
     rightMain.setInverted(true);
     rightMain.setNeutralMode(NeutralMode.Brake);
 
-    rightFollow = new TalonSRX(bRightMotorPort);
+    rightFollow = new WPI_TalonSRX(bRightMotorPort);
     rightFollow.follow(rightMain);
     rightFollow.setInverted(InvertType.FollowMaster);
     rightFollow.setNeutralMode(NeutralMode.Brake);
 
-    yScale = 0;
-    angularScale = 0;
+    // Initialize power values
+    leftPower = 0;
+    rightPower = 0;
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
     // TODO: odometry
-    leftMain.set(ControlMode.PercentOutput, yScale);
-    rightMain.set(ControlMode.PercentOutput, angularScale);
+
+    leftMain.set(ControlMode.PercentOutput, leftPower);
+    rightMain.set(ControlMode.PercentOutput, rightPower);
   }
 
   @Override
@@ -62,42 +64,61 @@ public class TankSubsystem extends SubsystemBase {
   }
 
   /**
-   * Drive the system with the given power scales.
+   * Drive the system with the given power scales using the car system.
    * 
    * @param yScale       Scale in the forward/backward direction, from 1 to -1.
    * @param angularScale Scale in the rotational direction, from 1 to -1,
    *                     clockwise to counterclockwise.
    */
-  public void setDrivePowers(double yScale, double angularScale) {
-    setDrivePowers(yScale, angularScale, true);
+  public void setCarDrivePowers(double yScale, double angularScale) {
+    setCarDrivePowers(yScale, angularScale, true);
   }
 
-  public void setDrivePowers(double yScale, double angularScale, boolean squareInput) {
-
+  public void setCarDrivePowers(double yScale, double angularScale, boolean squareInput) {
     // Square the input if needed for finer control
     if (squareInput) {
       yScale = Math.copySign(yScale * yScale, yScale);
       angularScale = Math.copySign(angularScale * angularScale, angularScale);
     }
 
-    double leftPower = yScale + angularScale;
-    double rightPower = yScale - angularScale;
+    // Set motor output state
+    double leftPowerTemp = yScale + angularScale;
+    double rightPowerTemp = yScale - angularScale;
 
     // Scale powers greater than 1 back to 1 if needed
-    double largest_power = Math.max(Math.abs(leftPower), Math.abs(rightPower));
+    double largest_power = Math.max(Math.abs(leftPowerTemp), Math.abs(rightPowerTemp));
     if (largest_power > 1.0) {
       double scale = 1.0 / largest_power;
 
-      leftPower *= scale;
-      rightPower *= scale;
+      leftPowerTemp *= scale;
+      rightPowerTemp *= scale;
     }
 
-    // set state with new motor powers
-    this.yScale = leftPower;
-    this.angularScale = rightPower;
+    // Set motor output state
+    this.leftPower = leftPowerTemp;
+    this.rightPower = rightPowerTemp;
   }
 
-  public void followPathCommand() {
+  /**
+   * Drive the system with the given power scales using the tank system.
+   * 
+   * @param leftScale  Scale in the forward/backward direction of the left motor,
+   *                   from -1 to 1.
+   * @param rightScale Scale in the forward/backward direction of the right motor,
+   *                   from -1 to 1.
+   */
+  public void setTankDrivePowers(double leftScale, double rightScale, boolean squareInput) {
+    if (squareInput) {
+      leftScale = Math.copySign(leftScale * leftScale, leftScale);
+      rightScale = Math.copySign(rightScale * rightScale, rightScale);
+    }
 
+    // Set motor output state
+    this.leftPower = leftScale;
+    this.leftPower = rightScale;
+  }
+
+  public void setTankDrivePowers(double leftScale, double rightScale) {
+    setTankDrivePowers(leftScale, rightScale, false);
   }
 }
