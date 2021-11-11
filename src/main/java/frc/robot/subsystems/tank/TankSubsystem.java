@@ -77,8 +77,8 @@ public class TankSubsystem extends SubsystemBase {
   public void setCarDrivePowers(double yScale, double angularScale, boolean squareInput) {
     // Square the input if needed for finer control
     if (squareInput) {
-      yScale = Math.copySign(yScale * yScale, yScale);
-      angularScale = Math.copySign(angularScale * angularScale, angularScale);
+      yScale = squareInput(yScale);
+      angularScale = squareInput(angularScale);
     }
 
     // Set motor output state
@@ -109,16 +109,26 @@ public class TankSubsystem extends SubsystemBase {
    */
   public void setTankDrivePowers(double leftScale, double rightScale, boolean squareInput) {
     if (squareInput) {
-      leftScale = Math.copySign(leftScale * leftScale, leftScale);
-      rightScale = Math.copySign(rightScale * rightScale, rightScale);
+      leftScale = squareInput(leftScale);
+      rightScale = squareInput(rightScale);
     }
 
     // Set motor output state
     this.leftPower = leftScale;
-    this.leftPower = rightScale;
+    this.rightPower = rightScale;
   }
 
   public void setTankDrivePowers(double leftScale, double rightScale) {
     setTankDrivePowers(leftScale, rightScale, false);
+  }
+
+  /**
+   * Squares input value while retaining original sign.
+   * 
+   * @param value the value to square
+   * @return the squared value
+   */
+  private double squareInput(double value) {
+    return Math.copySign(value * value, value);
   }
 }
