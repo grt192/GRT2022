@@ -1,0 +1,47 @@
+# drive motors CAN IDs
+fLeft = 3
+fRight = 1
+bLeft = 4
+bRight = 2
+
+#elevator motors CAN IDs
+mainId = 5
+followId = 6
+
+#elevator variables
+elevator_up_is_positive=true
+
+dt_width=0.73025 # WHAT IS THIS TODO
+# meters per tick
+ticks_to_meters=0.0005588
+
+max_speed=0.9
+
+left_inverted=false
+left_master=12
+left_follower=16
+right_inverted=true
+right_master=4
+right_follower=14
+
+#elevator variables
+elevator_master=5
+elevator_follower=6
+
+# speed and time of the ball dump/climb
+# speeds in % output of motors, times in ms
+ball_dump_speed=.9
+ball_dump_time=4500
+
+# outtake variables
+outtake_inverted=false
+outtake=15
+# times in milliseconds
+outtake_time_in=4000
+outtake_time_out=4000
+# speed from -1.0 to 1.0 to move mech out
+outtake_speed=.9
+
+# limit switch variables (currently hardcoded, ignore these)
+top_switch=0
+bottom_switch=1         

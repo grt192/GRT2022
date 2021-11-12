@@ -4,11 +4,25 @@
 
 package frc.robot;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
+
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.commands.ExampleAutoCommand;
-import frc.robot.subsystems.SwerveSubsystem;
+import edu.wpi.first.wpilibj2.command.RunCommand;
+import frc.robot.commands.tank.DriveTankCommand;
+import frc.robot.commands.elevator.ElevatorUpCommand;
+import frc.robot.commands.elevator.ElevatorDownCommand;
+import frc.robot.commands.elevator.ElevatorStopCommand;
+import frc.robot.subsystems.elevator.ElevatorSubsystem;
+import frc.robot.subsystems.tank.TankSubsystem;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -18,15 +32,46 @@ import frc.robot.subsystems.SwerveSubsystem;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-  // The robot's subsystems and commands are defined here...
-  private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
+  // Path of config file, relative to the deploy folder
+  private static final String CONFIG_PATH = "config.txt";
+  // config file
+  private Properties config;
 
-  private final ExampleAutoCommand autoCommand = new ExampleAutoCommand(swerveSubsystem);
+  // Subsystems
+  private final TankSubsystem tankSubsystem;
+
+  // Controllers
+  private XboxController controlXbox = new XboxController(0);
+
+  // Joysticks
+  private Joystick joystickLeft = new Joystick(1);
+  private Joystick joystickRight = new Joystick(2);
+
+  // Commands
+  private final DriveTankCommand tankCommand;
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
+   * 
    */
   public RobotContainer() {
+
+    // Load the config file
+    this.config = new Properties();
+
+    try {
+      FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
+      config.load(stream);
+    } catch (IOException ie) {
+      System.out.println("config file not found");
+    }
+
+    // Instantiate subsystems
+    tankSubsystem = new TankSubsystem();
+
+    // Instantiate commands
+    tankCommand = new DriveTankCommand(tankSubsystem, 0, 0);
+
     // Configure the button bindings
     configureButtonBindings();
   }
@@ -38,6 +83,24 @@ public class RobotContainer {
    * passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {
+    controllerBindings();
+  }
+
+  private void controllerBindings() {
+    Runnable tank = () -> {
+
+      // Check which controller is being used
+      boolean isXbox = (Math.abs(controlXbox.getY(Hand.kLeft))
+          + Math.abs(controlXbox.getX(Hand.kRight))) > (Math.abs(joystickLeft.getY()) + Math.abs(joystickRight.getY()));
+
+      // Set the drive powers based on which controller is being used
+      if (isXbox) {
+        tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
+      } else {
+        tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
+      }
+    };
+    tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }
 
   /**
@@ -47,6 +110,6 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     // An ExampleCommand will run in autonomous
-    return autoCommand;
+    return tankCommand;
   }
 }
