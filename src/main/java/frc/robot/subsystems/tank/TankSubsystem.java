@@ -5,6 +5,7 @@
 package frc.robot.subsystems.tank;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
@@ -44,6 +45,16 @@ public class TankSubsystem extends SubsystemBase {
     rightFollow.setInverted(InvertType.FollowMaster);
     rightFollow.setNeutralMode(NeutralMode.Brake);
 
+    // Initialize Talon sensors
+    // https://docs.ctre-phoenix.com/en/latest/ch14_MCSensor.html#cross-the-road-electronics-magnetic-encoder-absolute-and-relative
+    // https://docs.ctre-phoenix.com/en/latest/ch14_MCSensor.html#software-select-sensor
+    leftMain.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
+    rightMain.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
+
+    //https://docs.ctre-phoenix.com/en/latest/ch14_MCSensor.html#sensor-phase
+    leftMain.setSensorPhase(false);
+    rightMain.setSensorPhase(false);
+
     // Initialize power values
     leftPower = 0;
     rightPower = 0;
@@ -56,6 +67,9 @@ public class TankSubsystem extends SubsystemBase {
 
     leftMain.set(ControlMode.PercentOutput, leftPower);
     rightMain.set(ControlMode.PercentOutput, rightPower);
+
+    System.out.println("Positions: " + leftMain.getSelectedSensorPosition() + " " + rightMain.getSelectedSensorPosition());
+    System.out.println("Velocities: " + leftMain.getSelectedSensorVelocity() + " " + rightMain.getSelectedSensorVelocity());
   }
 
   @Override
