@@ -25,6 +25,7 @@ public final class Constants {
         // Encoder constants
         // Perhaps move these to their own class?
         public static final int kSensorUnitsPerRotation = 4096;
+        public static final double kWheelCircumference = Math.PI * 6.0; // In inches
     }
 
     public static final class ElevatorConstants {

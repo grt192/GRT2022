@@ -51,7 +51,7 @@ public class TankSubsystem extends SubsystemBase {
     leftMain.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
     rightMain.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
 
-    //https://docs.ctre-phoenix.com/en/latest/ch14_MCSensor.html#sensor-phase
+    // https://docs.ctre-phoenix.com/en/latest/ch14_MCSensor.html#sensor-phase
     leftMain.setSensorPhase(false);
     rightMain.setSensorPhase(false);
 
@@ -68,8 +68,12 @@ public class TankSubsystem extends SubsystemBase {
     leftMain.set(ControlMode.PercentOutput, leftPower);
     rightMain.set(ControlMode.PercentOutput, rightPower);
 
-    System.out.println("Positions: " + leftMain.getSelectedSensorPosition() + " " + rightMain.getSelectedSensorPosition());
-    System.out.println("Velocities: " + leftMain.getSelectedSensorVelocity() + " " + rightMain.getSelectedSensorVelocity());
+    //System.out.println("Positions: " + leftMain.getSelectedSensorPosition() + " " + rightMain.getSelectedSensorPosition());
+    //System.out.println("Velocities: " + leftMain.getSelectedSensorVelocity() + " " + rightMain.getSelectedSensorVelocity());
+    System.out.println(
+      "rightMain: " + rightMain.getSelectedSensorPosition() 
+      + " " + rightMain.getSelectedSensorVelocity()
+      + ", moved " + rightMain.getSelectedSensorPosition() / kSensorUnitsPerRotation * kWheelCircumference + " inches");
   }
 
   @Override
