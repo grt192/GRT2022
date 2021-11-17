@@ -16,8 +16,8 @@ package frc.robot;
  */
 public final class Constants {
     public static final class TankConstants {
-        public static final int fLeftMotorPort = 15;
-        public static final int bLeftMotorPort = 14;
+        public static final int fLeftMotorPort = 14;
+        public static final int bLeftMotorPort = 15;
 
         public static final int fRightMotorPort = 1;
         public static final int bRightMotorPort = 0;
@@ -26,6 +26,7 @@ public final class Constants {
         // Perhaps move these to their own class?
         public static final int kSensorUnitsPerRotation = 4096;
         public static final double kWheelCircumference = Math.PI * 6.0; // In inches
+        public static final double kSensorUnitsToInches = kWheelCircumference / kSensorUnitsPerRotation;
     }
 
     public static final class ElevatorConstants {

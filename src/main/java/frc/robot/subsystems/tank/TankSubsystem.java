@@ -55,6 +55,9 @@ public class TankSubsystem extends SubsystemBase {
     leftMain.setSensorPhase(false);
     rightMain.setSensorPhase(false);
 
+    zeroLeftSensor();
+    zeroRightSensor();
+
     // Initialize power values
     leftPower = 0;
     rightPower = 0;
@@ -68,12 +71,12 @@ public class TankSubsystem extends SubsystemBase {
     leftMain.set(ControlMode.PercentOutput, leftPower);
     rightMain.set(ControlMode.PercentOutput, rightPower);
 
-    //System.out.println("Positions: " + leftMain.getSelectedSensorPosition() + " " + rightMain.getSelectedSensorPosition());
+    System.out.println("Positions: " + getLeftPosition() + " " + getRightPosition());
     //System.out.println("Velocities: " + leftMain.getSelectedSensorVelocity() + " " + rightMain.getSelectedSensorVelocity());
-    System.out.println(
-      "rightMain: " + rightMain.getSelectedSensorPosition() 
-      + " " + rightMain.getSelectedSensorVelocity()
-      + ", moved " + rightMain.getSelectedSensorPosition() / kSensorUnitsPerRotation * kWheelCircumference + " inches");
+    //System.out.println(
+    //  "rightMain: " + rightMain.getSelectedSensorPosition() 
+    //  + " " + rightMain.getSelectedSensorVelocity()
+    //  + ", moved " + getRightPosition() + " inches");
   }
 
   @Override
@@ -148,5 +151,35 @@ public class TankSubsystem extends SubsystemBase {
    */
   private double squareInput(double value) {
     return Math.copySign(value * value, value);
+  }
+
+  /**
+   * Gets the distance travelled, in inches, of the left motor.
+   * @return the left sensor position, in inches
+   */
+  public double getLeftPosition() {
+    return leftMain.getSelectedSensorPosition() * kSensorUnitsToInches;
+  }
+
+  /**
+   * Gets the distance travelled, in inches, of the right motor.
+   * @return the right sensor position, in inches
+   */
+  public double getRightPosition() {
+    return rightMain.getSelectedSensorPosition() * kSensorUnitsToInches;
+  }
+
+  /**
+   * Zeros the left sensor's position.
+   */
+  public void zeroLeftSensor() {
+    leftMain.setSelectedSensorPosition(0);
+  }
+
+  /**
+   * Zeros the right sensor's position.
+   */
+  public void zeroRightSensor() {
+    rightMain.setSelectedSensorPosition(0);
   }
 }
