@@ -27,7 +27,14 @@ public class DriveTankCommand extends CommandBase {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void initialize() {
-    tankSubsystem.setCarDrivePowers(0.7, 0.0);
+    // TODO: the zeroing of the sensors takes a non-zero amount of time and `isFinished()` returns 
+    // true before the sensors are zeroed.
+    // Every other run of this command will fail, with the second run serving only to zero the sensors 
+    // for the third.
+    tankSubsystem.zeroLeftSensor();
+    tankSubsystem.zeroRightSensor();
+
+    tankSubsystem.setCarDrivePowers(0.5, 0.0);
   }
 
   @Override
