@@ -62,6 +62,10 @@ public class Robot extends TimedRobot {
     if (autonomousCommand != null) {
       autonomousCommand.schedule();
     }
+
+    // Run the Odometry thread
+    OdometryThread odoThread = new OdometryThread(robotContainer.getTankSubsystem());
+    new Thread(odoThread).start();
   }
 
   /** This function is called periodically during autonomous. */

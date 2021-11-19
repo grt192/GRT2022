@@ -155,18 +155,18 @@ public class TankSubsystem extends SubsystemBase {
 
   /**
    * Gets the distance travelled, in inches, of the left motor.
-   * @return the left sensor position, in inches
+   * @return the left sensor position, in sensor units
    */
   public double getLeftPosition() {
-    return leftMain.getSelectedSensorPosition() * kSensorUnitsToInches;
+    return leftMain.getSelectedSensorPosition();
   }
 
   /**
    * Gets the distance travelled, in inches, of the right motor.
-   * @return the right sensor position, in inches
+   * @return the right sensor position, in sensor units
    */
   public double getRightPosition() {
-    return rightMain.getSelectedSensorPosition() * kSensorUnitsToInches;
+    return rightMain.getSelectedSensorPosition();
   }
 
   /**
