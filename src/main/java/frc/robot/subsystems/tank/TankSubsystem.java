@@ -29,8 +29,8 @@ public class TankSubsystem extends SubsystemBase {
 
   private final DifferentialDrivePoseEstimator odometry;
 
-  // TODO: measure this
-  public static final double ENCODER_TICKS_TO_METERS = 0.0;
+  // TODO: measure this (replace "1.0" with average sensor reading after pushing robot 1m)
+  public static final double ENCODER_TICKS_TO_METERS = 1 / 1.0;
 
   // Motor power output states
   private double leftPower;
@@ -97,12 +97,11 @@ public class TankSubsystem extends SubsystemBase {
 
     odometry.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
 
-    System.out.println("Positions: " + getLeftPosition() + " " + getRightPosition());
-    //System.out.println("Velocities: " + leftMain.getSelectedSensorVelocity() + " " + rightMain.getSelectedSensorVelocity());
-    //System.out.println(
-    //  "rightMain: " + rightMain.getSelectedSensorPosition() 
-    //  + " " + rightMain.getSelectedSensorVelocity()
-    //  + ", moved " + getRightPosition() + " inches");
+    //System.out.println(odometry.getEstimatedPosition());
+
+    // Print sensor unit positions for measuring constant; 
+    // leftDistance == leftMain.getSelectedSensorPosition() as long as the constant is in its temp value (1.0)
+    System.out.println("l: " + leftDistance + " r: " + rightDistance + " avg: " + (leftDistance + rightDistance) / 2);
   }
 
   @Override
