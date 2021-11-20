@@ -10,6 +10,8 @@ import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
+import com.kauailabs.navx.frc.AHRS;
+
 import edu.wpi.first.wpilibj.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
@@ -17,6 +19,7 @@ import edu.wpi.first.wpilibj.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpiutil.math.MatBuilder;
 import edu.wpi.first.wpiutil.math.Nat;
+import edu.wpi.first.wpilibj.SPI;
 
 import static frc.robot.Constants.TankConstants.*;
 
@@ -26,6 +29,8 @@ public class TankSubsystem extends SubsystemBase {
 
   private final WPI_TalonSRX rightMain;
   private final WPI_TalonSRX rightFollow;
+
+  private final AHRS ahrs;
 
   private final DifferentialDrivePoseEstimator odometry;
 
@@ -69,6 +74,10 @@ public class TankSubsystem extends SubsystemBase {
     zeroLeftSensor();
     zeroRightSensor();
 
+    // Initialize navX AHRS
+    // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
+    ahrs = new AHRS(SPI.Port.kMXP); 
+
     // Initialize odometry class
     // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose_state-estimators.html
     odometry = new DifferentialDrivePoseEstimator(new Rotation2d(), new Pose2d(),
@@ -88,7 +97,7 @@ public class TankSubsystem extends SubsystemBase {
     rightMain.set(ControlMode.PercentOutput, rightPower);
 
     // Update odometry readings
-    Rotation2d gyroAngle = new Rotation2d(); // TODO: gyro angle
+    Rotation2d gyroAngle = Rotation2d.fromDegrees(ahrs.getAngle());
     DifferentialDriveWheelSpeeds wheelVelocities = new DifferentialDriveWheelSpeeds(
       leftMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_METERS, 
       rightMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_METERS);
