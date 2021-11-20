@@ -10,7 +10,13 @@ import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
+import edu.wpi.first.wpilibj.estimator.DifferentialDrivePoseEstimator;
+import edu.wpi.first.wpilibj.geometry.Pose2d;
+import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpiutil.math.MatBuilder;
+import edu.wpi.first.wpiutil.math.Nat;
 
 import static frc.robot.Constants.TankConstants.*;
 
@@ -20,6 +26,11 @@ public class TankSubsystem extends SubsystemBase {
 
   private final WPI_TalonSRX rightMain;
   private final WPI_TalonSRX rightFollow;
+
+  private final DifferentialDrivePoseEstimator odometry;
+
+  // TODO: measure this
+  public static final double ENCODER_TICKS_TO_METERS = 0.0;
 
   // Motor power output states
   private double leftPower;
@@ -58,6 +69,13 @@ public class TankSubsystem extends SubsystemBase {
     zeroLeftSensor();
     zeroRightSensor();
 
+    // Initialize odometry class
+    // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose_state-estimators.html
+    odometry = new DifferentialDrivePoseEstimator(new Rotation2d(), new Pose2d(),
+      new MatBuilder<>(Nat.N5(), Nat.N1()).fill(0.02, 0.02, 0.01, 0.02, 0.02), // State measurement standard deviations. X, Y, theta.
+      new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01), // Local measurement standard deviations. Left encoder, right encoder, gyro.
+      new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01)); // Global measurement standard deviations. X, Y, and theta. 
+
     // Initialize power values
     leftPower = 0;
     rightPower = 0;
@@ -65,11 +83,19 @@ public class TankSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    // This method will be called once per scheduler run
-    // TODO: odometry
 
     leftMain.set(ControlMode.PercentOutput, leftPower);
     rightMain.set(ControlMode.PercentOutput, rightPower);
+
+    // Update odometry readings
+    Rotation2d gyroAngle = new Rotation2d(); // TODO: gyro angle
+    DifferentialDriveWheelSpeeds wheelVelocities = new DifferentialDriveWheelSpeeds(
+      leftMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_METERS, 
+      rightMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_METERS);
+    double leftDistance = leftMain.getSelectedSensorPosition() * ENCODER_TICKS_TO_METERS;
+    double rightDistance = rightMain.getSelectedSensorPosition() * ENCODER_TICKS_TO_METERS;
+
+    odometry.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
 
     System.out.println("Positions: " + getLeftPosition() + " " + getRightPosition());
     //System.out.println("Velocities: " + leftMain.getSelectedSensorVelocity() + " " + rightMain.getSelectedSensorVelocity());
@@ -154,7 +180,7 @@ public class TankSubsystem extends SubsystemBase {
   }
 
   /**
-   * Gets the distance travelled, in inches, of the left motor.
+   * Gets the distance travelled, in sensor units, of the left motor.
    * @return the left sensor position, in sensor units
    */
   public double getLeftPosition() {
@@ -162,7 +188,7 @@ public class TankSubsystem extends SubsystemBase {
   }
 
   /**
-   * Gets the distance travelled, in inches, of the right motor.
+   * Gets the distance travelled, in sensor units, of the right motor.
    * @return the right sensor position, in sensor units
    */
   public double getRightPosition() {

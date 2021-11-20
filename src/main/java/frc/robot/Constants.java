@@ -21,12 +21,6 @@ public final class Constants {
 
         public static final int fRightMotorPort = 1;
         public static final int bRightMotorPort = 0;
-
-        // Encoder constants
-        // Perhaps move these to their own class?
-        public static final int kSensorUnitsPerRotation = 4096;
-        public static final double kWheelCircumference = Math.PI * 6.0; // In inches
-        public static final double kSensorUnitsToInches = kWheelCircumference / kSensorUnitsPerRotation;
     }
 
     public static final class ElevatorConstants {
