@@ -1,15 +1,13 @@
-package frc.robot;
-
-import frc.robot.subsystems.tank.TankSubsystem;
+package frc.robot.odometry;
 
 /**
  * Runnable thread to continually perform robot odometry
  */
 public class OdometryThread implements Runnable {
-  private final TankSubsystem tankSubsystem;
+  private final Odometry odometry;
 
-  public OdometryThread(TankSubsystem tankSubsystem) {
-    this.tankSubsystem = tankSubsystem;
+  public OdometryThread(Odometry odometry) {
+    this.odometry = odometry;
   }
 
   // Continually call update() while running
