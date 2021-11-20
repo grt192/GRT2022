@@ -188,32 +188,22 @@ public class TankSubsystem extends SubsystemBase {
   }
 
   /**
-   * Gets the distance travelled, in sensor units, of the left motor.
-   * @return the left sensor position, in sensor units
+   * Gets the estimated current position of the robot.
+   * @return the estimated position of the robot as a Pose2d.
    */
-  public double getLeftPosition() {
-    return leftMain.getSelectedSensorPosition();
+  public Pose2d getRobotPosition() {
+    return odometry.getEstimatedPosition();
   }
 
   /**
-   * Gets the distance travelled, in sensor units, of the right motor.
-   * @return the right sensor position, in sensor units
+   * Zeros the robot's position.
+   * This method zeros both the robot's translation *and* rotation.
    */
-  public double getRightPosition() {
-    return rightMain.getSelectedSensorPosition();
-  }
-
-  /**
-   * Zeros the left sensor's position.
-   */
-  public void zeroLeftSensor() {
+  public void zeroPosition() {
     leftMain.setSelectedSensorPosition(0);
-  }
-
-  /**
-   * Zeros the right sensor's position.
-   */
-  public void zeroRightSensor() {
     rightMain.setSelectedSensorPosition(0);
+
+    // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
+    odometry.resetPosition(new Pose2d(), Rotation2d.fromDegrees(ahrs.getAngle()));
   }
 }

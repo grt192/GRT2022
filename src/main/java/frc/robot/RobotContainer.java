@@ -110,9 +110,4 @@ public class RobotContainer {
     // The robot will drive forward for 12 inches in autonomous
     return tankCommand;
   }
-
-  // TODO: perhaps a more elegant way of doing this?
-  public TankSubsystem getTankSubsystem() {
-    return tankSubsystem;
-  }
 }
