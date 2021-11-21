@@ -71,9 +71,6 @@ public class TankSubsystem extends SubsystemBase {
     leftMain.setSensorPhase(false);
     rightMain.setSensorPhase(false);
 
-    zeroLeftSensor();
-    zeroRightSensor();
-
     // Initialize navX AHRS
     // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
     ahrs = new AHRS(SPI.Port.kMXP); 
@@ -88,6 +85,8 @@ public class TankSubsystem extends SubsystemBase {
     // Initialize power values
     leftPower = 0;
     rightPower = 0;
+
+    zeroPosition();
   }
 
   @Override
@@ -204,6 +203,6 @@ public class TankSubsystem extends SubsystemBase {
     rightMain.setSelectedSensorPosition(0);
 
     // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
-    odometry.resetPosition(new Pose2d(), Rotation2d.fromDegrees(ahrs.getAngle()));
+    odometry.resetPosition(getRobotPosition(), Rotation2d.fromDegrees(ahrs.getAngle()));
   }
 }
