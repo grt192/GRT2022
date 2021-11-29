@@ -29,4 +29,10 @@ public final class Constants {
         public static final boolean elevatorUpIsPositive = true;
 
     }
+
+    public static final class JetsonConstants {
+        public static final int jetsonCameraPort = 1337;
+        public static final String jetsonAddress = "10.1.92.14";
+
+    }
 }
