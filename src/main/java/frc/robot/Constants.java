@@ -28,4 +28,10 @@ public final class Constants {
         public static final int hoodPort = 1;
         public static final int flywheelPort = 2;
     }
+
+    public static final class JetsonConstants {
+        public static final int jetsonCameraPort = 1337;
+        public static final String jetsonAddress = "10.1.92.14";
+
+    }
 }
