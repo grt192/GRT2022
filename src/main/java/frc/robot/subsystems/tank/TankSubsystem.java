@@ -34,8 +34,9 @@ public class TankSubsystem extends SubsystemBase {
 
   private final DifferentialDrivePoseEstimator odometry;
 
-  // TODO: measure this (replace "1.0" with average sensor reading after pushing robot 1m)
-  public static final double ENCODER_TICKS_TO_METERS = 1 / 1.0;
+  // Right: 1738.0u
+  // Left: 1706.0u
+  public static final double ENCODER_TICKS_TO_METERS = 1 / 1722.0;
 
   // Motor power output states
   private double leftPower;
@@ -105,11 +106,7 @@ public class TankSubsystem extends SubsystemBase {
 
     odometry.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
 
-    //System.out.println(odometry.getEstimatedPosition());
-
-    // Print sensor unit positions for measuring constant; 
-    // leftDistance == leftMain.getSelectedSensorPosition() as long as the constant is in its temp value (1.0)
-    System.out.println("l: " + leftDistance + " r: " + rightDistance + " avg: " + (leftDistance + rightDistance) / 2);
+    System.out.println(odometry.getEstimatedPosition());
   }
 
   @Override
@@ -203,6 +200,6 @@ public class TankSubsystem extends SubsystemBase {
     rightMain.setSelectedSensorPosition(0);
 
     // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
-    odometry.resetPosition(getRobotPosition(), Rotation2d.fromDegrees(ahrs.getAngle()));
+    odometry.resetPosition(new Pose2d(), Rotation2d.fromDegrees(ahrs.getAngle()));
   }
 }

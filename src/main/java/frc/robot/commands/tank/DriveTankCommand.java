@@ -31,16 +31,16 @@ public class DriveTankCommand extends CommandBase {
     // true before the sensors are zeroed.
     // Every other run of this command will fail, with the second run serving only to zero the sensors 
     // for the third.
-    tankSubsystem.zeroLeftSensor();
-    tankSubsystem.zeroRightSensor();
+    tankSubsystem.zeroPosition();
 
     tankSubsystem.setCarDrivePowers(0.5, 0.0);
   }
 
   @Override
   public boolean isFinished() {
-    return tankSubsystem.getLeftPosition() >= distance
-      && tankSubsystem.getRightPosition() >= distance;
+    return true;
+    //return tankSubsystem.getLeftPosition() >= distance
+    //  && tankSubsystem.getRightPosition() >= distance;
   }
 
   @Override
