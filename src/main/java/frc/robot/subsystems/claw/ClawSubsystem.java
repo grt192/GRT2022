@@ -17,8 +17,24 @@ public class ClawSubsystem extends SubsystemBase{
     private Servo servo4;
 
     private Servo[] servos;
+    private int[] openAngles;
+    private int[] closedAngles;
 
     private Solenoid pfft1; 
+
+    public boolean clawIsOpen;
+    public boolean clawIsLifted;
+
+    public final int openAngle1, openAngle2 = 100;
+    public final int openAngle2 = 100;
+    public final int openAngle3 = 100;
+    public final int openAngle4 = 100;
+
+    public final int closedAngle1 = 0;
+    public final int closedAngle2 = 0;
+    public final int closedAngle3 = 0;
+    public final int closedAngle4 = 0;
+
 
     public ClawSubsystem() {
         
@@ -28,15 +44,37 @@ public class ClawSubsystem extends SubsystemBase{
           servo2 = new Servo(1);
           servo3 = new Servo(2);
           servo4 = new Servo(3);
+
           pfft1 = new Solenoid(4);
 
           servos = new Servo[]{servo1, servo2, servo3, servo4};
+          openAngles = new int[]{openAngle1, openAngle2, openAngle3, openAngle4};
+          closedAngles = new int[]{closedAngle1, closedAngle2, closedAngle3, closedAngle4};
       }
       
       @Override
       public void periodic() {
-        // This method will be called once per scheduler run
-  
+        if (clawIsOpen){
+          for (int i = 0; i < servos.length; i++){
+            servos[i].setAngle(openAngles[i]);
+          }
+        } 
+        else{
+          if (clawIsOpen){
+            for (int i = 0; i < servos.length; i++){
+              servos[i].setAngle(closedAngles[i]);
+            }
+        }
+        if (clawIsLifted){
+            pfft1.set(true);
+        }
+        else{
+          pfft1.set(false);
+          if (clawIsOpen){
+            for (int i = 0; i < servos.length; i++){
+              servos[i].setAngle(closedAngles[i]);
+            }
+        }
       }
     
       @Override
@@ -45,23 +83,19 @@ public class ClawSubsystem extends SubsystemBase{
       }
   
       public void openClaw(){
-          for (Servo s:servos){
-            s.setAngle(45);
-          }    
+        clawIsOpen = true;    
       }
   
       public void closeClaw(){
-        for (Servo s:servos){
-          s.setAngle(0);
-        }   
+        clawIsOpen = false;  
       }
   
       public void liftClaw(){
-          pfft1.set(true);
+       clawIsLifted = true;
       }
   
       public void lowerClaw(){
-          pfft1.set(false);
-          closeClaw();
+        clawIsLifted = true;
+        clawIsOpen = false;
       }
 }

@@ -21,6 +21,7 @@ import frc.robot.commands.elevator.ElevatorUpCommand;
 import frc.robot.commands.elevator.ElevatorDownCommand;
 import frc.robot.commands.elevator.ElevatorStopCommand;
 import frc.robot.subsystems.claw.ClawSubsystem;
+import frc.robot.subsystems.claw.clawSubsystem;
 import frc.robot.subsystems.elevator.ElevatorSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -44,6 +45,7 @@ public class RobotContainer {
 
   // Controllers
   private XboxController controlXbox = new XboxController(0);
+  private XboxController controlXbox2 = new XboxController(1);
 
   // Joysticks
   private Joystick joystickLeft = new Joystick(1);
@@ -95,26 +97,29 @@ public class RobotContainer {
       // Check which controller is being used
       boolean isXbox = (Math.abs(controlXbox.getY(Hand.kLeft))
           + Math.abs(controlXbox.getX(Hand.kRight))) > (Math.abs(joystickLeft.getY()) + Math.abs(joystickRight.getY()));
-
       // Set the drive powers based on which controller is being used
       if (isXbox) {
         tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
-        if(controlXbox.getAButtonPressed()){
-          clawSubsystem.openClaw();
-        }
-        if(controlXbox.getBButtonPressed()){
-          clawSubsystem.closeClaw();
-        }
-        if(controlXbox.getXButtonPressed()){
-          clawSubsystem.liftClaw();
-        }
-        if(controlXbox.getYButtonPressed()){
-          clawSubsystem.lowerClaw();
-        }
-      } else {
-        tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
+    }
+    else {
+      tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
+    }
+
+   if(controlXbox2.getAButtonReleased()){
+      if(clawSubsystem.clawIsOpen){
+        clawSubsystem.closeClaw();
       }
-    };
+      else{
+        clawSubsystem.openClaw();
+      }   
+    }
+    if(controlXbox2.getBButtonReleased()){
+      if(clawSubsystem.clawIsLifted){
+        clawSubsystem.lowerClaw();
+      }
+      clawSubsystem.liftClaw();
+    }
+    
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }
 
