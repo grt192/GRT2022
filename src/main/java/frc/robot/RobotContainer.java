@@ -20,6 +20,7 @@ import frc.robot.commands.tank.DriveTankCommand;
 import frc.robot.commands.elevator.ElevatorUpCommand;
 import frc.robot.commands.elevator.ElevatorDownCommand;
 import frc.robot.commands.elevator.ElevatorStopCommand;
+import frc.robot.subsystems.claw.ClawSubsystem;
 import frc.robot.subsystems.elevator.ElevatorSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -39,6 +40,7 @@ public class RobotContainer {
 
   // Subsystems
   private final TankSubsystem tankSubsystem;
+  private final ClawSubsystem clawSubsystem;
 
   // Controllers
   private XboxController controlXbox = new XboxController(0);
@@ -68,6 +70,7 @@ public class RobotContainer {
 
     // Instantiate subsystems
     tankSubsystem = new TankSubsystem();
+    clawSubsystem = new ClawSubsystem();
 
     // Instantiate commands
     tankCommand = new DriveTankCommand(tankSubsystem, 0, 0);
@@ -96,6 +99,18 @@ public class RobotContainer {
       // Set the drive powers based on which controller is being used
       if (isXbox) {
         tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
+        if(controlXbox.getAButtonPressed()){
+          clawSubsystem.openClaw();
+        }
+        if(controlXbox.getBButtonPressed()){
+          clawSubsystem.closeClaw();
+        }
+        if(controlXbox.getXButtonPressed()){
+          clawSubsystem.liftClaw();
+        }
+        if(controlXbox.getYButtonPressed()){
+          clawSubsystem.lowerClaw();
+        }
       } else {
         tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
       }
