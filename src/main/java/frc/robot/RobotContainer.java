@@ -21,7 +21,6 @@ import frc.robot.commands.elevator.ElevatorUpCommand;
 import frc.robot.commands.elevator.ElevatorDownCommand;
 import frc.robot.commands.elevator.ElevatorStopCommand;
 import frc.robot.subsystems.claw.ClawSubsystem;
-import frc.robot.subsystems.claw.clawSubsystem;
 import frc.robot.subsystems.elevator.ElevatorSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -119,9 +118,9 @@ public class RobotContainer {
       }
       clawSubsystem.liftClaw();
     }
-    
-    tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
-  }
+  };
+  tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
+}
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.

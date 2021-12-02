@@ -25,7 +25,7 @@ public class ClawSubsystem extends SubsystemBase{
     public boolean clawIsOpen;
     public boolean clawIsLifted;
 
-    public final int openAngle1, openAngle2 = 100;
+    public final int openAngle1 = 100;
     public final int openAngle2 = 100;
     public final int openAngle3 = 100;
     public final int openAngle4 = 100;
@@ -64,6 +64,7 @@ public class ClawSubsystem extends SubsystemBase{
             for (int i = 0; i < servos.length; i++){
               servos[i].setAngle(closedAngles[i]);
             }
+          }
         }
         if (clawIsLifted){
             pfft1.set(true);
@@ -76,6 +77,7 @@ public class ClawSubsystem extends SubsystemBase{
             }
         }
       }
+    }
     
       @Override
       public void simulationPeriodic() {
