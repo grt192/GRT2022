@@ -17,8 +17,8 @@ public class ClawSubsystem extends SubsystemBase{
     private Servo servo4;
 
     private Servo[] servos;
-    private int[] openAngles;
-    private int[] closedAngles;
+    private double[] openAngles;
+    private double[] closedAngles;
 
     private Solenoid pfft1; 
 
@@ -30,10 +30,10 @@ public class ClawSubsystem extends SubsystemBase{
     public final double openAngle3 = -0.5;
     public final double openAngle4 = -0.5;
 
-    public final int closedAngle1 = 0;
-    public final int closedAngle2 = 0;
-    public final int closedAngle3 = 0;
-    public final int closedAngle4 = 0;
+    public final double closedAngle1 = 0.0;
+    public final double closedAngle2 = 0.0;
+    public final double closedAngle3 = 0.0;
+    public final double closedAngle4 = 0.0;
 
 
     public ClawSubsystem() {
@@ -48,8 +48,8 @@ public class ClawSubsystem extends SubsystemBase{
           pfft1 = new Solenoid(4);
 
           servos = new Servo[]{servo1, servo2, servo3, servo4};
-          openAngles = new int[]{openAngle1, openAngle2, openAngle3, openAngle4};
-          closedAngles = new int[]{closedAngle1, closedAngle2, closedAngle3, closedAngle4};
+          openAngles = new double[]{openAngle1, openAngle2, openAngle3, openAngle4};
+          closedAngles = new double[]{closedAngle1, closedAngle2, closedAngle3, closedAngle4};
       }
       
       @Override
