@@ -57,10 +57,10 @@ public class ClawSubsystem extends SubsystemBase{
 
         for (int i = 0; i < servos.length; i++){
 	        if (clawIsOpen){
-            servos[i].setAngle(openAngles[i]);
+            servos[i].set(openAngles[i]);
           }
 	        else{
-	          servos[i].setAngle(closedAngles[i]);
+	          servos[i].set(closedAngles[i]);
 	        }
         } 
         
@@ -71,7 +71,7 @@ public class ClawSubsystem extends SubsystemBase{
           pfft1.set(false);
           if (!clawIsOpen){
             for (int i = 0; i < servos.length; i++){
-              servos[i].setAngle(openAngles[i]);
+              servos[i].set(openAngles[i]);
             }
           }
         }
