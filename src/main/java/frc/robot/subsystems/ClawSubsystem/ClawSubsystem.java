@@ -13,8 +13,8 @@ public class ClawSubsystem extends SubsystemBase{
     private TalonSRX motor1;
     private Solenoid pfft1;
 
-    public boolean clawIsOpen;
-    public boolean clawIsLifted;
+    public boolean clawIsOpen = false;
+    public boolean clawIsLifted = false;
 
     private int max_pos;
 
