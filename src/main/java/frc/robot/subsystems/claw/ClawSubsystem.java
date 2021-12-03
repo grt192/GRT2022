@@ -25,10 +25,10 @@ public class ClawSubsystem extends SubsystemBase{
     public boolean clawIsOpen = false;
     public boolean clawIsLifted = false;
 
-    public final int openAngle1 = 100;
-    public final int openAngle2 = 100;
-    public final int openAngle3 = 100;
-    public final int openAngle4 = 100;
+    public final double openAngle1 = .5;
+    public final double openAngle2 = .5;
+    public final double openAngle3 = -0.5;
+    public final double openAngle4 = -0.5;
 
     public final int closedAngle1 = 0;
     public final int closedAngle2 = 0;
