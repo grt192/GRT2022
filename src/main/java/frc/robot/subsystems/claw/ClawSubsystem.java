@@ -22,8 +22,8 @@ public class ClawSubsystem extends SubsystemBase{
 
     private Solenoid pfft1; 
 
-    public boolean clawIsOpen;
-    public boolean clawIsLifted;
+    public boolean clawIsOpen = false;
+    public boolean clawIsLifted = false;
 
     public final int openAngle1 = 100;
     public final int openAngle2 = 100;
@@ -80,22 +80,5 @@ public class ClawSubsystem extends SubsystemBase{
       @Override
       public void simulationPeriodic() {
         // This method will be called once per scheduler run during simulation
-      }
-  
-      public void openClaw(){
-        clawIsOpen = true;    
-      }
-  
-      public void closeClaw(){
-        clawIsOpen = false;  
-      }
-  
-      public void liftClaw(){
-       clawIsLifted = true;
-      }
-  
-      public void lowerClaw(){
-        clawIsLifted = false;
-        clawIsOpen = false;
       }
 }
