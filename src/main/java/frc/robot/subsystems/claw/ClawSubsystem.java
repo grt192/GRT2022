@@ -54,30 +54,28 @@ public class ClawSubsystem extends SubsystemBase{
       
       @Override
       public void periodic() {
-        if (clawIsOpen){
-          for (int i = 0; i < servos.length; i++){
+
+        for (int i = 0; i < servos.length; i++){
+	        if (clawIsOpen){
             servos[i].setAngle(openAngles[i]);
           }
+	        else{
+	          servos[i].setAngle(closedAngles[i]);
+	        }
         } 
-        else{
-          if (clawIsOpen){
-            for (int i = 0; i < servos.length; i++){
-              servos[i].setAngle(closedAngles[i]);
-            }
-          }
-        }
+        
         if (clawIsLifted){
             pfft1.set(true);
         }
         else{
           pfft1.set(false);
-          if (clawIsOpen){
+          if (!clawIsOpen){
             for (int i = 0; i < servos.length; i++){
-              servos[i].setAngle(closedAngles[i]);
+              servos[i].setAngle(openAngles[i]);
             }
+          }
         }
       }
-    }
     
       @Override
       public void simulationPeriodic() {
@@ -97,7 +95,7 @@ public class ClawSubsystem extends SubsystemBase{
       }
   
       public void lowerClaw(){
-        clawIsLifted = true;
+        clawIsLifted = false;
         clawIsOpen = false;
       }
 }

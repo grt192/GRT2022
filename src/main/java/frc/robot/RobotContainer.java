@@ -99,26 +99,19 @@ public class RobotContainer {
       // Set the drive powers based on which controller is being used
       if (isXbox) {
         tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
-    }
-    else {
-      tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
-    }
+      }
+      else {
+        tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
+      }
 
-   if(controlXbox2.getAButtonReleased()){
-      if(clawSubsystem.clawIsOpen){
-        clawSubsystem.closeClaw();
+      if(controlXbox2.getAButtonReleased()){
+        clawSubsystem.clawIsOpen = !clawSubsystem.clawIsOpen;
       }
-      else{
-        clawSubsystem.openClaw();
-      }   
-    }
-    if(controlXbox2.getBButtonReleased()){
-      if(clawSubsystem.clawIsLifted){
-        clawSubsystem.lowerClaw();
+
+      if(controlXbox2.getBButtonReleased()){
+      clawSubsystem.clawIsLifted = !clawSubsystem.clawIsLifted;
       }
-      clawSubsystem.liftClaw();
-    }
-  };
+    };
   tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
 }
 
