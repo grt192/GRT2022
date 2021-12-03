@@ -38,9 +38,9 @@ public class DriveTankCommand extends CommandBase {
 
   @Override
   public boolean isFinished() {
-    return true;
-    //return tankSubsystem.getLeftPosition() >= distance
-    //  && tankSubsystem.getRightPosition() >= distance;
+    // Finish if the x component of the robot's translation is greater than or equal to the desired distance
+    // x direction -> forward displacement when angle = 0
+    return tankSubsystem.getRobotPosition().getX() >= distance;
   }
 
   @Override

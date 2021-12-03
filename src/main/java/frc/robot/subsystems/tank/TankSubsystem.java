@@ -34,9 +34,7 @@ public class TankSubsystem extends SubsystemBase {
 
   private final DifferentialDrivePoseEstimator odometry;
 
-  // Right: 1738.0u
-  // Left: 1706.0u
-  public static final double ENCODER_TICKS_TO_METERS = 1 / 1722.0;
+  public static final double ENCODER_TICKS_TO_INCHES = 32 / 142.40;
 
   // Motor power output states
   private double leftPower;
@@ -99,10 +97,10 @@ public class TankSubsystem extends SubsystemBase {
     // Update odometry readings
     Rotation2d gyroAngle = Rotation2d.fromDegrees(ahrs.getAngle());
     DifferentialDriveWheelSpeeds wheelVelocities = new DifferentialDriveWheelSpeeds(
-      leftMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_METERS, 
-      rightMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_METERS);
-    double leftDistance = leftMain.getSelectedSensorPosition() * ENCODER_TICKS_TO_METERS;
-    double rightDistance = rightMain.getSelectedSensorPosition() * ENCODER_TICKS_TO_METERS;
+      leftMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_INCHES, 
+      rightMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_INCHES);
+    double leftDistance = leftMain.getSelectedSensorPosition() * ENCODER_TICKS_TO_INCHES;
+    double rightDistance = rightMain.getSelectedSensorPosition() * ENCODER_TICKS_TO_INCHES;
 
     odometry.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
 
