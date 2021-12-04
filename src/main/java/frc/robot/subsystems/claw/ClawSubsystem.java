@@ -14,7 +14,7 @@ import static frc.robot.Constants.ClawConstants.*;
 public class ClawSubsystem extends SubsystemBase {
   private TalonSRX motor1;
   private TalonSRX motor2;
-  private Solenoid pfft1;
+  private Solenoid pfft;
 
   public boolean clawIsOpen = false;
   public boolean clawIsLifted = false;
@@ -26,7 +26,7 @@ public class ClawSubsystem extends SubsystemBase {
     motor1 = new TalonSRX(motor1Port);
     motor2 = new TalonSRX(motor2Port);
 
-    pfft1 = new Solenoid(pfftPCMPort);
+    pfft = new Solenoid(pfftPCMPort);
 
     motor1.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
     motor1.setSelectedSensorPosition(0);
@@ -43,26 +43,20 @@ public class ClawSubsystem extends SubsystemBase {
       // Set motor
       if (motor1.getSelectedSensorPosition() < clawOpenPosition) {
         motor1.set(ControlMode.PercentOutput, clawMotorSpeed);
-      }
-
-      if (motor2.getSelectedSensorPosition() < clawOpenPosition) {
         motor2.set(ControlMode.PercentOutput, -clawMotorSpeed);
       }
     } else {
       if (motor1.getSelectedSensorPosition() > 0) {
         motor1.set(ControlMode.PercentOutput, -clawMotorSpeed);
-      }
-      if (motor2.getSelectedSensorPosition() > 0) {
         motor2.set(ControlMode.PercentOutput, clawMotorSpeed);
       }
     }
 
     // If claw is meant to be lifted, trigger pneumatic
     if (clawIsLifted) {
-      pfft1.set(true);
+      pfft.set(true);
     } else {
-      pfft1.set(false);
-      // motor1.set(ControlMode.PercentOutput, -.5);
+      pfft.set(false);
     }
   }
 
