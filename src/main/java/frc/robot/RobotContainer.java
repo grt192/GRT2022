@@ -47,8 +47,8 @@ public class RobotContainer {
   private XboxController controlXbox2 = new XboxController(1);
 
   // Joysticks
-  private Joystick joystickLeft = new Joystick(1);
-  private Joystick joystickRight = new Joystick(2);
+  // private Joystick joystickLeft = new Joystick(1);
+  // private Joystick joystickRight = new Joystick(2);
 
   // Commands
   private final DriveTankCommand tankCommand;
@@ -94,26 +94,34 @@ public class RobotContainer {
     Runnable tank = () -> {
 
       // Check which controller is being used
-      boolean isXbox = (Math.abs(controlXbox.getY(Hand.kLeft))
-          + Math.abs(controlXbox.getX(Hand.kRight))) > (Math.abs(joystickLeft.getY()) + Math.abs(joystickRight.getY()));
+      // boolean isXbox = (Math.abs(controlXbox.getY(Hand.kLeft))
+      // + Math.abs(controlXbox.getX(Hand.kRight))) > (Math.abs(joystickLeft.getY()) +
+      // Math.abs(joystickRight.getY()));
       // Set the drive powers based on which controller is being used
-      if (isXbox) {
-        tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
-      }
-      else {
-        tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
-      }
-
-      if(controlXbox2.getAButtonReleased()){
-        clawSubsystem.clawIsOpen = !clawSubsystem.clawIsOpen;
-      }
-
-      if(controlXbox2.getBButtonReleased()){
-      clawSubsystem.clawIsLifted = !clawSubsystem.clawIsLifted;
-      }
+      // if (isXbox) {
+      tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
+      // }
+      // else {
+      // tankSubsystem.setTankDrivePowers(-joystickLeft.getY(),
+      // -joystickRight.getY());
+      // }
     };
-  tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
-}
+    tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
+
+  }
+
+  public void periodic() {
+
+    if (controlXbox2.getAButtonReleased()) {
+      clawSubsystem.clawIsOpen = !clawSubsystem.clawIsOpen;
+      // System.out.println("hi");
+    }
+
+    if (controlXbox2.getBButtonReleased()) {
+      clawSubsystem.clawIsLifted = !clawSubsystem.clawIsLifted;
+      // System.out.println("hi");
+    }
+  }
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
