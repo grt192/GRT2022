@@ -17,12 +17,7 @@ import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.commands.tank.DriveTankCommand;
-import frc.robot.commands.elevator.ElevatorUpCommand;
-import frc.robot.commands.elevator.ElevatorDownCommand;
-import frc.robot.commands.elevator.ElevatorStopCommand;
-import frc.robot.subsystems.elevator.ElevatorSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -74,6 +69,15 @@ public class RobotContainer {
 
     // Configure the button bindings
     configureButtonBindings();
+
+    // Configure the Jetson
+    JetsonConnection jetsonObj = new JetsonConnection();
+    Runnable jetson = () -> {
+      jetsonObj.run();
+    };
+
+    Thread jetsonThread = new Thread(jetson);
+    jetsonThread.start();
   }
 
   /**
