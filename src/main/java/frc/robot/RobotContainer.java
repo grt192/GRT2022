@@ -68,6 +68,15 @@ public class RobotContainer {
 
     // Configure the button bindings
     configureButtonBindings();
+
+    // Configure the Jetson
+    JetsonConnection jetsonObj = new JetsonConnection();
+    Runnable jetson = () -> {
+      jetsonObj.run();
+    };
+
+    Thread jetsonThread = new Thread(jetson);
+    jetsonThread.start();
   }
 
   /**
