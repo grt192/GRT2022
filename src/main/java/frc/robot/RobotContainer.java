@@ -39,6 +39,7 @@ public class RobotContainer {
 
   // Controllers
   private XboxController controlXbox = new XboxController(0);
+  private XboxController mechControlXbox = new XboxController(1);
 
   // Joysticks
   private Joystick joystickLeft = new Joystick(1);
@@ -99,17 +100,17 @@ public class RobotContainer {
       }
 
       // "A" button controls open and closing of the claw
-      if (controlXbox.getAButtonReleased()) {
+      if (mechControlXbox.getAButtonReleased()) {
         clawSubsystem.clawIsOpen = !clawSubsystem.clawIsOpen;
       }
 
       // "B" button controls lifting of the claw
-      if (controlXbox.getBButtonPressed()) {
+      if (mechControlXbox.getBButtonPressed()) {
         clawSubsystem.clawIsLifted = !clawSubsystem.clawIsLifted;
       }
 
       // "X" button: closes and lifts claw at the same time
-      if (controlXbox.getXButtonPressed()) {
+      if (mechControlXbox.getXButtonPressed()) {
         clawSubsystem.closeAndLiftCommand();
       }
 

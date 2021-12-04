@@ -12,27 +12,26 @@ import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import static frc.robot.Constants.ClawConstants.*;
 
 public class ClawSubsystem extends SubsystemBase {
-  private TalonSRX motor1;
-  private TalonSRX motor2;
+  private TalonSRX rightMotor;
+  private TalonSRX leftMotor;
   private Solenoid pfft;
 
-  public boolean clawIsOpen = false;
+  // Set initial state: claw open and not lifted
+  public boolean clawIsOpen = true;
   public boolean clawIsLifted = false;
 
   public ClawSubsystem() {
-
     CommandScheduler.getInstance().registerSubsystem(this);
 
-    motor1 = new TalonSRX(motor1Port);
-    motor2 = new TalonSRX(motor2Port);
+    // Initialize motors and pneumatic
+    rightMotor = new TalonSRX(rightMotorPort);
+    leftMotor = new TalonSRX(leftMotorPort);
 
     pfft = new Solenoid(pfftPCMPort);
 
-    motor1.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-    motor1.setSelectedSensorPosition(0);
-
-    motor2.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-    motor2.setSelectedSensorPosition(0);
+    // Configure the motors for the encoder
+    rightMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
+    rightMotor.setSelectedSensorPosition(0);
   }
 
   @Override
@@ -41,21 +40,22 @@ public class ClawSubsystem extends SubsystemBase {
     if (clawIsOpen) {
 
       // Set motor
-      if (motor1.getSelectedSensorPosition() < clawOpenPosition) {
-        motor1.set(ControlMode.PercentOutput, clawMotorSpeed);
-        motor2.set(ControlMode.PercentOutput, -clawMotorSpeed);
+      if (rightMotor.getSelectedSensorPosition() < clawOpenPosition) {
+        rightMotor.set(ControlMode.PercentOutput, clawMotorSpeed);
+        leftMotor.set(ControlMode.PercentOutput, -clawMotorSpeed);
       }
     } else {
-      if (motor1.getSelectedSensorPosition() > 0) {
-        motor1.set(ControlMode.PercentOutput, -clawMotorSpeed);
-        motor2.set(ControlMode.PercentOutput, clawMotorSpeed);
+      if (rightMotor.getSelectedSensorPosition() > 0) {
+        rightMotor.set(ControlMode.PercentOutput, -clawMotorSpeed);
+        leftMotor.set(ControlMode.PercentOutput, clawMotorSpeed);
       }
     }
 
-    // If claw is meant to be lifted, trigger pneumatic
+    // If claw is meant to be lifted, turn pneumatic on
     if (clawIsLifted) {
       pfft.set(true);
     } else {
+      // If not, turn pfft off
       pfft.set(false);
     }
   }

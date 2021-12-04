@@ -31,8 +31,8 @@ public final class Constants {
     }
 
     public static final class ClawConstants {
-        public static final int motor1Port = 3;
-        public static final int motor2Port = 12;
+        public static final int rightMotorPort = 3;
+        public static final int leftMotorPort = 12;
 
         public static final int pfftPCMPort = 0;
 
