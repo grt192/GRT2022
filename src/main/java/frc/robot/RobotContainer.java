@@ -17,15 +17,8 @@ import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.commands.tank.DriveTankCommand;
-import frc.robot.commands.elevator.ElevatorUpCommand;
-import frc.robot.commands.elevator.ElevatorDownCommand;
-import frc.robot.commands.elevator.ElevatorStopCommand;
-import frc.robot.subsystems.ClawSubsystem.ClawSubsystem;
-import frc.robot.subsystems.elevator.ElevatorSubsystem;
+import frc.robot.subsystems.claw.ClawSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-import edu.wpi.first.wpilibj.Solenoid;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -102,18 +95,25 @@ public class RobotContainer {
       // Set the drive powers based on which controller is being used
       if (isXbox) {
         tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
-      }
-      else {
+      } else {
         tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
       }
-      
-      if(controlXbox2.getAButtonReleased()){
-        clawSubsystem.clawIsOpen = !clawSubsystem.clawIsOpen;
-        }
 
-      if(controlXbox2.getBButtonPressed()){
-          clawSubsystem.clawIsLifted = !clawSubsystem.clawIsLifted;
-        }
+      // "A" button controls open and closing of the claw
+      if (controlXbox2.getAButtonReleased()) {
+        clawSubsystem.clawIsOpen = !clawSubsystem.clawIsOpen;
+      }
+
+      // "B" button controls lifting of the claw
+      if (controlXbox2.getBButtonPressed()) {
+        clawSubsystem.clawIsLifted = !clawSubsystem.clawIsLifted;
+      }
+
+      // "X" button: closes and lifts claw at the same time
+      if (controlXbox2.getXButtonPressed()) {
+        clawSubsystem.closeAndLiftCommand();
+      }
+
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }

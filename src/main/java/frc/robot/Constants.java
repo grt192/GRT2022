@@ -29,4 +29,14 @@ public final class Constants {
         public static final boolean elevatorUpIsPositive = true;
 
     }
+
+    public static final class ClawConstants {
+        public static final int motor1Port = 3;
+        public static final int motor2Port = 12;
+
+        public static final int pfftPCMPort = 0;
+
+        public static final int clawOpenPosition = 10;
+        public static final double clawMotorSpeed = 0.5;
+    }
 }
