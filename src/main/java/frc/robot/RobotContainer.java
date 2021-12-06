@@ -13,9 +13,12 @@ import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.XboxController.Button;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.commands.claw.CloseAndLiftClawCommand;
 import frc.robot.commands.tank.DriveTankCommand;
 import frc.robot.subsystems.claw.ClawSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
@@ -61,7 +64,7 @@ public class RobotContainer {
       FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
       config.load(stream);
     } catch (IOException ie) {
-      System.out.println("config file not found");
+      System.out.println("Config file not found.");
     }
 
     // Instantiate subsystems
@@ -98,24 +101,27 @@ public class RobotContainer {
       } else {
         tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
       }
-
-      // "A" button controls open and closing of the claw
-      if (mechControlXbox.getAButtonReleased()) {
-        clawSubsystem.clawIsOpen = !clawSubsystem.clawIsOpen;
-      }
-
-      // "B" button controls lifting of the claw
-      if (mechControlXbox.getBButtonPressed()) {
-        clawSubsystem.clawIsLifted = !clawSubsystem.clawIsLifted;
-      }
-
-      // "X" button: closes and lifts claw at the same time
-      if (mechControlXbox.getXButtonPressed()) {
-        clawSubsystem.closeAndLiftCommand();
-      }
-
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
+
+    // Set up controller bindings for claw subsystem
+
+    // "A" controls open and closing of the claw
+    JoystickButton aButton = new JoystickButton(mechControlXbox, Button.kA.value);
+    aButton.whenPressed(() -> {
+      clawSubsystem.clawIsOpen = !clawSubsystem.clawIsOpen;
+    });
+
+    // "B" controls lifting of the claw
+    JoystickButton bButton = new JoystickButton(mechControlXbox, Button.kB.value);
+    bButton.whenPressed(() -> {
+      clawSubsystem.clawIsLifted = !clawSubsystem.clawIsLifted;
+    });
+
+    // "X" button: closes and lifts claw at the same time
+    JoystickButton xButton = new JoystickButton(mechControlXbox, Button.kX.value);
+    xButton.whenPressed(new CloseAndLiftClawCommand(clawSubsystem));
+
   }
 
   /**

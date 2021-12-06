@@ -38,5 +38,7 @@ public final class Constants {
 
         public static final int clawOpenPosition = 10;
         public static final double clawMotorSpeed = 0.5;
+
+        public static final double stallDelta = 2;
     }
 }

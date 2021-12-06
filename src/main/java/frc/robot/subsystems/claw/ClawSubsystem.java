@@ -16,6 +16,10 @@ public class ClawSubsystem extends SubsystemBase {
   private TalonSRX leftMotor;
   private Solenoid pfft;
 
+  // Position variables for the motors
+  private double rightPos;
+  private double leftPos;
+
   // Set initial state: claw open and not lifted
   public boolean clawIsOpen = true;
   public boolean clawIsLifted = false;
@@ -29,9 +33,17 @@ public class ClawSubsystem extends SubsystemBase {
 
     pfft = new Solenoid(pfftPCMPort);
 
-    // Configure the motors for the encoder
+    // Configure the motors for the encoders
     rightMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
     rightMotor.setSelectedSensorPosition(0);
+
+    leftMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
+    leftMotor.setSelectedSensorPosition(0);
+
+    // Set initial motor position vars
+    rightPos = 0;
+    leftPos = 0;
+
   }
 
   @Override
@@ -45,7 +57,8 @@ public class ClawSubsystem extends SubsystemBase {
         leftMotor.set(ControlMode.PercentOutput, -clawMotorSpeed);
       }
     } else {
-      if (rightMotor.getSelectedSensorPosition() > 0) {
+      // If claw is meant to be closed; give motors power until motors stall
+      if (!isMotorStalled()) {
         rightMotor.set(ControlMode.PercentOutput, -clawMotorSpeed);
         leftMotor.set(ControlMode.PercentOutput, clawMotorSpeed);
       }
@@ -61,11 +74,24 @@ public class ClawSubsystem extends SubsystemBase {
   }
 
   /**
-   * Closes and lifts the claw simultaneously.
+   * Checks if the claw motors are not moving (ie. if change in position is less
+   * than a small delta value).
+   * 
+   * @return true if stalled; false if moving
    */
-  public void closeAndLiftCommand() {
-    clawIsOpen = false;
-    clawIsLifted = true;
+  public boolean isMotorStalled() {
+    double newRightPos = rightMotor.getSelectedSensorPosition();
+    double newLeftPos = leftMotor.getSelectedSensorPosition();
+
+    // If motors are barely changing position
+    boolean isStalled = (Math.abs(newRightPos - rightPos) <= stallDelta)
+        && (Math.abs(newLeftPos - leftPos) <= stallDelta);
+
+    // Save new motor positions
+    rightPos = newRightPos;
+    leftPos = newLeftPos;
+
+    return isStalled;
   }
 
   @Override
