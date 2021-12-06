@@ -11,62 +11,40 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 
 public class ClawSubsystem extends SubsystemBase {
 
-  private Servo servo0;
-  private Servo servo1;
-  private Servo servo2;
-  private Servo servo3;
-
   private Servo[] servos;
-  private double[] openAngles;
-  private double[] closedAngles;
+
+  // Open position constants corresponding to servos [0, 1, 2, 3]
+  private final double[] openAngles = {
+    0, 0, 0.95, 1
+  };
+  // Closed position constants corresponding to servos [0, 1, 2, 3]
+  private final double[] closedAngles = {
+    0.5, 0.5, 0.5, 0
+  };
 
   private Solenoid pfft1;
 
   public boolean clawIsOpen = false;
   public boolean clawIsLifted = false;
 
-  private final double openAngle0 = 0;
-  private final double openAngle1 = 0;
-  private final double openAngle2 = 0.95;
-  private final double openAngle3 = 1;
-
-  private final double closedAngle0 = 0.5;
-  private final double closedAngle1 = 0.5;
-  private final double closedAngle2 = 0.5;
-  private final double closedAngle3 = 0;
-
   public ClawSubsystem() {
-
-    CommandScheduler.getInstance().registerSubsystem(this);
-
-    servo0 = new Servo(0);
-    servo1 = new Servo(1);
-    servo2 = new Servo(2);
-    servo3 = new Servo(3);
-
     pfft1 = new Solenoid(4);
 
-    servos = new Servo[] { servo0, servo1, servo2, servo3 };
-    // servos = new Servo[]{servo1};
-    openAngles = new double[] { openAngle0, openAngle1, openAngle2, openAngle3 };
-    closedAngles = new double[] { closedAngle0, closedAngle1, closedAngle2, closedAngle3 };
+    servos = new Servo[] { 
+      new Servo(0), new Servo(1), 
+      new Servo(2), new Servo(3) 
+    };
   }
 
   @Override
   public void periodic() {
     for (int i = 0; i < servos.length; i++) {
-      if (clawIsOpen) {
-        servos[i].set(openAngles[i]);
-      } else {
-        servos[i].set(closedAngles[i]);
-      }
+      servos[i].set(clawIsOpen
+        ? openAngles[i]
+        : closedAngles[i]);
     }
 
-    if (clawIsLifted) {
-      pfft1.set(true);
-    } else {
-      pfft1.set(false);
-    }
+    pfft1.set(clawIsLifted);
   }
 
   @Override
