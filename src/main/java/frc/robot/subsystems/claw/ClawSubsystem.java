@@ -20,9 +20,12 @@ public class ClawSubsystem extends SubsystemBase {
   private double rightPos;
   private double leftPos;
 
-  // Set initial state: claw open and not lifted
-  public boolean clawIsOpen = true;
-  public boolean clawIsLifted = false;
+  // Right and left motor powers -- state variables
+  private double rightMotorPower;
+  private double leftMotorPower;
+
+  // State variable for whether the pneumatic is lifted or not
+  private boolean liftClaw;
 
   public ClawSubsystem() {
     CommandScheduler.getInstance().registerSubsystem(this);
@@ -40,37 +43,55 @@ public class ClawSubsystem extends SubsystemBase {
     leftMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
     leftMotor.setSelectedSensorPosition(0);
 
-    // Set initial motor position vars
+    // Set initial motor position vars (for checking if motors are stalled)
     rightPos = 0;
     leftPos = 0;
+
+    liftClaw = false;
 
   }
 
   @Override
   public void periodic() {
-    // If claw is meant to be open
-    if (clawIsOpen) {
 
-      // Set motor
-      if (rightMotor.getSelectedSensorPosition() < clawOpenPosition) {
-        rightMotor.set(ControlMode.PercentOutput, clawMotorSpeed);
-        leftMotor.set(ControlMode.PercentOutput, -clawMotorSpeed);
-      }
-    } else {
-      // If claw is meant to be closed; give motors power until motors stall
-      if (!isMotorStalled()) {
-        rightMotor.set(ControlMode.PercentOutput, -clawMotorSpeed);
-        leftMotor.set(ControlMode.PercentOutput, clawMotorSpeed);
-      }
-    }
+    // Set motor powers
+    rightMotor.set(ControlMode.PercentOutput, rightMotorPower);
+    leftMotor.set(ControlMode.PercentOutput, leftMotorPower);
 
-    // If claw is meant to be lifted, turn pneumatic on
-    if (clawIsLifted) {
-      pfft.set(true);
-    } else {
-      // If not, turn pfft off
-      pfft.set(false);
-    }
+    // Set pneumatic
+    pfft.set(liftClaw);
+  }
+
+  /**
+   * Set motor powers to open.
+   */
+  public void setOpenPowers() {
+    rightMotorPower = rightOpenPower;
+    leftMotorPower = leftOpenPower;
+  }
+
+  /**
+   * Set motor powers to close.
+   */
+  public void setClosePowers() {
+    rightMotorPower = -rightOpenPower;
+    leftMotorPower = -leftOpenPower;
+  }
+
+  /**
+   * Set motor powers to zero.
+   */
+  public void setNeutralPowers() {
+    rightMotorPower = 0;
+    leftMotorPower = 0;
+  }
+
+  public boolean getClawLift() {
+    return liftClaw;
+  }
+
+  public void setClawLift(boolean liftClaw) {
+    this.liftClaw = liftClaw;
   }
 
   /**
@@ -79,19 +100,28 @@ public class ClawSubsystem extends SubsystemBase {
    * 
    * @return true if stalled; false if moving
    */
-  public boolean isMotorStalled() {
+  public boolean isMotorStalled(boolean right) {
     double newRightPos = rightMotor.getSelectedSensorPosition();
     double newLeftPos = leftMotor.getSelectedSensorPosition();
 
     // If motors are barely changing position
-    boolean isStalled = (Math.abs(newRightPos - rightPos) <= stallDelta)
-        && (Math.abs(newLeftPos - leftPos) <= stallDelta);
+    boolean isRightStalled = Math.abs(newRightPos - rightPos) <= stallDelta;
+    boolean isLeftStalled = Math.abs(newLeftPos - leftPos) <= stallDelta;
 
     // Save new motor positions
     rightPos = newRightPos;
     leftPos = newLeftPos;
 
-    return isStalled;
+    return right ? isRightStalled : isLeftStalled;
+  }
+
+  /**
+   * Returns true if both motors are stalled.
+   * 
+   * @return true if both are stalled
+   */
+  public boolean areBothMotorsStalled() {
+    return isMotorStalled(true) && isMotorStalled(false);
   }
 
   @Override

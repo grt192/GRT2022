@@ -36,9 +36,9 @@ public final class Constants {
 
         public static final int pfftPCMPort = 0;
 
-        public static final int clawOpenPosition = 10;
-        public static final double clawMotorSpeed = 0.5;
+        public static final double rightOpenPower = 0.5;
+        public static final double leftOpenPower = -0.5;
 
-        public static final double stallDelta = 2;
+        public static final double stallDelta = 1;
     }
 }

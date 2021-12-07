@@ -17,8 +17,10 @@ import edu.wpi.first.wpilibj.XboxController.Button;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import frc.robot.commands.claw.CloseAndLiftClawCommand;
+import frc.robot.commands.claw.CloseClawCommand;
+import frc.robot.commands.claw.OpenClawCommand;
 import frc.robot.commands.tank.DriveTankCommand;
 import frc.robot.subsystems.claw.ClawSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
@@ -106,22 +108,25 @@ public class RobotContainer {
 
     // Set up controller bindings for claw subsystem
 
-    // "A" controls open and closing of the claw
+    // While "X" is pressed, open the claw
+    JoystickButton xButton = new JoystickButton(mechControlXbox, Button.kX.value);
+    xButton.whenPressed(new OpenClawCommand(clawSubsystem, xButton));
+
+    // When "B" is pressed, close the claw
+    JoystickButton bButton = new JoystickButton(mechControlXbox, Button.kB.value);
+    bButton.whenPressed(new CloseClawCommand(clawSubsystem));
+
+    // When "A" is pressed, lift/lower the pneumatic
     JoystickButton aButton = new JoystickButton(mechControlXbox, Button.kA.value);
     aButton.whenPressed(() -> {
-      clawSubsystem.clawIsOpen = !clawSubsystem.clawIsOpen;
+      clawSubsystem.setClawLift(!clawSubsystem.getClawLift());
     });
 
-    // "B" controls lifting of the claw
-    JoystickButton bButton = new JoystickButton(mechControlXbox, Button.kB.value);
-    bButton.whenPressed(() -> {
-      clawSubsystem.clawIsLifted = !clawSubsystem.clawIsLifted;
-    });
-
-    // "X" button: closes and lifts claw at the same time
-    JoystickButton xButton = new JoystickButton(mechControlXbox, Button.kX.value);
-    xButton.whenPressed(new CloseAndLiftClawCommand(clawSubsystem));
-
+    // When "Y" is pressed, close the claw then lift the pneumatic
+    JoystickButton yButton = new JoystickButton(mechControlXbox, Button.kY.value);
+    yButton.whenPressed(new SequentialCommandGroup(new CloseClawCommand(clawSubsystem), new RunCommand(() -> {
+      clawSubsystem.setClawLift(true);
+    })));
   }
 
   /**
