@@ -104,7 +104,7 @@ public class TankSubsystem extends SubsystemBase {
 
     odometry.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
 
-    System.out.println(odometry.getEstimatedPosition());
+    System.out.println("Odometry readings: " + odometry.getEstimatedPosition());
   }
 
   @Override

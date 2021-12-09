@@ -7,9 +7,10 @@ package frc.robot.commands.tank;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.tank.TankSubsystem;
 
-/** A command to drive the robot straight for x inches */
-// Just a rough implementation for testing;
-// TODO: make actually useful commands
+/**
+ * A command to drive the robot straight for x inches
+ * Currently a rough implementation for testing; TODO: use closed loop to prevent turning
+ */
 public class DriveTankCommand extends CommandBase {
   @SuppressWarnings({ "PMD.UnusedPrivateField", "PMD.SingularField" })
   private final TankSubsystem tankSubsystem;
@@ -18,7 +19,7 @@ public class DriveTankCommand extends CommandBase {
 
   public DriveTankCommand(TankSubsystem tankSubsystem, double inches) {
     this.tankSubsystem = tankSubsystem;
-    
+
     addRequirements(tankSubsystem);
 
     this.distance = inches;
