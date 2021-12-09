@@ -53,6 +53,8 @@ public class ClawSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
+    System.out.println("right: " + rightMotor.getSelectedSensorPosition());
+    System.out.println("left: " + leftMotor.getSelectedSensorPosition());
 
     // Set motor powers
     rightMotor.set(ControlMode.PercentOutput, rightMotorPower);
