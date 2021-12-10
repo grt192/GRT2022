@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.commands.tank.DriveTankCommand;
 import frc.robot.commands.elevator.ElevatorUpCommand;
@@ -45,6 +46,9 @@ public class RobotContainer {
   // Controllers
   private XboxController controlXbox = new XboxController(0);
   private XboxController controlXbox2 = new XboxController(1);
+
+  private JoystickButton xboxAButton = new JoystickButton(controlXbox2, XboxController.Button.kA.value);
+  private JoystickButton xboxBButton = new JoystickButton(controlXbox2, XboxController.Button.kB.value);
 
   // Joysticks
   // private Joystick joystickLeft = new Joystick(1);
@@ -91,27 +95,19 @@ public class RobotContainer {
   }
 
   private void controllerBindings() {
-    Runnable tank = () -> {
+    // Bind A -> open/close claw, B -> lift/lower elevator
+    xboxAButton.whenPressed(new InstantCommand(clawSubsystem::toggleIsOpen, clawSubsystem));
+    xboxBButton.whenPressed(new InstantCommand(clawSubsystem::toggleIsLifted, clawSubsystem));
 
-      // Check which controller is being used
-      // boolean isXbox = (Math.abs(controlXbox.getY(Hand.kLeft))
-      // + Math.abs(controlXbox.getX(Hand.kRight))) > (Math.abs(joystickLeft.getY()) +
-      // Math.abs(joystickRight.getY()));
-      // Set the drive powers based on which controller is being used
-      // if (isXbox) {
+    Runnable tank = () -> {
       tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
-      // }
-      // else {
-      // tankSubsystem.setTankDrivePowers(-joystickLeft.getY(),
-      // -joystickRight.getY());
-      // }
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
-
   }
 
   public void periodic() {
 
+    /*
     if (controlXbox2.getAButtonReleased()) {
       clawSubsystem.clawIsOpen = !clawSubsystem.clawIsOpen;
       // System.out.println("hi");
@@ -121,6 +117,7 @@ public class RobotContainer {
       clawSubsystem.clawIsLifted = !clawSubsystem.clawIsLifted;
       // System.out.println("hi");
     }
+    */
   }
 
   /**
