@@ -43,10 +43,6 @@ public class RobotContainer {
   private XboxController controlXbox = new XboxController(0);
   private JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
 
-  // Joysticks
-  private Joystick joystickLeft = new Joystick(1);
-  private Joystick joystickRight = new Joystick(2);
-
   // Commands
   private final DriveTankCommand tankCommand;
 
@@ -93,17 +89,8 @@ public class RobotContainer {
     xboxAButton.whenPressed(new InstantCommand(tankSubsystem::zeroPosition, tankSubsystem));
 
     Runnable tank = () -> {
-
-      // Check which controller is being used
-      boolean isXbox = (Math.abs(controlXbox.getLeftY())
-          + Math.abs(controlXbox.getRightX())) > (Math.abs(joystickLeft.getY()) + Math.abs(joystickRight.getY()));
-
       // Set the drive powers based on which controller is being used
-      if (isXbox) {
-        tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
-      } else {
-        tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
-      }
+      tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }
