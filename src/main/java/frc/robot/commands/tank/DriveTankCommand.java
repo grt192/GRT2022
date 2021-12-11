@@ -5,6 +5,7 @@
 package frc.robot.commands.tank;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
+import frc.robot.odometry.Odometry;
 import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
@@ -14,11 +15,13 @@ import frc.robot.subsystems.tank.TankSubsystem;
 public class DriveTankCommand extends CommandBase {
   @SuppressWarnings({ "PMD.UnusedPrivateField", "PMD.SingularField" })
   private final TankSubsystem tankSubsystem;
+  private final Odometry odometry;
 
   private double distance;
 
-  public DriveTankCommand(TankSubsystem tankSubsystem, double inches) {
+  public DriveTankCommand(TankSubsystem tankSubsystem, Odometry odometry, double inches) {
     this.tankSubsystem = tankSubsystem;
+    this.odometry = odometry;
 
     addRequirements(tankSubsystem);
 
@@ -32,7 +35,7 @@ public class DriveTankCommand extends CommandBase {
     // true before the sensors are zeroed.
     // Every other run of this command will fail, with the second run serving only to zero the sensors 
     // for the third.
-    tankSubsystem.zeroPosition();
+    odometry.zeroPosition();
 
     tankSubsystem.setCarDrivePowers(0.5, 0.0);
   }
@@ -41,7 +44,7 @@ public class DriveTankCommand extends CommandBase {
   public boolean isFinished() {
     // Finish if the x component of the robot's translation is greater than or equal to the desired distance
     // x direction -> forward displacement when angle = 0
-    return tankSubsystem.getRobotPosition().getX() >= distance;
+    return odometry.getRobotPosition().getX() >= distance;
   }
 
   @Override

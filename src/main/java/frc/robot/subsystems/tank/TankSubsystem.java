@@ -10,16 +10,7 @@ import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
-import com.kauailabs.navx.frc.AHRS;
-
-import edu.wpi.first.wpilibj.estimator.DifferentialDrivePoseEstimator;
-import edu.wpi.first.wpilibj.geometry.Pose2d;
-import edu.wpi.first.wpilibj.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpiutil.math.MatBuilder;
-import edu.wpi.first.wpiutil.math.Nat;
-import edu.wpi.first.wpilibj.SPI;
 
 import static frc.robot.Constants.TankConstants.*;
 
@@ -29,12 +20,6 @@ public class TankSubsystem extends SubsystemBase {
 
   private final WPI_TalonSRX rightMain;
   private final WPI_TalonSRX rightFollow;
-
-  private final AHRS ahrs;
-
-  private final DifferentialDrivePoseEstimator odometry;
-
-  public static final double ENCODER_TICKS_TO_INCHES = 32 / 142.40;
 
   // Motor power output states
   private double leftPower;
@@ -70,22 +55,9 @@ public class TankSubsystem extends SubsystemBase {
     leftMain.setSensorPhase(false);
     rightMain.setSensorPhase(false);
 
-    // Initialize navX AHRS
-    // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
-    ahrs = new AHRS(SPI.Port.kMXP); 
-
-    // Initialize odometry class
-    // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose_state-estimators.html
-    odometry = new DifferentialDrivePoseEstimator(new Rotation2d(), new Pose2d(),
-      new MatBuilder<>(Nat.N5(), Nat.N1()).fill(0.02, 0.02, 0.01, 0.02, 0.02), // State measurement standard deviations. X, Y, theta.
-      new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01), // Local measurement standard deviations. Left encoder, right encoder, gyro.
-      new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01)); // Global measurement standard deviations. X, Y, and theta. 
-
     // Initialize power values
     leftPower = 0;
     rightPower = 0;
-
-    zeroPosition();
   }
 
   @Override
@@ -93,18 +65,6 @@ public class TankSubsystem extends SubsystemBase {
 
     leftMain.set(ControlMode.PercentOutput, leftPower);
     rightMain.set(ControlMode.PercentOutput, rightPower);
-
-    // Update odometry readings
-    Rotation2d gyroAngle = Rotation2d.fromDegrees(ahrs.getAngle());
-    DifferentialDriveWheelSpeeds wheelVelocities = new DifferentialDriveWheelSpeeds(
-      leftMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_INCHES, 
-      rightMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_INCHES);
-    double leftDistance = leftMain.getSelectedSensorPosition() * ENCODER_TICKS_TO_INCHES;
-    double rightDistance = rightMain.getSelectedSensorPosition() * ENCODER_TICKS_TO_INCHES;
-
-    odometry.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
-
-    System.out.println("Odometry readings: " + odometry.getEstimatedPosition());
   }
 
   @Override
@@ -179,25 +139,5 @@ public class TankSubsystem extends SubsystemBase {
    */
   private double squareInput(double value) {
     return Math.copySign(value * value, value);
-  }
-
-  /**
-   * Gets the estimated current position of the robot.
-   * @return the estimated position of the robot as a Pose2d.
-   */
-  public Pose2d getRobotPosition() {
-    return odometry.getEstimatedPosition();
-  }
-
-  /**
-   * Zeros the robot's position.
-   * This method zeros both the robot's translation *and* rotation.
-   */
-  public void zeroPosition() {
-    leftMain.setSelectedSensorPosition(0);
-    rightMain.setSelectedSensorPosition(0);
-
-    // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
-    odometry.resetPosition(new Pose2d(), Rotation2d.fromDegrees(ahrs.getAngle()));
   }
 }

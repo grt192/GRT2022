@@ -11,12 +11,12 @@ import java.util.Properties;
 
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.commands.tank.DriveTankCommand;
+import frc.robot.odometry.Odometry;
 import frc.robot.commands.elevator.ElevatorUpCommand;
 import frc.robot.commands.elevator.ElevatorDownCommand;
 import frc.robot.commands.elevator.ElevatorStopCommand;
@@ -38,6 +38,7 @@ public class RobotContainer {
 
   // Subsystems
   private final TankSubsystem tankSubsystem;
+  private final Odometry odometry;
 
   // Controllers
   private XboxController controlXbox = new XboxController(0);
@@ -64,11 +65,12 @@ public class RobotContainer {
 
     // Instantiate subsystems
     tankSubsystem = new TankSubsystem();
+    odometry = new Odometry();
 
     // Instantiate commands
     // Drive forward for 12 inches in autonomous to test the constant
     // TODO: improve DriveTankCommand to use closed loop
-    tankCommand = new DriveTankCommand(tankSubsystem, 12);
+    tankCommand = new DriveTankCommand(tankSubsystem, odometry, 12);
 
     // Configure the button bindings
     configureButtonBindings();
@@ -86,7 +88,7 @@ public class RobotContainer {
 
   private void controllerBindings() {
     // Bind A button to zero robot position when pressed
-    xboxAButton.whenPressed(new InstantCommand(tankSubsystem::zeroPosition, tankSubsystem));
+    xboxAButton.whenPressed(new InstantCommand(odometry::zeroPosition));
 
     Runnable tank = () -> {
       // Set the drive powers based on which controller is being used
