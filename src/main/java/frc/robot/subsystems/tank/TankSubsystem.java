@@ -4,22 +4,20 @@
 
 package frc.robot.subsystems.tank;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.FeedbackDevice;
-import com.ctre.phoenix.motorcontrol.InvertType;
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static frc.robot.Constants.TankConstants.*;
 
 public class TankSubsystem extends SubsystemBase {
-  private final WPI_TalonSRX leftMain;
-  private final WPI_TalonSRX leftFollow;
+  private final CANSparkMax leftMain;
+  private final CANSparkMax leftFollow;
 
-  private final WPI_TalonSRX rightMain;
-  private final WPI_TalonSRX rightFollow;
+  private final CANSparkMax rightMain;
+  private final CANSparkMax rightFollow;
 
   // Motor power output states
   private double leftPower;
@@ -27,33 +25,21 @@ public class TankSubsystem extends SubsystemBase {
 
   public TankSubsystem() {
     // Init left main and follower motors
-    leftMain = new WPI_TalonSRX(fLeftMotorPort);
-    leftMain.setNeutralMode(NeutralMode.Brake);
+    leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
+    leftMain.setIdleMode(IdleMode.kBrake);
 
-    leftFollow = new WPI_TalonSRX(bLeftMotorPort);
+    leftFollow = new CANSparkMax(bLeftMotorPort, MotorType.kBrushless);
     leftFollow.follow(leftMain);
-    leftFollow.setInverted(InvertType.FollowMaster);
-    leftFollow.setNeutralMode(NeutralMode.Brake);
+    leftFollow.setIdleMode(IdleMode.kBrake);
 
     // Init right main and follower motors
-    rightMain = new WPI_TalonSRX(fRightMotorPort);
+    rightMain = new CANSparkMax(fRightMotorPort, MotorType.kBrushless);
     rightMain.setInverted(true);
-    rightMain.setNeutralMode(NeutralMode.Brake);
+    rightMain.setIdleMode(IdleMode.kBrake);
 
-    rightFollow = new WPI_TalonSRX(bRightMotorPort);
+    rightFollow = new CANSparkMax(bRightMotorPort, MotorType.kBrushless);
     rightFollow.follow(rightMain);
-    rightFollow.setInverted(InvertType.FollowMaster);
-    rightFollow.setNeutralMode(NeutralMode.Brake);
-
-    // Initialize Talon sensors
-    // https://docs.ctre-phoenix.com/en/latest/ch14_MCSensor.html#cross-the-road-electronics-magnetic-encoder-absolute-and-relative
-    // https://docs.ctre-phoenix.com/en/latest/ch14_MCSensor.html#software-select-sensor
-    leftMain.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-    rightMain.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-
-    // https://docs.ctre-phoenix.com/en/latest/ch14_MCSensor.html#sensor-phase
-    leftMain.setSensorPhase(false);
-    rightMain.setSensorPhase(false);
+    rightFollow.setIdleMode(IdleMode.kBrake);
 
     // Initialize power values
     leftPower = 0;
@@ -62,9 +48,8 @@ public class TankSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-
-    leftMain.set(ControlMode.PercentOutput, leftPower);
-    rightMain.set(ControlMode.PercentOutput, rightPower);
+    leftMain.set(leftPower);
+    rightMain.set(rightPower);
   }
 
   @Override

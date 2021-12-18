@@ -1,8 +1,9 @@
 package frc.robot.odometry;
 
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-
 import com.kauailabs.navx.frc.AHRS;
+
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
@@ -19,8 +20,8 @@ import static frc.robot.Constants.TankConstants.*;
  * read and manipulate said position data.
  */
 public class Odometry {
-  private final WPI_TalonSRX leftMain;
-  private final WPI_TalonSRX rightMain;
+  private final CANSparkMax leftMain;
+  private final CANSparkMax rightMain;
 
   private final AHRS ahrs;
   private final DifferentialDrivePoseEstimator poseEstimator;
@@ -28,10 +29,14 @@ public class Odometry {
   public static final double ENCODER_TICKS_TO_INCHES = 32 / 142.40;
 
   public Odometry() {
-    // Ititialize motors
-    // Talon sensor configuration is handled already in tankSubsystem so don't do them again
-    leftMain = new WPI_TalonSRX(fLeftMotorPort);
-    rightMain = new WPI_TalonSRX(fRightMotorPort);
+    // Ititialize motors and encoder position/velocity scaling
+    leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
+    leftMain.getEncoder().setPositionConversionFactor(ENCODER_TICKS_TO_INCHES);
+    leftMain.getEncoder().setVelocityConversionFactor(ENCODER_TICKS_TO_INCHES);
+
+    rightMain = new CANSparkMax(fRightMotorPort, MotorType.kBrushless);
+    rightMain.getEncoder().setPositionConversionFactor(ENCODER_TICKS_TO_INCHES);
+    rightMain.getEncoder().setVelocityConversionFactor(ENCODER_TICKS_TO_INCHES);
 
     // Initialize navX AHRS
     // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
@@ -57,10 +62,10 @@ public class Odometry {
     // Update odometry readings
     Rotation2d gyroAngle = Rotation2d.fromDegrees(ahrs.getAngle());
     DifferentialDriveWheelSpeeds wheelVelocities = new DifferentialDriveWheelSpeeds(
-      leftMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_INCHES, 
-      rightMain.getSelectedSensorVelocity() * ENCODER_TICKS_TO_INCHES);
-    double leftDistance = leftMain.getSelectedSensorPosition() * ENCODER_TICKS_TO_INCHES;
-    double rightDistance = rightMain.getSelectedSensorPosition() * ENCODER_TICKS_TO_INCHES;
+      leftMain.getEncoder().getVelocity(), 
+      rightMain.getEncoder().getVelocity());
+    double leftDistance = leftMain.getEncoder().getPosition();
+    double rightDistance = rightMain.getEncoder().getPosition();
 
     poseEstimator.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
 
@@ -80,8 +85,8 @@ public class Odometry {
    * This method zeros both the robot's translation *and* rotation.
    */
   public void zeroPosition() {
-    leftMain.setSelectedSensorPosition(0);
-    rightMain.setSelectedSensorPosition(0);
+    leftMain.getEncoder().setPosition(0);
+    rightMain.getEncoder().setPosition(0);
 
     // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
     poseEstimator.resetPosition(new Pose2d(), Rotation2d.fromDegrees(ahrs.getAngle()));
