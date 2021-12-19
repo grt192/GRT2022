@@ -125,4 +125,16 @@ public class TankSubsystem extends SubsystemBase {
   private double squareInput(double value) {
     return Math.copySign(value * value, value);
   }
+
+  /**
+   * Drive the system with the given voltage values for each side of the drivetrain.
+   *  
+   * @param left left motor voltages
+   * @param right right motor voltages
+   */
+  public void setMotorVoltages(double left, double right) {
+    // TODO: stub on purpose, see comment in FollowPathCommand
+    // This doesn't really match our current interface, but neither does the other option;
+    // Should a state on this subsystem be added to switch between voltage and percent output?
+  }
 }

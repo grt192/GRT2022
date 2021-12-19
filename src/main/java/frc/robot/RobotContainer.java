@@ -7,15 +7,21 @@ package frc.robot;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID.Hand;
+import edu.wpi.first.wpilibj.geometry.Pose2d;
+import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.commands.tank.DriveTankCommand;
+import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.odometry.Odometry;
 import frc.robot.commands.elevator.ElevatorUpCommand;
 import frc.robot.commands.elevator.ElevatorDownCommand;
@@ -45,7 +51,7 @@ public class RobotContainer {
   private JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
 
   // Commands
-  private final DriveTankCommand tankCommand;
+  private final FollowPathCommand tankCommand;
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -68,9 +74,16 @@ public class RobotContainer {
     odometry = new Odometry();
 
     // Instantiate commands
-    // Drive forward for 12 inches in autonomous to test the constant
-    // TODO: improve DriveTankCommand to use closed loop
-    tankCommand = new DriveTankCommand(tankSubsystem, odometry, 12);
+    // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
+    tankCommand = new FollowPathCommand(
+      tankSubsystem, odometry, 
+      new Pose2d(), 
+      List.of(
+        new Translation2d(1, 1), 
+        new Translation2d(2, -1)
+      ), 
+      new Pose2d(3, 0, new Rotation2d())
+    );
 
     // Configure the button bindings
     configureButtonBindings();

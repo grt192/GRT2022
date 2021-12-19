@@ -61,9 +61,7 @@ public class Odometry {
   public void updateCurrentPosition() {
     // Update odometry readings
     Rotation2d gyroAngle = Rotation2d.fromDegrees(ahrs.getAngle());
-    DifferentialDriveWheelSpeeds wheelVelocities = new DifferentialDriveWheelSpeeds(
-      leftMain.getEncoder().getVelocity(), 
-      rightMain.getEncoder().getVelocity());
+    DifferentialDriveWheelSpeeds wheelVelocities = getWheelSpeeds();
     double leftDistance = leftMain.getEncoder().getPosition();
     double rightDistance = rightMain.getEncoder().getPosition();
 
@@ -81,14 +79,32 @@ public class Odometry {
   }
 
   /**
-   * Zeros the robot's position.
-   * This method zeros both the robot's translation *and* rotation.
+   * Gets the wheel speeds of the drivetrain.
+   * @return the drivetrain wheel speeds as a DifferentialDriveWheelSpeeds object.
    */
-  public void zeroPosition() {
+  public DifferentialDriveWheelSpeeds getWheelSpeeds() {
+    return new DifferentialDriveWheelSpeeds(
+      leftMain.getEncoder().getVelocity(), 
+      rightMain.getEncoder().getVelocity());
+  }
+
+  /**
+   * Reset the robot's position to a given Pose2d.
+   * @param position the position to reset the pose estimator to
+   */
+  public void resetPosition(Pose2d position) {
     leftMain.getEncoder().setPosition(0);
     rightMain.getEncoder().setPosition(0);
 
     // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
-    poseEstimator.resetPosition(new Pose2d(), Rotation2d.fromDegrees(ahrs.getAngle()));
+    poseEstimator.resetPosition(position, Rotation2d.fromDegrees(ahrs.getAngle()));
+  }
+
+  /**
+   * Zeros the robot's position.
+   * This method zeros both the robot's translation *and* rotation.
+   */
+  public void resetPosition() {
+    resetPosition(new Pose2d());
   }
 }
