@@ -101,7 +101,7 @@ public class RobotContainer {
 
   private void controllerBindings() {
     // Bind A button to zero robot position when pressed
-    xboxAButton.whenPressed(new InstantCommand(odometry::zeroPosition));
+    xboxAButton.whenPressed(new InstantCommand(odometry::resetPosition));
 
     Runnable tank = () -> {
       // Set the drive powers based on which controller is being used

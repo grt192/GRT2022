@@ -10,7 +10,10 @@ import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
  * A command to drive the robot straight for x inches
- * Currently a rough implementation for testing; TODO: use closed loop to prevent turning
+ * Currently a rough implementation for testing; 
+ * 
+ * TODO: use closed loop to prevent turning
+ * TODO: is this necessary with FollowPathCommand existing?
  */
 public class DriveTankCommand extends CommandBase {
   @SuppressWarnings({ "PMD.UnusedPrivateField", "PMD.SingularField" })
@@ -35,7 +38,7 @@ public class DriveTankCommand extends CommandBase {
     // true before the sensors are zeroed.
     // Every other run of this command will fail, with the second run serving only to zero the sensors 
     // for the third.
-    odometry.zeroPosition();
+    odometry.resetPosition();
 
     tankSubsystem.setCarDrivePowers(0.5, 0.0);
   }

@@ -23,10 +23,7 @@ import frc.robot.subsystems.tank.TankSubsystem;
  * 
  * https://docs.wpilib.org/en/stable/docs/software/examples-tutorials/trajectory-tutorial/trajectory-tutorial-overview.html
  * 
- * TODO: RamseteCommand has two constructors, one of which supplies `tankSubsystem` with left and right voltages and one that
- * supplies the raw wheel speeds instead, neither of which are really applicable to our current percent output based system.
- * 
- * Also, WPILib uses meters while our current odometry uses inches, so we can either switch the odometry to meters, convert
+ * TODO: WPILib uses meters while our current odometry uses inches, so we can either switch the odometry to meters, convert
  * the readings to meters for the purposes of this command, or use inches for this command and convert everything else appropriately.
  */
 public class FollowPathCommand extends RamseteCommand {
@@ -73,7 +70,7 @@ public class FollowPathCommand extends RamseteCommand {
       // PID controllers
       new PIDController(Kp, 0, 0),
       new PIDController(Kp, 0, 0),
-      tankSubsystem::setMotorVoltages, // Wheel voltage consumer
+      tankSubsystem::setTankDriveVoltages, // Wheel voltage consumer
       tankSubsystem
     );
 

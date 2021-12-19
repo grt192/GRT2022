@@ -19,10 +19,6 @@ public class TankSubsystem extends SubsystemBase {
   private final CANSparkMax rightMain;
   private final CANSparkMax rightFollow;
 
-  // Motor power output states
-  private double leftPower;
-  private double rightPower;
-
   public TankSubsystem() {
     // Init left main and follower motors
     leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
@@ -40,21 +36,6 @@ public class TankSubsystem extends SubsystemBase {
     rightFollow = new CANSparkMax(bRightMotorPort, MotorType.kBrushless);
     rightFollow.follow(rightMain);
     rightFollow.setIdleMode(IdleMode.kBrake);
-
-    // Initialize power values
-    leftPower = 0;
-    rightPower = 0;
-  }
-
-  @Override
-  public void periodic() {
-    leftMain.set(leftPower);
-    rightMain.set(rightPower);
-  }
-
-  @Override
-  public void simulationPeriodic() {
-    // This method will be called once per scheduler run during simulation
   }
 
   /**
@@ -89,8 +70,8 @@ public class TankSubsystem extends SubsystemBase {
     }
 
     // Set motor output state
-    this.leftPower = leftPowerTemp;
-    this.rightPower = rightPowerTemp;
+    leftMain.set(leftPowerTemp);
+    rightMain.set(rightPowerTemp);
   }
 
   /**
@@ -108,12 +89,23 @@ public class TankSubsystem extends SubsystemBase {
     }
 
     // Set motor output state
-    this.leftPower = leftScale;
-    this.rightPower = rightScale;
+    leftMain.set(leftScale);
+    rightMain.set(rightScale);
   }
 
   public void setTankDrivePowers(double leftScale, double rightScale) {
     setTankDrivePowers(leftScale, rightScale, false);
+  }
+
+  /**
+   * Drive the system with the given voltage values for each side of the drivetrain.
+   *  
+   * @param leftVoltage left motor voltages
+   * @param rightVoltage right motor voltages
+   */
+  public void setTankDriveVoltages(double leftVoltage, double rightVoltage) {
+    leftMain.setVoltage(leftVoltage);
+    rightMain.setVoltage(rightVoltage);
   }
 
   /**
@@ -124,17 +116,5 @@ public class TankSubsystem extends SubsystemBase {
    */
   private double squareInput(double value) {
     return Math.copySign(value * value, value);
-  }
-
-  /**
-   * Drive the system with the given voltage values for each side of the drivetrain.
-   *  
-   * @param left left motor voltages
-   * @param right right motor voltages
-   */
-  public void setMotorVoltages(double left, double right) {
-    // TODO: stub on purpose, see comment in FollowPathCommand
-    // This doesn't really match our current interface, but neither does the other option;
-    // Should a state on this subsystem be added to switch between voltage and percent output?
   }
 }
