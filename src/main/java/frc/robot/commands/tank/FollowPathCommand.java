@@ -19,16 +19,14 @@ import frc.robot.subsystems.tank.TankSubsystem;
 /**
  * A command to drive the robot from some start to end point, passing through given waypoints
  * in the path. Start and end are represented as `Pose2d`s while waypoints are given as a List of
- * `Translation2d`.
+ * `Translation2d`. All units are given in meters.
  * 
  * https://docs.wpilib.org/en/stable/docs/software/examples-tutorials/trajectory-tutorial/trajectory-tutorial-overview.html
- * 
- * TODO: WPILib uses meters while our current odometry uses inches, so we can either switch the odometry to meters, convert
- * the readings to meters for the purposes of this command, or use inches for this command and convert everything else appropriately.
  */
 public class FollowPathCommand extends RamseteCommand {
 
   // Robot constants
+  // TODO: measure this
   private static final double ROBOT_WIDTH_METERS = 0.7;
   private static final DifferentialDriveKinematics KINEMATICS = 
     new DifferentialDriveKinematics(ROBOT_WIDTH_METERS);
@@ -39,10 +37,9 @@ public class FollowPathCommand extends RamseteCommand {
   private static final double Ks = 0;
   private static final double Kv = 0;
   private static final double Ka = 0;
-
   private static final double Kp = 0;
 
-  // Velocity / Acceleration constants
+  // Velocity / Acceleration constants (m/s, m/s^2)
   private static final double MAX_VEL = 3;
   private static final double MAX_ACCEL = 3;
 

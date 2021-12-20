@@ -17,7 +17,7 @@ import static frc.robot.Constants.TankConstants.*;
 
 /**
  * A localization class which stores the robot's position and contains helper methods to
- * read and manipulate said position data.
+ * read and manipulate said position data. Measurements are given in meters.
  */
 public class Odometry {
   private final CANSparkMax leftMain;
@@ -26,17 +26,18 @@ public class Odometry {
   private final AHRS ahrs;
   private final DifferentialDrivePoseEstimator poseEstimator;
 
-  public static final double ENCODER_TICKS_TO_INCHES = 32 / 142.40;
+  // TODO: remeasure this in meters on the new base
+  public static final double ENCODER_TICKS_TO_METERS = 32 / 142.40;
 
   public Odometry() {
     // Ititialize motors and encoder position/velocity scaling
     leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
-    leftMain.getEncoder().setPositionConversionFactor(ENCODER_TICKS_TO_INCHES);
-    leftMain.getEncoder().setVelocityConversionFactor(ENCODER_TICKS_TO_INCHES);
+    leftMain.getEncoder().setPositionConversionFactor(ENCODER_TICKS_TO_METERS);
+    leftMain.getEncoder().setVelocityConversionFactor(ENCODER_TICKS_TO_METERS);
 
     rightMain = new CANSparkMax(fRightMotorPort, MotorType.kBrushless);
-    rightMain.getEncoder().setPositionConversionFactor(ENCODER_TICKS_TO_INCHES);
-    rightMain.getEncoder().setVelocityConversionFactor(ENCODER_TICKS_TO_INCHES);
+    rightMain.getEncoder().setPositionConversionFactor(ENCODER_TICKS_TO_METERS);
+    rightMain.getEncoder().setVelocityConversionFactor(ENCODER_TICKS_TO_METERS);
 
     // Initialize navX AHRS
     // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
