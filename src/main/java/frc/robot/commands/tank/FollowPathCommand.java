@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.wpilibj.trajectory.Trajectory;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
 import edu.wpi.first.wpilibj.trajectory.constraint.DifferentialDriveVoltageConstraint;
@@ -46,19 +47,17 @@ public class FollowPathCommand extends RamseteCommand {
   // Ramsete constants
   private static final double RAMSETE_B = 2;
   private static final double RAMSETE_ZETA = 0.7;
-
-  public FollowPathCommand(TankSubsystem tankSubsystem, Odometry odometry, Pose2d start, List<Translation2d> waypoints, Pose2d end) {
+  
+  /**
+   * Creates a FollowPathCommand from a given trajectory.
+   * 
+   * @param tankSubsystem The tank subsystem.
+   * @param odometry The odometry object.
+   * @param trajectory The trajectory to follow.
+   */
+  public FollowPathCommand(TankSubsystem tankSubsystem, Odometry odometry, Trajectory trajectory) {
     super(
-      // Target trajectory
-      TrajectoryGenerator.generateTrajectory(
-        start, waypoints, end, 
-        new TrajectoryConfig(MAX_VEL, MAX_ACCEL)
-          .setKinematics(KINEMATICS)
-          .addConstraint(new DifferentialDriveVoltageConstraint(
-            new SimpleMotorFeedforward(Ks, Kv, Ka), 
-            KINEMATICS, 
-            10))
-      ),
+      trajectory,
       odometry::getRobotPosition, // Position supplier
       new RamseteController(RAMSETE_B, RAMSETE_ZETA),
       new SimpleMotorFeedforward(Ks, Kv, Ka),
@@ -71,6 +70,32 @@ public class FollowPathCommand extends RamseteCommand {
       tankSubsystem
     );
 
-    odometry.resetPosition(start);
+    odometry.resetPosition(trajectory.getInitialPose());
+  }
+
+  /**
+   * Creates a FollowPathCommand from a given start point, list of waypoints, and end point.
+   * 
+   * @param tankSubsystem The tank subsystem.
+   * @param odometry The odometry object.
+   * @param start The start point of the trajectory as a Pose2d.
+   * @param waypoints A list of waypoints the robot must pass through as a List<Translation2d>.
+   * @param end The end point of the trajectory as a Pose2d.
+   */
+  public FollowPathCommand(TankSubsystem tankSubsystem, Odometry odometry, Pose2d start, List<Translation2d> waypoints, Pose2d end) {
+    this(
+      tankSubsystem,
+      odometry,
+      // Target trajectory
+      TrajectoryGenerator.generateTrajectory(
+        start, waypoints, end, 
+        new TrajectoryConfig(MAX_VEL, MAX_ACCEL)
+          .setKinematics(KINEMATICS)
+          .addConstraint(new DifferentialDriveVoltageConstraint(
+            new SimpleMotorFeedforward(Ks, Kv, Ka), 
+            KINEMATICS, 
+            10))
+      )
+    );
   }
 }

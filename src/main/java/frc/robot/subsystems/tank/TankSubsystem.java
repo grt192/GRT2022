@@ -100,8 +100,8 @@ public class TankSubsystem extends SubsystemBase {
   /**
    * Drive the system with the given voltage values for each side of the drivetrain.
    *  
-   * @param leftVoltage left motor voltages
-   * @param rightVoltage right motor voltages
+   * @param leftVoltage Left motor voltages.
+   * @param rightVoltage Right motor voltages.
    */
   public void setTankDriveVoltages(double leftVoltage, double rightVoltage) {
     leftMain.setVoltage(leftVoltage);
@@ -111,8 +111,8 @@ public class TankSubsystem extends SubsystemBase {
   /**
    * Squares input value while retaining original sign.
    * 
-   * @param value the value to square
-   * @return the squared value
+   * @param value The value to square.
+   * @return The squared value.
    */
   private double squareInput(double value) {
     return Math.copySign(value * value, value);

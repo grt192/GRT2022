@@ -73,7 +73,7 @@ public class Odometry {
 
   /**
    * Gets the estimated current position of the robot.
-   * @return the estimated position of the robot as a Pose2d.
+   * @return The estimated position of the robot as a Pose2d.
    */
   public Pose2d getRobotPosition() {
     return poseEstimator.getEstimatedPosition();
@@ -81,7 +81,7 @@ public class Odometry {
 
   /**
    * Gets the wheel speeds of the drivetrain.
-   * @return the drivetrain wheel speeds as a DifferentialDriveWheelSpeeds object.
+   * @return The drivetrain wheel speeds as a DifferentialDriveWheelSpeeds object.
    */
   public DifferentialDriveWheelSpeeds getWheelSpeeds() {
     return new DifferentialDriveWheelSpeeds(
@@ -91,7 +91,7 @@ public class Odometry {
 
   /**
    * Reset the robot's position to a given Pose2d.
-   * @param position the position to reset the pose estimator to
+   * @param position The position to reset the pose estimator to.
    */
   public void resetPosition(Pose2d position) {
     leftMain.getEncoder().setPosition(0);
