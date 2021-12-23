@@ -30,7 +30,7 @@ public class TankSubsystem extends SubsystemBase {
 
     // Init right main and follower motors
     rightMain = new CANSparkMax(fRightMotorPort, MotorType.kBrushless);
-    rightMain.setInverted(true);
+    // rightMain.setInverted(true);
     rightMain.setIdleMode(IdleMode.kBrake);
 
     rightFollow = new CANSparkMax(bRightMotorPort, MotorType.kBrushless);
@@ -57,8 +57,8 @@ public class TankSubsystem extends SubsystemBase {
     }
 
     // Set motor output state
-    double leftPowerTemp = yScale + angularScale;
-    double rightPowerTemp = yScale - angularScale;
+    double leftPowerTemp = yScale - angularScale;
+    double rightPowerTemp = yScale + angularScale;
 
     // Scale powers greater than 1 back to 1 if needed
     double largest_power = Math.max(Math.abs(leftPowerTemp), Math.abs(rightPowerTemp));
@@ -98,9 +98,10 @@ public class TankSubsystem extends SubsystemBase {
   }
 
   /**
-   * Drive the system with the given voltage values for each side of the drivetrain.
-   *  
-   * @param leftVoltage Left motor voltages.
+   * Drive the system with the given voltage values for each side of the
+   * drivetrain.
+   * 
+   * @param leftVoltage  Left motor voltages.
    * @param rightVoltage Right motor voltages.
    */
   public void setTankDriveVoltages(double leftVoltage, double rightVoltage) {

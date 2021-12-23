@@ -20,7 +20,7 @@ public final class Constants {
         public static final int bLeftMotorPort = 15;
 
         public static final int fRightMotorPort = 1;
-        public static final int bRightMotorPort = 0;
+        public static final int bRightMotorPort = 2;
     }
 
     public static final class ElevatorConstants {
