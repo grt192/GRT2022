@@ -69,10 +69,17 @@ public class RobotContainer {
     // Configure the button bindings
     configureButtonBindings();
 
-    // Configure the Jetson
+    // Configure the Jetson and run it
     JetsonConnection jetsonObj = new JetsonConnection();
     Runnable jetson = () -> {
-      jetsonObj.run();
+      jetsonObj.periodic();
+
+      // Pause the thread so it doesn't run like crazy
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     };
 
     Thread jetsonThread = new Thread(jetson);
