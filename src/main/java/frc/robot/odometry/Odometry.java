@@ -26,8 +26,7 @@ public class Odometry {
   private final AHRS ahrs;
   private final DifferentialDrivePoseEstimator poseEstimator;
 
-  // TODO: remeasure this in meters on the new base
-  public static final double ENCODER_TICKS_TO_METERS = 32 / 142.40;
+  public static final double ENCODER_TICKS_TO_METERS = 3 / 3274.70;
 
   public Odometry() {
     // Ititialize motors and encoder position/velocity scaling
