@@ -45,7 +45,7 @@ public class FollowPathCommand extends RamseteCommand {
   // Ramsete constants
   private static final double RAMSETE_B = 2;
   private static final double RAMSETE_ZETA = 0.7;
-  
+
   /**
    * Creates a FollowPathCommand from a given trajectory.
    * 

@@ -26,6 +26,8 @@ public class Odometry {
   private final AHRS ahrs;
   private final DifferentialDrivePoseEstimator poseEstimator;
 
+  // For characterization:
+  // Rotations -> meters = ENCODER_TICKS_TO_METERS * 42 (hall sensor ticks per revolution)
   public static final double ENCODER_TICKS_TO_METERS = 3 / 3274.70;
 
   public Odometry() {
@@ -47,7 +49,8 @@ public class Odometry {
     poseEstimator = new DifferentialDrivePoseEstimator(new Rotation2d(), new Pose2d(),
       new MatBuilder<>(Nat.N5(), Nat.N1()).fill(0.02, 0.02, 0.01, 0.02, 0.02), // State measurement standard deviations. X, Y, theta.
       new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01), // Local measurement standard deviations. Left encoder, right encoder, gyro.
-      new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01)); // Global measurement standard deviations. X, Y, and theta. 
+      new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01), // Global measurement standard deviations. X, Y, and theta.
+      0.001); // Seconds between each time `update()` is called
 
     // Launch odometry thread
     OdometryThread odoThread = new OdometryThread(this);
@@ -97,7 +100,7 @@ public class Odometry {
     rightMain.getEncoder().setPosition(0);
 
     // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
-    poseEstimator.resetPosition(position, Rotation2d.fromDegrees(ahrs.getAngle()));
+    poseEstimator.resetPosition(position, Rotation2d.fromDegrees(-ahrs.getAngle()));
   }
 
   /**
