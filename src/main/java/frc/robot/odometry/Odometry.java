@@ -60,7 +60,7 @@ public class Odometry {
    */
   public void updateCurrentPosition() {
     // Update odometry readings
-    Rotation2d gyroAngle = Rotation2d.fromDegrees(ahrs.getAngle());
+    Rotation2d gyroAngle = Rotation2d.fromDegrees(-ahrs.getAngle()); // Invert to be ccw positive
     DifferentialDriveWheelSpeeds wheelVelocities = getWheelSpeeds();
     double leftDistance = leftMain.getEncoder().getPosition();
     double rightDistance = rightMain.getEncoder().getPosition();

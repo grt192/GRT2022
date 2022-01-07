@@ -20,13 +20,8 @@ import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-import frc.robot.commands.tank.DriveTankCommand;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.odometry.Odometry;
-import frc.robot.commands.elevator.ElevatorUpCommand;
-import frc.robot.commands.elevator.ElevatorDownCommand;
-import frc.robot.commands.elevator.ElevatorStopCommand;
-import frc.robot.subsystems.elevator.ElevatorSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
@@ -40,7 +35,7 @@ public class RobotContainer {
   // Path of config file, relative to the deploy folder
   private static final String CONFIG_PATH = "config.txt";
   // config file
-  private Properties config;
+  //private Properties config;
 
   // Subsystems
   private final TankSubsystem tankSubsystem;
@@ -60,6 +55,7 @@ public class RobotContainer {
   public RobotContainer() {
 
     // Load the config file
+    /*
     this.config = new Properties();
 
     try {
@@ -68,6 +64,7 @@ public class RobotContainer {
     } catch (IOException ie) {
       System.out.println("config file not found");
     }
+    */
 
     // Instantiate subsystems
     tankSubsystem = new TankSubsystem();

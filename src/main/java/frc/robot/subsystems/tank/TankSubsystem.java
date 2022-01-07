@@ -22,18 +22,23 @@ public class TankSubsystem extends SubsystemBase {
   public TankSubsystem() {
     // Init left main and follower motors
     leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
+    leftMain.restoreFactoryDefaults();
+    leftMain.setInverted(true);
     leftMain.setIdleMode(IdleMode.kBrake);
 
     leftFollow = new CANSparkMax(bLeftMotorPort, MotorType.kBrushless);
+    leftFollow.restoreFactoryDefaults();
     leftFollow.follow(leftMain);
     leftFollow.setIdleMode(IdleMode.kBrake);
 
     // Init right main and follower motors
     rightMain = new CANSparkMax(fRightMotorPort, MotorType.kBrushless);
-    rightMain.setInverted(true);
+    rightMain.restoreFactoryDefaults();
+    //rightMain.setInverted(true);
     rightMain.setIdleMode(IdleMode.kBrake);
 
     rightFollow = new CANSparkMax(bRightMotorPort, MotorType.kBrushless);
+    rightFollow.restoreFactoryDefaults();
     rightFollow.follow(rightMain);
     rightFollow.setIdleMode(IdleMode.kBrake);
   }

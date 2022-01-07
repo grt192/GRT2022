@@ -16,11 +16,11 @@ package frc.robot;
  */
 public final class Constants {
     public static final class TankConstants {
-        public static final int fLeftMotorPort = 2;
-        public static final int bLeftMotorPort = 1;
+        public static final int fLeftMotorPort = 14;
+        public static final int bLeftMotorPort = 15;
 
-        public static final int fRightMotorPort = 14;
-        public static final int bRightMotorPort = 15;
+        public static final int fRightMotorPort = 2;
+        public static final int bRightMotorPort = 1;
     }
 
     public static final class ElevatorConstants {
