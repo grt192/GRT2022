@@ -27,16 +27,16 @@ import frc.robot.subsystems.tank.TankSubsystem;
 public class FollowPathCommand extends RamseteCommand {
 
   // Robot constants
-  private static final double ROBOT_WIDTH_METERS = 0.5652691153105908;
+  private static final double TRACK_WIDTH = 0.5492423243834469;
   private static final DifferentialDriveKinematics KINEMATICS = 
-    new DifferentialDriveKinematics(ROBOT_WIDTH_METERS);
+    new DifferentialDriveKinematics(TRACK_WIDTH);
 
   // Drive constants
   // https://docs.wpilib.org/en/stable/docs/software/examples-tutorials/trajectory-tutorial/characterizing-drive.html
-  private static final double Ks = 0.138; // V
-  private static final double Kv = 3.3; // Vs/m
-  private static final double Ka = 0.426; // Vs^2/m
-  private static final double Kp = 2.1;
+  private static final double Ks = 0.599; // V
+  private static final double Kv = 3.15; // Vs/m
+  private static final double Ka = 0.0145; // Vs^2/m
+  private static final double Kp = 0.0282;
 
   // Velocity / Acceleration constants
   private static final double MAX_VEL = 3; // m/s
