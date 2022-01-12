@@ -32,7 +32,7 @@ public class JetsonConnection {
     }
 
     public String getString(String key) {
-        return table.getEntry(key).getString("hi");
+        return table.getEntry(key).getString("");
     }
 
     public double getDouble(String key) {
