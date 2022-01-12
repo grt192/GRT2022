@@ -19,12 +19,20 @@ public class JetsonConnection {
     public void periodic() {
 
         System.out.println("test: " + getString("test"));
-        System.out.println("xCentroids len: " + getDoubleArray("xCentroids").length);
-        System.out.println("yCentroids len: " + getDoubleArray("yCentroids").length);
+        System.out.println("test exists? " + hasKey("test"));
+        System.out.println("xCentroid: " + getDouble("xCentroid"));
+        System.out.println("yCentroid: " + getDouble("yCentroid"));
+        System.out.println("pitchAngle: " + getDouble("pitchAngles"));
+        System.out.println("yawAngle: " + getDouble("yawAngle"));
+
+    }
+
+    public boolean hasKey(String key) {
+        return table.getEntry(key).exists();
     }
 
     public String getString(String key) {
-        return table.getEntry(key).getString("");
+        return table.getEntry(key).getString("hi");
     }
 
     public double getDouble(String key) {
