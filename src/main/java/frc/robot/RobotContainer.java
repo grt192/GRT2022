@@ -54,6 +54,8 @@ public class RobotContainer {
 
   public boolean runJetson = true;
 
+  public boolean runJetson = true;
+
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
@@ -109,6 +111,12 @@ public class RobotContainer {
           e.printStackTrace();
         }
       }
+      // Pause the thread so it doesn't run like crazy
+      // try {
+      // Thread.sleep(1000);
+      // } catch (InterruptedException e) {
+      // e.printStackTrace();
+      // }
     };
 
     Thread jetsonThread = new Thread(jetson);
