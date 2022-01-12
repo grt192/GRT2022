@@ -44,6 +44,8 @@ public class RobotContainer {
   // Commands
   private final DriveTankCommand tankCommand;
 
+  public boolean runJetson = true;
+
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    * 
@@ -57,7 +59,7 @@ public class RobotContainer {
       FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
       config.load(stream);
     } catch (IOException ie) {
-      System.out.println("config file not found");
+      System.out.println("Config file not found");
     }
 
     // Instantiate subsystems
@@ -72,14 +74,23 @@ public class RobotContainer {
     // Configure the Jetson and run it
     JetsonConnection jetsonObj = new JetsonConnection();
     Runnable jetson = () -> {
-      jetsonObj.periodic();
 
-      // Pause the thread so it doesn't run like crazy
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
+      while (runJetson) {
+        jetsonObj.periodic();
+
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
       }
+      // Pause the thread so it doesn't run like crazy
+      // try {
+      // Thread.sleep(1000);
+      // } catch (InterruptedException e) {
+      // e.printStackTrace();
+      // }
     };
 
     Thread jetsonThread = new Thread(jetson);
@@ -122,4 +133,5 @@ public class RobotContainer {
     // An ExampleCommand will run in autonomous
     return tankCommand;
   }
+
 }
