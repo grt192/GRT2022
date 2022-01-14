@@ -9,9 +9,12 @@ import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.math.MatBuilder;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 
 import static frc.robot.Constants.TankConstants.*;
 
@@ -25,6 +28,11 @@ public class Odometry {
 
   private final AHRS ahrs;
   private final DifferentialDrivePoseEstimator poseEstimator;
+
+  private final ShuffleboardTab shuffleboardTab;
+  private final NetworkTableEntry shuffleboardXEntry;
+  private final NetworkTableEntry shuffleboardYEntry;
+  private final NetworkTableEntry shuffleboardAngleEntry;
 
   // For characterization:
   // Rotations -> meters = ENCODER_TICKS_TO_METERS * 42 (hall sensor ticks per revolution)
@@ -52,6 +60,12 @@ public class Odometry {
       new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01), // Global measurement standard deviations. X, Y, and theta.
       0.001); // Seconds between each time `update()` is called
 
+    // Initialize Shuffleboard entries
+    shuffleboardTab = Shuffleboard.getTab("Drivetrain");
+    shuffleboardXEntry = shuffleboardTab.add("Robot x", 0).getEntry();
+    shuffleboardYEntry = shuffleboardTab.add("Robot y", 0).getEntry();
+    shuffleboardAngleEntry = shuffleboardTab.add("Gyro angle", 0).getEntry();
+
     // Launch odometry thread
     OdometryThread odoThread = new OdometryThread(this);
     new Thread(odoThread).start();
@@ -69,6 +83,12 @@ public class Odometry {
     double rightDistance = rightMain.getEncoder().getPosition();
 
     poseEstimator.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
+
+    // Update Shuffleboard entries
+    Pose2d pose = poseEstimator.getEstimatedPosition();
+    shuffleboardXEntry.setDouble(pose.getX());
+    shuffleboardYEntry.setDouble(pose.getY());
+    shuffleboardAngleEntry.setDouble(pose.getRotation().getDegrees());
 
     System.out.println("Odometry readings: " + poseEstimator.getEstimatedPosition());
   }
