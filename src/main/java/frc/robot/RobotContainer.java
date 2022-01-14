@@ -13,13 +13,13 @@ import java.util.Properties;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.GenericHID.Hand;
-import edu.wpi.first.wpilibj.geometry.Pose2d;
-import edu.wpi.first.wpilibj.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.odometry.Odometry;
 import frc.robot.subsystems.tank.TankSubsystem;
@@ -46,7 +46,7 @@ public class RobotContainer {
   private JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
 
   // Commands
-  private final FollowPathCommand tankCommand;
+  private final Command tankCommand;
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -72,7 +72,7 @@ public class RobotContainer {
 
     // Instantiate commands
     // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
-    tankCommand = new FollowPathCommand(
+    tankCommand = /*new FollowPathCommand(
       tankSubsystem, odometry, 
       new Pose2d(), 
       List.of(
@@ -81,6 +81,9 @@ public class RobotContainer {
       ), 
       new Pose2d(3, 0, new Rotation2d())
     );
+    */
+    new FollowPathCommand(tankSubsystem, odometry, new Pose2d(), List.of(), new Pose2d(3, 0, new Rotation2d()))
+      .andThen(new InstantCommand(() -> tankSubsystem.setTankDriveVoltages(0, 0)));
 
     // Configure the button bindings
     configureButtonBindings();
@@ -102,7 +105,7 @@ public class RobotContainer {
 
     Runnable tank = () -> {
       // Set the drive powers based on which controller is being used
-      tankSubsystem.setCarDrivePowers(-controlXbox.getY(Hand.kLeft), controlXbox.getX(Hand.kRight));
+      tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }

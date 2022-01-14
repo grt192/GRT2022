@@ -2,16 +2,16 @@ package frc.robot.commands.tank;
 
 import java.util.List;
 
-import edu.wpi.first.wpilibj.controller.PIDController;
-import edu.wpi.first.wpilibj.controller.RamseteController;
-import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
-import edu.wpi.first.wpilibj.geometry.Pose2d;
-import edu.wpi.first.wpilibj.geometry.Translation2d;
-import edu.wpi.first.wpilibj.kinematics.DifferentialDriveKinematics;
-import edu.wpi.first.wpilibj.trajectory.Trajectory;
-import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
-import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
-import edu.wpi.first.wpilibj.trajectory.constraint.DifferentialDriveVoltageConstraint;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.RamseteController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.trajectory.Trajectory;
+import edu.wpi.first.math.trajectory.TrajectoryConfig;
+import edu.wpi.first.math.trajectory.TrajectoryGenerator;
+import edu.wpi.first.math.trajectory.constraint.DifferentialDriveVoltageConstraint;
 import edu.wpi.first.wpilibj2.command.RamseteCommand;
 
 import frc.robot.odometry.Odometry;
@@ -36,7 +36,10 @@ public class FollowPathCommand extends RamseteCommand {
   private static final double Ks = 0.599; // V
   private static final double Kv = 3.15; // Vs/m
   private static final double Ka = 0.0145; // Vs^2/m
+
+  // PID constants
   private static final double Kp = 0.0282;
+  private static final double Ki = 1.1;
 
   // Velocity / Acceleration constants
   private static final double MAX_VEL = 3; // m/s
@@ -62,8 +65,8 @@ public class FollowPathCommand extends RamseteCommand {
       KINEMATICS,
       odometry::getWheelSpeeds, // Wheel speed supplier
       // PID controllers
-      new PIDController(Kp, 0, 0),
-      new PIDController(Kp, 0, 0),
+      new PIDController(Kp, Ki, 0),
+      new PIDController(Kp, Ki, 0),
       tankSubsystem::setTankDriveVoltages, // Wheel voltage consumer
       tankSubsystem
     );
