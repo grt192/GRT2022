@@ -21,7 +21,6 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.commands.tank.FollowPathCommand;
-import frc.robot.odometry.Odometry;
 import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
@@ -39,7 +38,6 @@ public class RobotContainer {
 
   // Subsystems
   private final TankSubsystem tankSubsystem;
-  private final Odometry odometry;
 
   // Controllers
   private XboxController controlXbox = new XboxController(0);
@@ -68,12 +66,11 @@ public class RobotContainer {
 
     // Instantiate subsystems
     tankSubsystem = new TankSubsystem();
-    odometry = new Odometry();
 
     // Instantiate commands
     // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
-    tankCommand = /*new FollowPathCommand(
-      tankSubsystem, odometry, 
+    tankCommand = new FollowPathCommand(
+      tankSubsystem, 
       new Pose2d(), 
       List.of(
         new Translation2d(1, 1), 
@@ -81,9 +78,10 @@ public class RobotContainer {
       ), 
       new Pose2d(3, 0, new Rotation2d())
     );
-    */
-    new FollowPathCommand(tankSubsystem, odometry, new Pose2d(), List.of(), new Pose2d(3, 0, new Rotation2d()))
+    /*
+    new FollowPathCommand(tankSubsystem, new Pose2d(), List.of(), new Pose2d(3, 0, new Rotation2d()))
       .andThen(new InstantCommand(() -> tankSubsystem.setTankDriveVoltages(0, 0)));
+    */
 
     // Configure the button bindings
     configureButtonBindings();
@@ -101,7 +99,7 @@ public class RobotContainer {
 
   private void controllerBindings() {
     // Bind A button to zero robot position when pressed
-    xboxAButton.whenPressed(new InstantCommand(odometry::resetPosition));
+    xboxAButton.whenPressed(new InstantCommand(tankSubsystem::resetPosition));
 
     Runnable tank = () -> {
       // Set the drive powers based on which controller is being used

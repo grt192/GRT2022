@@ -14,7 +14,6 @@ import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 import edu.wpi.first.math.trajectory.constraint.DifferentialDriveVoltageConstraint;
 import edu.wpi.first.wpilibj2.command.RamseteCommand;
 
-import frc.robot.odometry.Odometry;
 import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
@@ -27,19 +26,19 @@ import frc.robot.subsystems.tank.TankSubsystem;
 public class FollowPathCommand extends RamseteCommand {
 
   // Robot constants
-  private static final double TRACK_WIDTH = 0.5492423243834469;
+  private static final double TRACK_WIDTH = 0.7805022504396351;
   private static final DifferentialDriveKinematics KINEMATICS = 
     new DifferentialDriveKinematics(TRACK_WIDTH);
 
   // Drive constants
   // https://docs.wpilib.org/en/stable/docs/software/examples-tutorials/trajectory-tutorial/characterizing-drive.html
-  private static final double Ks = 0.599; // V
-  private static final double Kv = 3.15; // Vs/m
-  private static final double Ka = 0.0145; // Vs^2/m
+  private static final double Ks = 0.521; // V
+  private static final double Kv = 2.28; // Vs/m
+  private static final double Ka = 0.00982; // Vs^2/m
 
   // PID constants
-  private static final double Kp = 0.0282;
-  private static final double Ki = 1.1;
+  private static final double Kp = 0.0178;
+  private static final double Ki = 0;
 
   // Velocity / Acceleration constants
   private static final double MAX_VEL = 3; // m/s
@@ -53,17 +52,16 @@ public class FollowPathCommand extends RamseteCommand {
    * Creates a FollowPathCommand from a given trajectory.
    * 
    * @param tankSubsystem The tank subsystem.
-   * @param odometry The odometry object.
    * @param trajectory The trajectory to follow.
    */
-  public FollowPathCommand(TankSubsystem tankSubsystem, Odometry odometry, Trajectory trajectory) {
+  public FollowPathCommand(TankSubsystem tankSubsystem, Trajectory trajectory) {
     super(
       trajectory,
-      odometry::getRobotPosition, // Position supplier
+      tankSubsystem::getRobotPosition, // Position supplier
       new RamseteController(RAMSETE_B, RAMSETE_ZETA),
       new SimpleMotorFeedforward(Ks, Kv, Ka),
       KINEMATICS,
-      odometry::getWheelSpeeds, // Wheel speed supplier
+      tankSubsystem::getWheelSpeeds, // Wheel speed supplier
       // PID controllers
       new PIDController(Kp, Ki, 0),
       new PIDController(Kp, Ki, 0),
@@ -71,22 +69,20 @@ public class FollowPathCommand extends RamseteCommand {
       tankSubsystem
     );
 
-    odometry.resetPosition(trajectory.getInitialPose());
+    tankSubsystem.resetPosition(trajectory.getInitialPose());
   }
 
   /**
    * Creates a FollowPathCommand from a given start point, list of waypoints, and end point.
    * 
    * @param tankSubsystem The tank subsystem.
-   * @param odometry The odometry object.
    * @param start The start point of the trajectory as a Pose2d.
    * @param waypoints A list of waypoints the robot must pass through as a List<Translation2d>.
    * @param end The end point of the trajectory as a Pose2d.
    */
-  public FollowPathCommand(TankSubsystem tankSubsystem, Odometry odometry, Pose2d start, List<Translation2d> waypoints, Pose2d end) {
+  public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Translation2d> waypoints, Pose2d end) {
     this(
       tankSubsystem,
-      odometry,
       // Target trajectory
       TrajectoryGenerator.generateTrajectory(
         start, waypoints, end, 
