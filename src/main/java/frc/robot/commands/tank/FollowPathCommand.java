@@ -32,12 +32,12 @@ public class FollowPathCommand extends RamseteCommand {
 
   // Drive constants
   // https://docs.wpilib.org/en/stable/docs/software/examples-tutorials/trajectory-tutorial/characterizing-drive.html
-  private static final double Ks = 0.521; // V
-  private static final double Kv = 2.28; // Vs/m
-  private static final double Ka = 0.00982; // Vs^2/m
+  private static final double Ks = /* 0.521 */ 0.10898; // V
+  private static final double Kv = /* 2.28 */ 2.438; // Vs/m
+  private static final double Ka = /* 0.00982 */ 0.35759; // Vs^2/m
 
   // PID constants
-  private static final double Kp = 0.0178;
+  private static final double Kp = /* 0.0178 */ 3.1745;
   private static final double Ki = 0;
 
   // Velocity / Acceleration constants
