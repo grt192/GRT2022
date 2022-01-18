@@ -1,5 +1,7 @@
 package frc.robot;
 
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.HttpCamera;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 
@@ -10,6 +12,11 @@ public class JetsonConnection {
 
     public JetsonConnection() {
         table = NetworkTableInstance.getDefault().getTable(TABLE_NAME);
+
+        // Start camera stream on Shuffleboard
+        // TODO if this HttpCamera thing works, make it work for multiple streams 
+        HttpCamera jetsonCamera = new HttpCamera("Jetson Camera - Port 1182", "http://10.1.92.94:1182/?action=stream");
+        CameraServer.startAutomaticCapture(jetsonCamera);
     }
 
     /**
