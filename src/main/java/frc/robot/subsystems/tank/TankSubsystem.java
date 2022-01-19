@@ -7,6 +7,7 @@ package frc.robot.subsystems.tank;
 import com.kauailabs.navx.frc.AHRS;
 
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
@@ -20,6 +21,7 @@ import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static frc.robot.Constants.TankConstants.*;
@@ -31,6 +33,9 @@ public class TankSubsystem extends SubsystemBase {
   private final CANSparkMax rightMain;
   private final CANSparkMax rightFollow;
 
+  private final RelativeEncoder leftEncoder;
+  private final RelativeEncoder rightEncoder;
+
   private final AHRS ahrs;
   private final DifferentialDrivePoseEstimator poseEstimator;
 
@@ -38,19 +43,22 @@ public class TankSubsystem extends SubsystemBase {
   private final NetworkTableEntry shuffleboardXEntry;
   private final NetworkTableEntry shuffleboardYEntry;
   private final NetworkTableEntry shuffleboardAngleEntry;
+  private final Field2d shuffleboardField;
 
   public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
 
   public TankSubsystem() {
     // Init left main and follower motors and encoders
-    // Position conversion: Rotations -> m
-    // Velocity conversion: RPM -> m/s
     leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
     leftMain.restoreFactoryDefaults();
     leftMain.setInverted(true);
     leftMain.setIdleMode(IdleMode.kBrake);
-    leftMain.getEncoder().setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
-    leftMain.getEncoder().setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
+
+    // Position conversion: Rotations -> m
+    // Velocity conversion: RPM -> m/s
+    leftEncoder = leftMain.getEncoder();
+    leftEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
+    leftEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
 
     leftFollow = new CANSparkMax(bLeftMotorPort, MotorType.kBrushless);
     leftFollow.restoreFactoryDefaults();
@@ -62,8 +70,10 @@ public class TankSubsystem extends SubsystemBase {
     rightMain.restoreFactoryDefaults();
     //rightMain.setInverted(true);
     rightMain.setIdleMode(IdleMode.kBrake);
-    rightMain.getEncoder().setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
-    rightMain.getEncoder().setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
+
+    rightEncoder = rightMain.getEncoder();
+    rightEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
+    rightEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
 
     rightFollow = new CANSparkMax(bRightMotorPort, MotorType.kBrushless);
     rightFollow.restoreFactoryDefaults();
@@ -86,6 +96,8 @@ public class TankSubsystem extends SubsystemBase {
     shuffleboardXEntry = shuffleboardTab.add("Robot x", 0).getEntry();
     shuffleboardYEntry = shuffleboardTab.add("Robot y", 0).getEntry();
     shuffleboardAngleEntry = shuffleboardTab.add("Gyro angle", 0).getEntry();
+    shuffleboardField = new Field2d();
+    shuffleboardTab.add("Field", shuffleboardField);
   }
 
   /**
@@ -161,8 +173,8 @@ public class TankSubsystem extends SubsystemBase {
     // Update odometry readings
     Rotation2d gyroAngle = getRobotHeading();
     DifferentialDriveWheelSpeeds wheelVelocities = getWheelSpeeds();
-    double leftDistance = leftMain.getEncoder().getPosition();
-    double rightDistance = rightMain.getEncoder().getPosition();
+    double leftDistance = leftEncoder.getPosition();
+    double rightDistance = rightEncoder.getPosition();
 
     poseEstimator.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
 
@@ -171,10 +183,11 @@ public class TankSubsystem extends SubsystemBase {
     shuffleboardXEntry.setDouble(pose.getX());
     shuffleboardYEntry.setDouble(pose.getY());
     shuffleboardAngleEntry.setDouble(pose.getRotation().getDegrees());
+    shuffleboardField.setRobotPose(pose);
 
     System.out.println("Odometry readings: " + poseEstimator.getEstimatedPosition());
-    System.out.println("l: " + leftMain.getEncoder().getPosition());
-    System.out.println("r: " + rightMain.getEncoder().getPosition());
+    System.out.println("l: " + leftEncoder.getPosition());
+    System.out.println("r: " + rightEncoder.getPosition());
   }
 
     /**
@@ -199,8 +212,8 @@ public class TankSubsystem extends SubsystemBase {
    */
   public DifferentialDriveWheelSpeeds getWheelSpeeds() {
     return new DifferentialDriveWheelSpeeds(
-      leftMain.getEncoder().getVelocity(), 
-      rightMain.getEncoder().getVelocity());
+      leftEncoder.getVelocity(), 
+      rightEncoder.getVelocity());
   }
 
   /**
@@ -208,8 +221,8 @@ public class TankSubsystem extends SubsystemBase {
    * @param position The position to reset the pose estimator to.
    */
   public void resetPosition(Pose2d position) {
-    leftMain.getEncoder().setPosition(0);
-    rightMain.getEncoder().setPosition(0);
+    leftEncoder.setPosition(0);
+    rightEncoder.setPosition(0);
 
     // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
     poseEstimator.resetPosition(position, getRobotHeading());
