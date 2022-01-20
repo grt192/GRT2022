@@ -186,8 +186,6 @@ public class TankSubsystem extends SubsystemBase {
     shuffleboardField.setRobotPose(pose);
 
     System.out.println("Odometry readings: " + poseEstimator.getEstimatedPosition());
-    System.out.println("l: " + leftEncoder.getPosition());
-    System.out.println("r: " + rightEncoder.getPosition());
   }
 
     /**
