@@ -42,7 +42,6 @@ public class TankSubsystem extends SubsystemBase {
   private final ShuffleboardTab shuffleboardTab;
   private final NetworkTableEntry shuffleboardXEntry;
   private final NetworkTableEntry shuffleboardYEntry;
-  private final NetworkTableEntry shuffleboardAngleEntry;
   private final Field2d shuffleboardField;
 
   public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
@@ -95,7 +94,7 @@ public class TankSubsystem extends SubsystemBase {
     shuffleboardTab = Shuffleboard.getTab("Drivetrain");
     shuffleboardXEntry = shuffleboardTab.add("Robot x", 0).getEntry();
     shuffleboardYEntry = shuffleboardTab.add("Robot y", 0).getEntry();
-    shuffleboardAngleEntry = shuffleboardTab.add("Gyro angle", 0).getEntry();
+    shuffleboardTab.add("Gyro", ahrs);
     shuffleboardField = new Field2d();
     shuffleboardTab.add("Field", shuffleboardField);
   }
@@ -182,7 +181,6 @@ public class TankSubsystem extends SubsystemBase {
     Pose2d pose = poseEstimator.getEstimatedPosition();
     shuffleboardXEntry.setDouble(pose.getX());
     shuffleboardYEntry.setDouble(pose.getY());
-    shuffleboardAngleEntry.setDouble(pose.getRotation().getDegrees());
     shuffleboardField.setRobotPose(pose);
 
     System.out.println("Odometry readings: " + poseEstimator.getEstimatedPosition());
