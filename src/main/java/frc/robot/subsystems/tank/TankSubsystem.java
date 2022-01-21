@@ -4,71 +4,106 @@
 
 package frc.robot.subsystems.tank;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.InvertType;
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.kauailabs.navx.frc.AHRS;
 
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
+import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
+import edu.wpi.first.math.MatBuilder;
+import edu.wpi.first.math.Nat;
+import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static frc.robot.Constants.TankConstants.*;
 
 public class TankSubsystem extends SubsystemBase {
-  private final WPI_TalonSRX leftMain;
-  private final WPI_TalonSRX leftFollow;
+  private final CANSparkMax leftMain;
+  private final CANSparkMax leftFollow;
 
-  private final WPI_TalonSRX rightMain;
-  private final WPI_TalonSRX rightFollow;
+  private final CANSparkMax rightMain;
+  private final CANSparkMax rightFollow;
 
-  // Motor power output states
-  private double leftPower;
-  private double rightPower;
+  private final RelativeEncoder leftEncoder;
+  private final RelativeEncoder rightEncoder;
+
+  private final AHRS ahrs;
+  private final DifferentialDrivePoseEstimator poseEstimator;
+
+  private final ShuffleboardTab shuffleboardTab;
+  private final NetworkTableEntry shuffleboardXEntry;
+  private final NetworkTableEntry shuffleboardYEntry;
+  private final Field2d shuffleboardField;
+
+  public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
 
   public TankSubsystem() {
-    // Init left main and follower motors
-    leftMain = new WPI_TalonSRX(fLeftMotorPort);
-    leftMain.setNeutralMode(NeutralMode.Brake);
+    // Init left main and follower motors and encoders
+    leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
+    leftMain.restoreFactoryDefaults();
+    leftMain.setInverted(true);
+    leftMain.setIdleMode(IdleMode.kBrake);
 
-    leftFollow = new WPI_TalonSRX(bLeftMotorPort);
+    // Position conversion: Rotations -> m
+    // Velocity conversion: RPM -> m/s
+    leftEncoder = leftMain.getEncoder();
+    leftEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
+    leftEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
+
+    leftFollow = new CANSparkMax(bLeftMotorPort, MotorType.kBrushless);
+    leftFollow.restoreFactoryDefaults();
     leftFollow.follow(leftMain);
-    leftFollow.setInverted(InvertType.FollowMaster);
-    leftFollow.setNeutralMode(NeutralMode.Brake);
+    leftFollow.setIdleMode(IdleMode.kBrake);
 
     // Init right main and follower motors
-    rightMain = new WPI_TalonSRX(fRightMotorPort);
-    rightMain.setInverted(true);
-    rightMain.setNeutralMode(NeutralMode.Brake);
+    rightMain = new CANSparkMax(fRightMotorPort, MotorType.kBrushless);
+    rightMain.restoreFactoryDefaults();
+    //rightMain.setInverted(true);
+    rightMain.setIdleMode(IdleMode.kBrake);
 
-    rightFollow = new WPI_TalonSRX(bRightMotorPort);
+    rightEncoder = rightMain.getEncoder();
+    rightEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
+    rightEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
+
+    rightFollow = new CANSparkMax(bRightMotorPort, MotorType.kBrushless);
+    rightFollow.restoreFactoryDefaults();
     rightFollow.follow(rightMain);
-    rightFollow.setInverted(InvertType.FollowMaster);
-    rightFollow.setNeutralMode(NeutralMode.Brake);
+    rightFollow.setIdleMode(IdleMode.kBrake);
 
-    // Initialize power values
-    leftPower = 0;
-    rightPower = 0;
-  }
+    // Initialize navX AHRS
+    // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
+    ahrs = new AHRS(SPI.Port.kMXP); 
 
-  @Override
-  public void periodic() {
-    // This method will be called once per scheduler run
-    // TODO: odometry
+    // Initialize odometry class
+    // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose_state-estimators.html
+    poseEstimator = new DifferentialDrivePoseEstimator(new Rotation2d(), new Pose2d(),
+      new MatBuilder<>(Nat.N5(), Nat.N1()).fill(0.02, 0.02, 0.01, 0.02, 0.02), // State measurement standard deviations. X, Y, theta.
+      new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01), // Local measurement standard deviations. Left encoder, right encoder, gyro.
+      new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01)); // Global measurement standard deviations. X, Y, and theta.
 
-    leftMain.set(ControlMode.PercentOutput, leftPower);
-    rightMain.set(ControlMode.PercentOutput, rightPower);
-  }
-
-  @Override
-  public void simulationPeriodic() {
-    // This method will be called once per scheduler run during simulation
+    // Initialize Shuffleboard entries
+    shuffleboardTab = Shuffleboard.getTab("Drivetrain");
+    shuffleboardXEntry = shuffleboardTab.add("Robot x", 0).getEntry();
+    shuffleboardYEntry = shuffleboardTab.add("Robot y", 0).getEntry();
+    shuffleboardTab.add("Gyro", ahrs);
+    shuffleboardField = new Field2d();
+    shuffleboardTab.add("Field", shuffleboardField);
   }
 
   /**
    * Drive the system with the given power scales using the car system.
    * 
    * @param yScale       Scale in the forward/backward direction, from 1 to -1.
-   * @param angularScale Scale in the rotational direction, from 1 to -1,
-   *                     clockwise to counterclockwise.
+   * @param angularScale Scale in the rotational direction, from 1 to -1, clockwise to counterclockwise.
    */
   public void setCarDrivePowers(double yScale, double angularScale) {
     setCarDrivePowers(yScale, angularScale, true);
@@ -95,17 +130,15 @@ public class TankSubsystem extends SubsystemBase {
     }
 
     // Set motor output state
-    this.leftPower = leftPowerTemp;
-    this.rightPower = rightPowerTemp;
+    leftMain.set(leftPowerTemp);
+    rightMain.set(rightPowerTemp);
   }
 
   /**
    * Drive the system with the given power scales using the tank system.
    * 
-   * @param leftScale  Scale in the forward/backward direction of the left motor,
-   *                   from -1 to 1.
-   * @param rightScale Scale in the forward/backward direction of the right motor,
-   *                   from -1 to 1.
+   * @param leftScale  Scale in the forward/backward direction of the left motor, from -1 to 1.
+   * @param rightScale Scale in the forward/backward direction of the right motor, from -1 to 1.
    */
   public void setTankDrivePowers(double leftScale, double rightScale, boolean squareInput) {
     if (squareInput) {
@@ -114,8 +147,8 @@ public class TankSubsystem extends SubsystemBase {
     }
 
     // Set motor output state
-    this.leftPower = leftScale;
-    this.rightPower = rightScale;
+    leftMain.set(leftScale);
+    rightMain.set(rightScale);
   }
 
   public void setTankDrivePowers(double leftScale, double rightScale) {
@@ -123,10 +156,87 @@ public class TankSubsystem extends SubsystemBase {
   }
 
   /**
+   * Drive the system with the given voltage values for each side of the
+   * drivetrain.
+   * 
+   * @param leftVoltage  Left motor voltages.
+   * @param rightVoltage Right motor voltages.
+   */
+  public void setTankDriveVoltages(double leftVoltage, double rightVoltage) {
+    leftMain.setVoltage(leftVoltage);
+    rightMain.setVoltage(rightVoltage);
+  }
+
+  @Override
+  public void periodic() {
+    // Update odometry readings
+    Rotation2d gyroAngle = getRobotHeading();
+    DifferentialDriveWheelSpeeds wheelVelocities = getWheelSpeeds();
+    double leftDistance = leftEncoder.getPosition();
+    double rightDistance = rightEncoder.getPosition();
+
+    poseEstimator.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
+
+    // Update Shuffleboard entries
+    Pose2d pose = poseEstimator.getEstimatedPosition();
+    shuffleboardXEntry.setDouble(pose.getX());
+    shuffleboardYEntry.setDouble(pose.getY());
+    shuffleboardField.setRobotPose(pose);
+
+    System.out.println("Odometry readings: " + poseEstimator.getEstimatedPosition());
+  }
+
+    /**
+   * Gets the estimated current position of the robot.
+   * @return The estimated position of the robot as a Pose2d.
+   */
+  public Pose2d getRobotPosition() {
+    return poseEstimator.getEstimatedPosition();
+  }
+
+  /**
+   * Gets the gyro angle given by the NavX AHRS, inverted to be counterclockwise positive.
+   * @return The robot heading as a Rotation2d.
+   */
+  public Rotation2d getRobotHeading() {
+    return Rotation2d.fromDegrees(-ahrs.getAngle());
+  }
+
+  /**
+   * Gets the wheel speeds of the drivetrain.
+   * @return The drivetrain wheel speeds as a DifferentialDriveWheelSpeeds object.
+   */
+  public DifferentialDriveWheelSpeeds getWheelSpeeds() {
+    return new DifferentialDriveWheelSpeeds(
+      leftEncoder.getVelocity(), 
+      rightEncoder.getVelocity());
+  }
+
+  /**
+   * Reset the robot's position to a given Pose2d.
+   * @param position The position to reset the pose estimator to.
+   */
+  public void resetPosition(Pose2d position) {
+    leftEncoder.setPosition(0);
+    rightEncoder.setPosition(0);
+
+    // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
+    poseEstimator.resetPosition(position, getRobotHeading());
+  }
+
+  /**
+   * Zeros the robot's position.
+   * This method zeros both the robot's translation *and* rotation.
+   */
+  public void resetPosition() {
+    resetPosition(new Pose2d());
+  }
+
+  /**
    * Squares input value while retaining original sign.
    * 
-   * @param value the value to square
-   * @return the squared value
+   * @param value The value to square.
+   * @return The squared value.
    */
   private double squareInput(double value) {
     return Math.copySign(value * value, value);

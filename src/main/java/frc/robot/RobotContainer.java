@@ -7,15 +7,20 @@ package frc.robot;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-import frc.robot.commands.tank.DriveTankCommand;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
@@ -29,20 +34,17 @@ public class RobotContainer {
   // Path of config file, relative to the deploy folder
   private static final String CONFIG_PATH = "config.txt";
   // config file
-  private Properties config;
+  //private Properties config;
 
   // Subsystems
   private final TankSubsystem tankSubsystem;
 
   // Controllers
   private XboxController controlXbox = new XboxController(0);
-
-  // Joysticks
-  private Joystick joystickLeft = new Joystick(1);
-  private Joystick joystickRight = new Joystick(2);
+  private JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
 
   // Commands
-  private final DriveTankCommand tankCommand;
+  private final Command tankCommand;
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -51,6 +53,7 @@ public class RobotContainer {
   public RobotContainer() {
 
     // Load the config file
+    /*
     this.config = new Properties();
 
     try {
@@ -59,12 +62,26 @@ public class RobotContainer {
     } catch (IOException ie) {
       System.out.println("config file not found");
     }
+    */
 
     // Instantiate subsystems
     tankSubsystem = new TankSubsystem();
 
     // Instantiate commands
-    tankCommand = new DriveTankCommand(tankSubsystem, 0, 0);
+    // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
+    tankCommand = new FollowPathCommand(
+      tankSubsystem, 
+      new Pose2d(), 
+      List.of(
+        new Translation2d(1, 1), 
+        new Translation2d(2, -1)
+      ), 
+      new Pose2d(3, 0, new Rotation2d())
+    );
+    /*
+    new FollowPathCommand(tankSubsystem, new Pose2d(), List.of(), new Pose2d(3, 0, new Rotation2d()))
+      .andThen(new InstantCommand(() -> tankSubsystem.setTankDriveVoltages(0, 0)));
+    */
 
     // Configure the button bindings
     configureButtonBindings();
@@ -81,18 +98,12 @@ public class RobotContainer {
   }
 
   private void controllerBindings() {
+    // Bind A button to zero robot position when pressed
+    xboxAButton.whenPressed(new InstantCommand(tankSubsystem::resetPosition));
+
     Runnable tank = () -> {
-
-      // Check which controller is being used
-      boolean isXbox = (Math.abs(controlXbox.getLeftY())
-          + Math.abs(controlXbox.getRightX())) > (Math.abs(joystickLeft.getY()) + Math.abs(joystickRight.getY()));
-
       // Set the drive powers based on which controller is being used
-      if (isXbox) {
-        tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
-      } else {
-        tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
-      }
+      tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }
@@ -103,7 +114,6 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // An ExampleCommand will run in autonomous
     return tankCommand;
   }
 }
