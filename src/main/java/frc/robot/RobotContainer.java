@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.brownout.PowerController;
 import frc.robot.commands.tank.FollowPathCommand;
+import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
@@ -39,6 +40,7 @@ public class RobotContainer {
 
   // Subsystems
   private final TankSubsystem tankSubsystem;
+  private final ShooterSubsystem shooterSubsystem;
 
   private final PowerController powerController;
 
@@ -68,6 +70,7 @@ public class RobotContainer {
 
     // Instantiate subsystems
     tankSubsystem = new TankSubsystem();
+    shooterSubsystem = new ShooterSubsystem();
 
     powerController = new PowerController(tankSubsystem);
 

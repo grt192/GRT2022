@@ -23,10 +23,7 @@ public final class Constants {
         public static final int bRightMotorPort = 1;
     }
 
-    public static final class ElevatorConstants {
-        public static final int mainMotorPort = 5;
-        public static final int followMotorPort = 6;
-
-        public static final boolean elevatorUpIsPositive = true;
+    public static final class ShooterConstants {
+        public static final int flywheelPort = 1;
     }
 }
