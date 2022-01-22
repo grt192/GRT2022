@@ -20,6 +20,9 @@ import static frc.robot.Constants.ShooterConstants.*;
 public class ShooterSubsystem extends SubsystemBase {
   private final WPI_TalonSRX turntable;
 
+  private final CANSparkMax hood;
+  private final RelativeEncoder hoodEncoder;
+
   private final CANSparkMax flywheel;
   private final RelativeEncoder flywheelEncoder;
 
@@ -37,10 +40,15 @@ public class ShooterSubsystem extends SubsystemBase {
     turntable.setNeutralMode(NeutralMode.Brake);
     turntable.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
 
+    hood = new CANSparkMax(flywheelPort, MotorType.kBrushless);
+    hood.restoreFactoryDefaults();
+    hood.setIdleMode(IdleMode.kBrake);
+    hoodEncoder = hood.getEncoder();
+    hoodEncoder.setPosition(0);
+
     flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
     flywheel.restoreFactoryDefaults();
-    flywheel.setIdleMode(IdleMode.kBrake);
-
+    //flywheel.setIdleMode(IdleMode.kBrake);
     flywheelEncoder = flywheel.getEncoder();
     flywheelEncoder.setPosition(0);
   }
