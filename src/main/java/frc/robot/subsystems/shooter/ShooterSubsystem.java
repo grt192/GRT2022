@@ -40,7 +40,7 @@ public class ShooterSubsystem extends SubsystemBase {
     turntable.setNeutralMode(NeutralMode.Brake);
     turntable.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
 
-    hood = new CANSparkMax(flywheelPort, MotorType.kBrushless);
+    hood = new CANSparkMax(hoodPort, MotorType.kBrushless);
     hood.restoreFactoryDefaults();
     hood.setIdleMode(IdleMode.kBrake);
     hoodEncoder = hood.getEncoder();

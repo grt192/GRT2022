@@ -26,5 +26,6 @@ public final class Constants {
     public static final class ShooterConstants {
         public static final int turntablePort = 0;
         public static final int flywheelPort = 1;
+        public static final int hoodPort = 2;
     }
 }
