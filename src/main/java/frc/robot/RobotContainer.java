@@ -45,8 +45,9 @@ public class RobotContainer {
   private final PowerController powerController;
 
   // Controllers
-  private XboxController controlXbox = new XboxController(0);
-  private JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
+  private final XboxController controlXbox = new XboxController(0);
+  private final JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
+  private final JoystickButton xboxXButton = new JoystickButton(controlXbox, XboxController.Button.kX.value);
 
   // Commands
   private final Command tankCommand;
@@ -105,11 +106,12 @@ public class RobotContainer {
   }
 
   private void controllerBindings() {
-    // Bind A button to zero robot position when pressed
+    // A button -> zero odometry readings
+    // X button -> shoot ball from shooter
     xboxAButton.whenPressed(new InstantCommand(tankSubsystem::resetPosition));
+    xboxXButton.whenPressed(new InstantCommand(shooterSubsystem::shoot));
 
     Runnable tank = () -> {
-      // Set the drive powers based on which controller is being used
       tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
