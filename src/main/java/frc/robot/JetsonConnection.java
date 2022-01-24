@@ -6,9 +6,8 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 
 public class JetsonConnection {
-
-    public static String TABLE_NAME = "jetson";
     private NetworkTable table;
+    public static String TABLE_NAME = "jetson";
 
     public JetsonConnection() {
         table = NetworkTableInstance.getDefault().getTable(TABLE_NAME);
@@ -49,13 +48,6 @@ public class JetsonConnection {
     }
 
     public double[] getDoubleArray(String key) {
-        Number[] numArr = table.getEntry(key).getNumberArray(new Number[0]);
-
-        double[] arr = new double[0];
-        for (int i = 0; i < numArr.length; i++) {
-            arr[i] = numArr[i].doubleValue();
-        }
-        return arr;
+        return table.getEntry(key).getDoubleArray(new double[0]);
     }
-
 }
