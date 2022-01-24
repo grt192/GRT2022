@@ -29,6 +29,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
   private final CANSparkMax flywheel;
   private final RelativeEncoder flywheelEncoder;
+  private final SparkMaxPIDController flywheelPidController;
 
   private final double kP = 0.125;
   private final double kI = 0;
@@ -68,13 +69,18 @@ public class ShooterSubsystem extends SubsystemBase {
     hoodPidController.setI(kI);
     hoodPidController.setD(kD);
 
-    // Initialize flywheel SparkMax
+    // Initialize flywheel SparkMax and encoder PID
     flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
     flywheel.restoreFactoryDefaults();
     //flywheel.setIdleMode(IdleMode.kBrake);
 
     flywheelEncoder = flywheel.getEncoder();
     flywheelEncoder.setPosition(0);
+
+    flywheelPidController = flywheel.getPIDController();
+    flywheelPidController.setP(kP);
+    flywheelPidController.setI(kI);
+    flywheelPidController.setD(kD);
   }
 
   @Override
@@ -84,19 +90,29 @@ public class ShooterSubsystem extends SubsystemBase {
 
   /**
    * Shoots a ball from the flywheel shooter.
+   * 
+   * Currently, this has been co-opted by a PID testing function.
+   * For the turntable and hood, this will toggle the position closed loop between a negative and positive value.
+   * For the flywheel, this will toggle the velocity closed loop between two speeds.
    */
   public void shoot() {
     // TODO: implement this
 
     System.out.println(isOpen);
-    hoodPidController.setReference(isOpen ? 5 : -5, ControlType.kPosition);
+    //hoodPidController.setReference(isOpen ? 5 : -5, ControlType.kPosition);
+    flywheelPidController.setReference(isOpen ? 30 : 60, ControlType.kVelocity);
     //turntable.set(ControlMode.Position, isOpen ? 1000 : -1000);
     isOpen = !isOpen;
   }
 
+  /**
+   * A test function to see if the plugged in motor works (and to spin it for position PID testing).
+   * This will toggle the motor between 50% and 0% output.
+   */
   public void test() {
     System.out.println(isOpen);
-    hood.set(!isOpen ? 0.5 : 0);
+    //hood.set(!isOpen ? 0.5 : 0);
+    flywheel.set(!isOpen ? 0.5 : 0);
     //turntable.set(ControlMode.PercentOutput, !isOpen ? 0.5 : 0);
     isOpen = !isOpen;
   }
