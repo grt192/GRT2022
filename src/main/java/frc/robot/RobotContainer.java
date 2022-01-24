@@ -54,8 +54,6 @@ public class RobotContainer {
 
   public boolean runJetson = true;
 
-  public boolean runJetson = true;
-
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
@@ -101,8 +99,7 @@ public class RobotContainer {
     // Configure the Jetson and run it
     JetsonConnection jetsonObj = new JetsonConnection();
     Runnable jetson = () -> {
-
-      while (runJetson) {
+      while (true) {
         jetsonObj.periodic();
 
         try {
