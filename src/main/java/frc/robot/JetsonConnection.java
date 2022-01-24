@@ -15,7 +15,8 @@ public class JetsonConnection {
 
         // Start camera stream on Shuffleboard
         // TODO if this HttpCamera thing works, make it work for multiple streams 
-        HttpCamera jetsonCamera = new HttpCamera("Jetson Camera - Port 1182", "http://10.1.92.94:1182/?action=stream");
+        // "mjpg:http://%s:%d/?action=stream" % (address, port)
+        HttpCamera jetsonCamera = new HttpCamera("Jetson Camera - Port 1181", "mjpg:http://10.1.92.94:1181/?action=stream");
         CameraServer.startAutomaticCapture(jetsonCamera);
     }
 

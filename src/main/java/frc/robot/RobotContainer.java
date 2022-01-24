@@ -44,11 +44,8 @@ public class RobotContainer {
   // Commands
   private final DriveTankCommand tankCommand;
 
-  public boolean runJetson = true;
-
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
-   * 
    */
   public RobotContainer() {
 
@@ -74,8 +71,7 @@ public class RobotContainer {
     // Configure the Jetson and run it
     JetsonConnection jetsonObj = new JetsonConnection();
     Runnable jetson = () -> {
-
-      while (runJetson) {
+      while (true) {
         jetsonObj.periodic();
 
         try {
