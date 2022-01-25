@@ -1,7 +1,7 @@
 package frc.robot;
 
 public interface ControllableSubsystem {
-  int getTotalCurrentDrawn();
-  int minCurrent();
+  double getTotalCurrentDrawn();
+  double minCurrent();
   void setCurrentLimit(int limit);
 }

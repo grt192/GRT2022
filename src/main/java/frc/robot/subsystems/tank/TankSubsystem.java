@@ -23,11 +23,12 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.PowerController;
 
+import frc.robot.ControllableSubsystem;
+import frc.robot.PowerController;
 import static frc.robot.Constants.TankConstants.*;
 
-public class TankSubsystem extends SubsystemBase {
+public class TankSubsystem extends SubsystemBase implements ControllableSubsystem {
   private final CANSparkMax leftMain;
   private final CANSparkMax leftFollow;
 
@@ -45,16 +46,13 @@ public class TankSubsystem extends SubsystemBase {
   private final NetworkTableEntry shuffleboardYEntry;
   private final Field2d shuffleboardField;
 
-  private int currentLimit;
-  private int minCurrent;
+  // TODO: determine values
+  private int currentLimit = 350;
+  private final double minCurrent = 50.0;
 
-  public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
+  public static final double ENCODER_ROTATIONS_TO_METERS = 5.0 / 92.08;
 
   public TankSubsystem() {
-    currentLimit = 350;
-    minCurrent = 50;
-    //TODO DETERMINE VALUES
-
     // Init left main and follower motors and encoders
     leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
     leftMain.restoreFactoryDefaults();
@@ -220,17 +218,6 @@ public class TankSubsystem extends SubsystemBase {
       rightEncoder.getVelocity());
   }
 
-  public void setCurrentLimit(int limit) {
-    this.currentLimit = limit;
-
-    int motorLimit = currentLimit/4; //number of motors
-    leftMain.setSmartCurrentLimit(motorLimit);
-    leftFollow.setSmartCurrentLimit(motorLimit);
-    rightMain.setSmartCurrentLimit(motorLimit);
-    rightFollow.setSmartCurrentLimit(motorLimit);
-
-  }
-
   /**
    * Reset the robot's position to a given Pose2d.
    * @param position The position to reset the pose estimator to.
@@ -261,13 +248,24 @@ public class TankSubsystem extends SubsystemBase {
     return Math.copySign(value * value, value);
   }
 
-  public int getTotalCurrentDrawn() {
+  @Override
+  public double getTotalCurrentDrawn() {
     return PowerController.getCurrentDrawnFromPDP(fLeftMotorPort, fRightMotorPort, bLeftMotorPort, bRightMotorPort);
   }
 
-  public int minCurrent() {
-
+  @Override
+  public double minCurrent() {
     return minCurrent;
   }
 
+  @Override
+  public void setCurrentLimit(int limit) {
+    this.currentLimit = limit;
+
+    int motorLimit = currentLimit / 4; // Split limit between motors
+    leftMain.setSmartCurrentLimit(motorLimit);
+    leftFollow.setSmartCurrentLimit(motorLimit);
+    rightMain.setSmartCurrentLimit(motorLimit);
+    rightFollow.setSmartCurrentLimit(motorLimit);
+  }
 }

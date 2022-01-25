@@ -1,168 +1,123 @@
 package frc.robot;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
 
 import edu.wpi.first.wpilibj.PowerDistribution;
+
 import frc.robot.subsystems.tank.TankSubsystem;
-import static frc.robot.Constants.TankConstants.*;
 
 public class PowerController {
 
-    private static PowerDistribution PDP = new PowerDistribution();
+  private static PowerDistribution PDP = new PowerDistribution();
 
-    private ControllableSubsystem tankSubsystem;
+  // TODO: find current max value
+  // TODO: Calculate total sustainable current
+  private final double currentCurrentLimit = 350.0;
+  private final double totalSustainableCurrent = 200.0;
 
-//    private ControllableSubsystem climbSubsystem;
+  private ControllableSubsystem[] subsystems;
 
-   // private ControllableSubsystem intakeSubsystem;
+  public PowerController(ControllableSubsystem... subsystems) {
+    this.subsystems = subsystems;
+  }
 
-   // private ControllableSubsystem shooterSubsystem;
+  public void check() {
+    System.out.println("Checking for a brownout...");
 
-    private int currentCurrentLimit;
-
-    private int totalSustainableCurrent;
-
-    //TODO find current max value
-
-
-    private List<ControllableSubsystem> subsystems;
-
-    public PowerController(ControllableSubsystem tankSubsystem) {
-        subsystems = new ArrayList<ControllableSubsystem>();
-
-        subsystems.add(tankSubsystem);
-
-        this.tankSubsystem = tankSubsystem;
-
-        currentCurrentLimit = 350;
-        //should be same as limit in tank subsystem
-
-        //TODO Calculate total sustainable current
-        totalSustainableCurrent = 200;
-
+    // If the PDP is close to a brownout, trigger brownout scaling
+    if (PDP.getVoltage() < 7) {
+      System.out.println("close to brownout!");
+      setBrownoutScaling();
     }
 
-    public void check() {
+    // Sum up total current drawn from all subsystems
+    double totalCurrent = PDP.getTotalCurrent();
+    System.out.println("total current drawn: " + totalCurrent);
 
-        System.out.println("Checking for a brownout...");
-        // Check PDP voltage; if close to a brownout:
-        if (PDP.getVoltage() < 7) {
-            System.out.println("close to brownout!");
-            setBrownoutScaling();
-        }
+    // If current goes over sustainable current, scale subsystems down
+    if (totalCurrent > totalSustainableCurrent) {
+      scale(totalCurrent, new HashSet<>());
+    }
+  }
 
-        // Sum up total current drawn from all subsystems
-        int totalCurrent = (int)PDP.getTotalCurrent();
-        int nonTankCurrent = totalCurrent - getCurrentDrawnFromPDP(fLeftMotorPort,fRightMotorPort,bLeftMotorPort,bRightMotorPort);
-        System.out.println("total current drawn: " + totalCurrent + 
-                            "; non tank current drawn: " + nonTankCurrent);
+  /**
+   * Gets the total current drawn from the PDP by the specified channels.
+   * @param channels The channels to sum.
+   * @return The total current drawn by the provided channels.
+   */
+  public static double getCurrentDrawnFromPDP(int... channels) {
+    double sum = 0;
 
-        //if current goes over sustainable current...
-        // Set scale of the current drawn by TankSubsystem
-        if (totalCurrent > totalSustainableCurrent) {
-
-            scale(totalCurrent, null);
-
-            /* // New scale = current available after other components draw divided by current
-            // drawn by tank
-            tankSubsystem.setCurrentLimit((totalSustainableCurrent - nonTankCurrent));
-            System.out.println("New limit for tank subsystem: " + currentCurrentLimit);
-            */
-        }
-
-      
+    for (int channel : channels) {
+      sum += PDP.getCurrent(channel);
     }
 
-    public static int getCurrentDrawnFromPDP(int... PDPChannel) {
-        int sum = 0;
-        int channels = 0;
-
-        for (int channel : PDPChannel) {
-            sum += PDP.getCurrent(channel);
-            channels++;
-        }
-
-        if ((channels == 16) && (sum != PDP.getTotalCurrent())) {
-            System.out.println("something is wrong, total current does not match");
-        }
-
-        return sum;
+    // Is this necessary?
+    if (channels.length == 16 && (sum != PDP.getTotalCurrent())) {
+      System.out.println("something is wrong, total current does not match");
     }
 
+    return sum;
+  }
 
-    private void setBrownoutScaling() {
+  /**
+   * Scales all subsystems by a set sensible amount to prevent brownout.
+   * Call this as a last resort when the voltage drops to near brownout or if subsystem scaling fails to 
+   * maintain the sustainable current.
+   */
+  private void setBrownoutScaling() {
+    for (ControllableSubsystem subsystem : subsystems) {
+      double currDrawn = subsystem.getTotalCurrentDrawn();
+      int tempscale = (int) (currDrawn * 0.8);
+      subsystem.setCurrentLimit(tempscale);
+    }
+  }
 
-        //scale all subsystems by set (sensible) amount
-        for (ControllableSubsystem subsystem : subsystems) {
-            int currDrawn = subsystem.getTotalCurrentDrawn();
-            int tempscale = currDrawn - (int)(currDrawn*0.2);
-            subsystem.setCurrentLimit(tempscale);
+  /**
+   * Recursively scales down the lowest priority subsystem until the total drawn current falls below the
+   * sustainable threshold.
+   * @param current The current total current.
+   * @param checked A set of already scaled subsystems.
+   */
+  private void scale(double current, HashSet<ControllableSubsystem> checked) {
+    ControllableSubsystem lowestPriority = null;
+    int lowPriority = 10; // This int should be higher than the number of subsystems
 
-        }
-
+    // If we've already scaled many subsystems, just scale more dramatically for everything
+    if (checked.size() > 3) {
+      setBrownoutScaling();
+      return;
     }
 
-    private void scale(int current, ArrayList<ControllableSubsystem> checked) {
-        //scale lowest priority subsystem down to sustainable current from current current
+    for (ControllableSubsystem subsystem : subsystems) {
+      int priority = checkPriority(subsystem);
+      if (priority < lowPriority && !(checked.contains(subsystem))) {
+        lowestPriority = subsystem;
+        lowPriority = priority;
+      }
+    }
 
-        ControllableSubsystem lowestPriority = null;
-        int lowPriority = 10; //this int should be higher than the number of subsystems
-
-        if (checked == null) {
-
-            checked = new ArrayList<ControllableSubsystem>();
-
-        }
-
-        //if we've already scaled many subsystems, 
-        //just scale more dramatically for everything
-        if (checked.size() > 3) {
-            setBrownoutScaling();
-            return;
-        }
-
-        for (ControllableSubsystem subsystem : subsystems) {
-            int priority = checkPriority(subsystem);
-            if ((priority < lowPriority) && !(checked.contains(subsystem))) {
-                lowestPriority = subsystem;
-                lowPriority = priority;
-            }
-
-        }
+    double currDrawn = lowestPriority.getTotalCurrentDrawn();
+    lowestPriority.setCurrentLimit((int) lowestPriority.minCurrent());
     
-        
-        int currDrawn = lowestPriority.getTotalCurrentDrawn();
-        lowestPriority.setCurrentLimit(lowestPriority.minCurrent());
-        
-        if ((current - currDrawn + lowestPriority.minCurrent()) > totalSustainableCurrent) {
-            checked.add(lowestPriority);
-            scale(current - currDrawn + lowestPriority.minCurrent(), checked);
-        }
-        
-
+    if (current - currDrawn + lowestPriority.minCurrent() > totalSustainableCurrent) {
+      checked.add(lowestPriority);
+      scale(current - currDrawn + lowestPriority.minCurrent(), checked);
     }
+  }
 
-    private int checkPriority(Object subsystem) {
-        if (subsystem instanceof TankSubsystem) {
-            return 1;
-        }
-        /*if (subsystem instanceof IntakeSubsystem) {
-            return 2;
-        }
-        if (subsystem instanceof ShooterSubsystem) {
-            return 3;
-        }
-        if (subsystem instanceof ClimbSubsystem) {
-            return 4;
-        }
-        if (subsystem instanceof TankSubsystem) {
-            return 1;
-        }
-        */
-
-        return 0;
-
-    }
+  /**
+   * Returns the priority assigned to a subsystem.
+   * @param subsystem The subsystem to check.
+   * @return An int rescribing the subsystem's priority.
+   */
+  private int checkPriority(ControllableSubsystem subsystem) {
+    if (subsystem instanceof TankSubsystem) return 1;
+    /*
+    if (subsystem instanceof IntakeSubsystem) return 2;
+    if (subsystem instanceof ShooterSubsystem) return 3;
+    if (subsystem instanceof ClimbSubsystem) return 4;
+    */
+    return 0;
+  }
 }
