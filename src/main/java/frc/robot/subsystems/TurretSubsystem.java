@@ -13,7 +13,6 @@ import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -21,7 +20,11 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.jetson.JetsonConnection;
 import static frc.robot.Constants.ShooterConstants.*;
 
-public class ShooterSubsystem extends SubsystemBase {
+/**
+ * A subsystem which controls the turret mechanism on the robot. 
+ * Note that the act of shooting is handled by internals; this subsystem only handles aiming (calculations and shot readiness).
+ */
+public class TurretSubsystem extends SubsystemBase {
   private final WPI_TalonSRX turntable;
 
   private final CANSparkMax hood;
@@ -41,14 +44,12 @@ public class ShooterSubsystem extends SubsystemBase {
 
   private final JetsonConnection jetson;
 
-  private boolean isOpen = false;
-
   private ShuffleboardTab sTab = Shuffleboard.getTab("shooter");
   private NetworkTableEntry targetPower = sTab.add("power", 0.8).getEntry();
   private NetworkTableEntry sPos = sTab.add("pos", 69).getEntry();
   private NetworkTableEntry sVelo = sTab.add("velo", 1337).getEntry();
 
-  public ShooterSubsystem(JetsonConnection connection) {
+  public TurretSubsystem(JetsonConnection connection) {
     // Initialize turntable Talon and encoder PID
     turntable = new WPI_TalonSRX(turntablePort);
     turntable.configFactoryDefault();
@@ -96,21 +97,7 @@ public class ShooterSubsystem extends SubsystemBase {
     flywheelPidController.setReference(flywheelSpeed, ControlType.kVelocity);
 
     double theta = jetson.getDouble("theta");
-
-    // TODO: more conditions and logic
-    if (shotRequested && flywheelReady()) {
-      shoot();
-      shotRequested = false;
-    }
     */
-  }
-
-  /**
-   * Requests that the flywheel shooter shoot a ball.
-   * The ball will be shot when all components are ready.
-   */
-  public void requestShot() {
-    this.shotRequested = true;
   }
 
   /**
@@ -123,31 +110,38 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   /**
-   * Shoots a ball from the flywheel shooter.
-   * 
-   * Currently, this has been co-opted by a PID testing function.
+   * A PID constant testing function.
    * For the turntable and hood, this will toggle the position closed loop between a negative and positive value.
-   * For the flywheel, this will toggle the velocity closed loop between two speeds.
+   * For the flywheel, this will toggle the velocity closed loop between two speeds. Once testing ends, this will 
+   * be made private.
    */
-  public void shoot() {
-    // TODO: implement this
-
-    System.out.println(isOpen);
-    //hoodPidController.setReference(isOpen ? 5 : -5, ControlType.kPosition);
-    flywheelPidController.setReference(isOpen ? 30 : 60, ControlType.kVelocity);
-    //turntable.set(ControlMode.Position, isOpen ? 1000 : -1000);
-    isOpen = !isOpen;
+  public void testPid() {
+    System.out.println(shotRequested);
+    //hoodPidController.setReference(shotRequested ? 5 : -5, ControlType.kPosition);
+    flywheelPidController.setReference(shotRequested ? 30 : 60, ControlType.kVelocity);
+    //turntable.set(ControlMode.Position, shotRequested ? 1000 : -1000);
+    shotRequested = !shotRequested;
   }
 
   /**
    * A test function to see if the plugged in motor works (and to spin it for position PID testing).
    * This will toggle the motor between 50% and 0% output.
    */
-  public void test() {
-    System.out.println(isOpen);
-    //hood.set(!isOpen ? 0.5 : 0);
-    flywheel.set(!isOpen ? 0.5 : 0);
-    //turntable.set(ControlMode.PercentOutput, !isOpen ? 0.5 : 0);
-    isOpen = !isOpen;
+  public void testVel() {
+    System.out.println(shotRequested);
+    //hood.set(!shotRequested ? 0.5 : 0);
+    flywheel.set(!shotRequested ? 0.5 : 0);
+    //turntable.set(ControlMode.PercentOutput, !shotRequested ? 0.5 : 0);
+    shotRequested = !shotRequested;
+  }
+
+  /**
+   * Cleans up the subsystem for climb.
+   * Sets the turntable to face the same direction as the robot, retracts the hood, and turns off the flywheel.
+   */
+  public void climbInit() {
+    turntable.set(ControlMode.Position, 0);
+    hoodPidController.setReference(0, ControlType.kPosition);
+    flywheelSpeed = 0;
   }
 }

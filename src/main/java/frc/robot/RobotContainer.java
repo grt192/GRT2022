@@ -24,7 +24,7 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.brownout.PowerController;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
-import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.TankSubsystem;
 
 /**
@@ -42,7 +42,7 @@ public class RobotContainer {
 
   // Subsystems
   //private final TankSubsystem tankSubsystem;
-  private final ShooterSubsystem shooterSubsystem;
+  private final TurretSubsystem turretSubsystem;
 
   private final PowerController powerController;
   private final JetsonConnection jetson;
@@ -79,7 +79,7 @@ public class RobotContainer {
 
     // Instantiate subsystems
     //tankSubsystem = new TankSubsystem();
-    shooterSubsystem = new ShooterSubsystem(jetson);
+    turretSubsystem = new TurretSubsystem(jetson);
 
     powerController = new PowerController(tankSubsystem);
 
@@ -117,8 +117,8 @@ public class RobotContainer {
   private void controllerBindings() {
     // A button -> zero odometry readings
     // X button -> shoot ball from shooter
-    xboxAButton.whenPressed(new InstantCommand(shooterSubsystem::test));
-    xboxXButton.whenPressed(new InstantCommand(shooterSubsystem::shoot));
+    xboxAButton.whenPressed(new InstantCommand(turretSubsystem::testVel));
+    xboxXButton.whenPressed(new InstantCommand(turretSubsystem::testPid));
 
     Runnable tank = () -> {
       //tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());

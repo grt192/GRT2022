@@ -24,6 +24,9 @@ import frc.robot.brownout.PowerController;
 
 import static frc.robot.Constants.TankConstants.*;
 
+/**
+ * A subsystem which controls the robot's drivetrain. This subsystem handles both driving and odometry.
+ */
 public class TankSubsystem extends GRTSubsystem {
   private final CANSparkMax leftMain;
   private final CANSparkMax leftFollow;
