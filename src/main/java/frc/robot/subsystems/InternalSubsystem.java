@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import com.revrobotics.ColorSensorV3;
@@ -11,18 +12,16 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.util.Color;
 
-import static frc.robot.Constants.InternalConstants.*;
-import frc.robot.jetson.JetsonConnection;
-
 import frc.robot.subsystems.TurretSubsystem;
+import frc.robot.jetson.JetsonConnection;
+import static frc.robot.Constants.InternalConstants.*;
 
 public class InternalSubsystem extends SubsystemBase {
 
   private final TurretSubsystem turretSubsystem;
+  private final JetsonConnection jetson;
 
   private final WPI_TalonSRX motor;
-
-  private final JetsonConnection jetson;
 
   private final ColorSensorV3 sensorTop;
   private final ColorSensorV3 sensorBottom;
@@ -35,30 +34,17 @@ public class InternalSubsystem extends SubsystemBase {
   private final Color RED = new Color(0.561, 0.232, 0.114);
   private final Color BLUE = new Color(0.143, 0.427, 0.429);
 
-  public InternalSubsystem() {
-
-    jetson = new JetsonConnection();
-
-    turretSubsystem = new TurretSubsystem(jetson);
+  public InternalSubsystem(TurretSubsystem turretSubsystem, JetsonConnection jetson) {
+    this.turretSubsystem = turretSubsystem;
+    this.jetson = jetson;
 
     motor = new WPI_TalonSRX(motorPort);
+    motor.configFactoryDefault();
+    motor.setNeutralMode(NeutralMode.Brake);
 
-    /**
-     * A Rev Color Sensor V3 object is constructed with an I2C port as a
-     * parameter. The device will be automatically initialized with default
-     * parameters.
-     */
     sensorTop = new ColorSensorV3(I2C.Port.kOnboard);
     sensorBottom = new ColorSensorV3(I2C.Port.kOnboard);
 
-    /**
-     * A Rev Color Match object is used to register and detect known colors. This
-     * can
-     * be calibrated ahead of time or during operation.
-     * 
-     * This object uses a simple euclidian distance to estimate the closest match
-     * with given confidence range.
-     */
     colorMatcher = new ColorMatch();
     shotRequested = false;
   }
@@ -67,9 +53,17 @@ public class InternalSubsystem extends SubsystemBase {
   public void periodic() {
     controlFeed();
 
-    if (turretSubsystem.flywheelReady() && shotRequested && turretSubsystem.turntableAligned()){ 
-      //TODO launch ball into turret
+    if (shotRequested && turretSubsystem.flywheelReady() && turretSubsystem.turntableAligned()) { 
+      // TODO launch ball into turret
     }
+  }
+
+  /**
+   * Request that a ball be loaded and shot.
+   * The ball will *actually* be shot when the turret is aimed and ready.
+   */
+  public void requestShot() {
+    this.shotRequested = true;
   }
 
   public boolean isRed(ColorSensorV3 s) {
@@ -92,9 +86,5 @@ public class InternalSubsystem extends SubsystemBase {
     } else if (isBlue(sensorBottom) || isRed(sensorBottom)) {
       motor.set(ControlMode.PercentOutput, .5);
     }
-  }
-
-  public void requestShot() {
-    this.shotRequested = true;
   }
 }
