@@ -13,8 +13,7 @@ import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 import edu.wpi.first.math.trajectory.constraint.DifferentialDriveVoltageConstraint;
 import edu.wpi.first.wpilibj2.command.RamseteCommand;
-
-import frc.robot.subsystems.tank.TankSubsystem;
+import frc.robot.subsystems.TankSubsystem;
 
 /**
  * A command to drive the robot from some start to end point, passing through given waypoints

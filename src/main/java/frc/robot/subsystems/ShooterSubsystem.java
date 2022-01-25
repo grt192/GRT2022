@@ -1,4 +1,4 @@
-package frc.robot.subsystems.shooter;
+package frc.robot.subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import frc.robot.jetson.JetsonConnection;
 import static frc.robot.Constants.ShooterConstants.*;
 
 public class ShooterSubsystem extends SubsystemBase {
@@ -35,16 +36,19 @@ public class ShooterSubsystem extends SubsystemBase {
   private final double kI = 0;
   private final double kD = 0;
 
+  private double flywheelSpeed = 30;
+  private boolean shotRequested = false;
+
+  private final JetsonConnection jetson;
+
   private boolean isOpen = false;
-  private double lastUpdate = 0;
-  private double lastPos = 0;
 
   private ShuffleboardTab sTab = Shuffleboard.getTab("shooter");
   private NetworkTableEntry targetPower = sTab.add("power", 0.8).getEntry();
   private NetworkTableEntry sPos = sTab.add("pos", 69).getEntry();
   private NetworkTableEntry sVelo = sTab.add("velo", 1337).getEntry();
 
-  public ShooterSubsystem() {
+  public ShooterSubsystem(JetsonConnection connection) {
     // Initialize turntable Talon and encoder PID
     turntable = new WPI_TalonSRX(turntablePort);
     turntable.configFactoryDefault();
@@ -81,11 +85,41 @@ public class ShooterSubsystem extends SubsystemBase {
     flywheelPidController.setP(kP);
     flywheelPidController.setI(kI);
     flywheelPidController.setD(kD);
+
+    this.jetson = connection;
   }
 
   @Override
   public void periodic() {
     // TODO: implement vision tracking and turntable
+    /*
+    flywheelPidController.setReference(flywheelSpeed, ControlType.kVelocity);
+
+    double theta = jetson.getDouble("theta");
+
+    // TODO: more conditions and logic
+    if (shotRequested && flywheelReady()) {
+      shoot();
+      shotRequested = false;
+    }
+    */
+  }
+
+  /**
+   * Requests that the flywheel shooter shoot a ball.
+   * The ball will be shot when all components are ready.
+   */
+  public void requestShot() {
+    this.shotRequested = true;
+  }
+
+  /**
+   * Checks whether the flywheel is ready to shoot.
+   * @return Whether the flywheel is up to speed.
+   */
+  public boolean flywheelReady() {
+    // TODO: implement thresholding?
+    return flywheelEncoder.getVelocity() >= flywheelSpeed;
   }
 
   /**

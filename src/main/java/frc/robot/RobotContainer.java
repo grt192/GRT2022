@@ -20,10 +20,12 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+
 import frc.robot.brownout.PowerController;
 import frc.robot.commands.tank.FollowPathCommand;
-import frc.robot.subsystems.shooter.ShooterSubsystem;
-import frc.robot.subsystems.tank.TankSubsystem;
+import frc.robot.jetson.JetsonConnection;
+import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.TankSubsystem;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -39,10 +41,11 @@ public class RobotContainer {
   //private Properties config;
 
   // Subsystems
-  private final TankSubsystem tankSubsystem;
+  //private final TankSubsystem tankSubsystem;
   private final ShooterSubsystem shooterSubsystem;
 
   private final PowerController powerController;
+  private final JetsonConnection jetson;
 
   // Controllers
   private final XboxController controlXbox = new XboxController(0);
@@ -50,7 +53,7 @@ public class RobotContainer {
   private final JoystickButton xboxXButton = new JoystickButton(controlXbox, XboxController.Button.kX.value);
 
   // Commands
-  private final Command tankCommand;
+  private final Command tankCommand = new InstantCommand();
 
   public boolean runJetson = true;
 
@@ -71,14 +74,18 @@ public class RobotContainer {
     }
     */
 
+    // Instantiate the Jetson connection
+    jetson = new JetsonConnection();
+
     // Instantiate subsystems
-    tankSubsystem = new TankSubsystem();
-    shooterSubsystem = new ShooterSubsystem();
+    //tankSubsystem = new TankSubsystem();
+    shooterSubsystem = new ShooterSubsystem(jetson);
 
     powerController = new PowerController(tankSubsystem);
 
     // Instantiate commands
     // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
+    /*
     tankCommand = new FollowPathCommand(
       tankSubsystem, 
       new Pose2d(), 
@@ -95,23 +102,6 @@ public class RobotContainer {
 
     // Configure the button bindings
     configureButtonBindings();
-
-    // Configure the Jetson and run it
-    JetsonConnection jetsonObj = new JetsonConnection();
-    Runnable jetson = () -> {
-      while (true) {
-        jetsonObj.periodic();
-
-        try {
-          Thread.sleep(1000);
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
-      }
-    };
-
-    Thread jetsonThread = new Thread(jetson);
-    jetsonThread.start();
   }
 
   /**
@@ -127,13 +117,13 @@ public class RobotContainer {
   private void controllerBindings() {
     // A button -> zero odometry readings
     // X button -> shoot ball from shooter
-    xboxAButton.whenPressed(new InstantCommand(tankSubsystem::resetPosition));
+    xboxAButton.whenPressed(new InstantCommand(shooterSubsystem::test));
     xboxXButton.whenPressed(new InstantCommand(shooterSubsystem::shoot));
 
     Runnable tank = () -> {
-      tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
+      //tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
     };
-    tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
+    //tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }
 
   /**
