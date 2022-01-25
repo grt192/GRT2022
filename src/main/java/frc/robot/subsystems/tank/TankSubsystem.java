@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.PowerController;
 
 import static frc.robot.Constants.TankConstants.*;
 
@@ -45,12 +46,14 @@ public class TankSubsystem extends SubsystemBase {
   private final Field2d shuffleboardField;
 
   private int currentLimit;
+  private int minCurrent;
 
   public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
 
   public TankSubsystem() {
     currentLimit = 350;
-    //TODO DETERMINE VALUE
+    minCurrent = 50;
+    //TODO DETERMINE VALUES
 
     // Init left main and follower motors and encoders
     leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
@@ -220,10 +223,11 @@ public class TankSubsystem extends SubsystemBase {
   public void setCurrentLimit(int limit) {
     this.currentLimit = limit;
 
-    leftMain.setSmartCurrentLimit(currentLimit);
-    leftFollow.setSmartCurrentLimit(currentLimit);
-    rightMain.setSmartCurrentLimit(currentLimit);
-    rightFollow.setSmartCurrentLimit(currentLimit);
+    int motorLimit = currentLimit/4; //number of motors
+    leftMain.setSmartCurrentLimit(motorLimit);
+    leftFollow.setSmartCurrentLimit(motorLimit);
+    rightMain.setSmartCurrentLimit(motorLimit);
+    rightFollow.setSmartCurrentLimit(motorLimit);
 
   }
 
@@ -256,4 +260,14 @@ public class TankSubsystem extends SubsystemBase {
   private double squareInput(double value) {
     return Math.copySign(value * value, value);
   }
+
+  public int getTotalCurrentDrawn() {
+    return PowerController.getCurrentDrawnFromPDP(fLeftMotorPort, fRightMotorPort, bLeftMotorPort, bRightMotorPort);
+  }
+
+  public int minCurrent() {
+
+    return minCurrent;
+  }
+
 }

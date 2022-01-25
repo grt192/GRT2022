@@ -1,6 +1,7 @@
 package frc.robot;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import edu.wpi.first.wpilibj.PowerDistribution;
@@ -11,20 +12,25 @@ public class PowerController {
 
     private static PowerDistribution PDP = new PowerDistribution();
 
-    private TankSubsystem tankSubsystem;
+    private ControllableSubsystem tankSubsystem;
 
-//    private ClimbSubsystem climbSubsystem;
+//    private ControllableSubsystem climbSubsystem;
 
-   // private IntakeSubsystem intakeSubsystem;
+   // private ControllableSubsystem intakeSubsystem;
 
-   // private shooterSubsystem shooterSubsystem;
+   // private ControllableSubsystem shooterSubsystem;
 
     private int currentCurrentLimit;
 
-    private List<Object> subsystems;
+    private int totalSustainableCurrent;
 
-    public PowerController(TankSubsystem tankSubsystem) {
-        subsystems = new ArrayList<Object>();
+    //TODO find current max value
+
+
+    private List<ControllableSubsystem> subsystems;
+
+    public PowerController(ControllableSubsystem tankSubsystem) {
+        subsystems = new ArrayList<ControllableSubsystem>();
 
         subsystems.add(tankSubsystem);
 
@@ -32,6 +38,9 @@ public class PowerController {
 
         currentCurrentLimit = 350;
         //should be same as limit in tank subsystem
+
+        //TODO Calculate total sustainable current
+        totalSustainableCurrent = 200;
 
     }
 
@@ -44,37 +53,30 @@ public class PowerController {
             setBrownoutScaling();
         }
 
-        //TODO Calculate total sustainable current
-        double totalSustainableCurrent = 200;
-
         // Sum up total current drawn from all subsystems
-        double totalCurrent = 0;
-        double nonTankCurrent = 0;
-
-
-        totalCurrent = PDP.getTotalCurrent();
-        nonTankCurrent = totalCurrent - getCurrentDrawnFromPDP(fLeftMotorPort,fRightMotorPort,bLeftMotorPort,bRightMotorPort);
-        System.out.println("total current drawn: " + totalCurrent + "; non tank current drawn: " + nonTankCurrent);
-
+        int totalCurrent = (int)PDP.getTotalCurrent();
+        int nonTankCurrent = totalCurrent - getCurrentDrawnFromPDP(fLeftMotorPort,fRightMotorPort,bLeftMotorPort,bRightMotorPort);
+        System.out.println("total current drawn: " + totalCurrent + 
+                            "; non tank current drawn: " + nonTankCurrent);
 
         //if current goes over sustainable current...
         // Set scale of the current drawn by TankSubsystem
         if (totalCurrent > totalSustainableCurrent) {
 
-            //see if a subsystem is drawing more than its current limit of power
-            //subsystem.getMinCurrentRequired
+            scale(totalCurrent, null);
 
-            // New scale = current available after other components draw divided by current
+            /* // New scale = current available after other components draw divided by current
             // drawn by tank
-            tankSubsystem.setCurrentLimit((int)(totalSustainableCurrent - nonTankCurrent));
+            tankSubsystem.setCurrentLimit((totalSustainableCurrent - nonTankCurrent));
             System.out.println("New limit for tank subsystem: " + currentCurrentLimit);
+            */
         }
 
       
     }
 
-    public static double getCurrentDrawnFromPDP(int... PDPChannel) {
-        double sum = 0;
+    public static int getCurrentDrawnFromPDP(int... PDPChannel) {
+        int sum = 0;
         int channels = 0;
 
         for (int channel : PDPChannel) {
@@ -89,9 +91,78 @@ public class PowerController {
         return sum;
     }
 
+
     private void setBrownoutScaling() {
 
         //scale all subsystems by set (sensible) amount
+        for (ControllableSubsystem subsystem : subsystems) {
+            int currDrawn = subsystem.getTotalCurrentDrawn();
+            int tempscale = currDrawn - (int)(currDrawn*0.2);
+            subsystem.setCurrentLimit(tempscale);
+
+        }
+
+    }
+
+    private void scale(int current, ArrayList<ControllableSubsystem> checked) {
+        //scale lowest priority subsystem down to sustainable current from current current
+
+        ControllableSubsystem lowestPriority = null;
+        int lowPriority = 10; //this int should be higher than the number of subsystems
+
+        if (checked == null) {
+
+            checked = new ArrayList<ControllableSubsystem>();
+
+        }
+
+        //if we've already scaled many subsystems, 
+        //just scale more dramatically for everything
+        if (checked.size() > 3) {
+            setBrownoutScaling();
+            return;
+        }
+
+        for (ControllableSubsystem subsystem : subsystems) {
+            int priority = checkPriority(subsystem);
+            if ((priority < lowPriority) && !(checked.contains(subsystem))) {
+                lowestPriority = subsystem;
+                lowPriority = priority;
+            }
+
+        }
+    
+        
+        int currDrawn = lowestPriority.getTotalCurrentDrawn();
+        lowestPriority.setCurrentLimit(lowestPriority.minCurrent());
+        
+        if ((current - currDrawn + lowestPriority.minCurrent()) > totalSustainableCurrent) {
+            checked.add(lowestPriority);
+            scale(current - currDrawn + lowestPriority.minCurrent(), checked);
+        }
+        
+
+    }
+
+    private int checkPriority(Object subsystem) {
+        if (subsystem instanceof TankSubsystem) {
+            return 1;
+        }
+        /*if (subsystem instanceof IntakeSubsystem) {
+            return 2;
+        }
+        if (subsystem instanceof ShooterSubsystem) {
+            return 3;
+        }
+        if (subsystem instanceof ClimbSubsystem) {
+            return 4;
+        }
+        if (subsystem instanceof TankSubsystem) {
+            return 1;
+        }
+        */
+
+        return 0;
 
     }
 }
