@@ -27,25 +27,18 @@ public class InternalSubsystem extends SubsystemBase {
   private final ColorSensorV3 sensorTop;
   private final ColorSensorV3 sensorBottom;
 
-  // Change the I2C port below to match the connection of your color sensor
-  private I2C.Port i2cPortTop = I2C.Port.kOnboard;
-  private I2C.Port i2cPortBottom = I2C.Port.kOnboard;
-
   private final ColorMatch colorMatcher;
-
-  // will replace color values after testing
-  private final Color BlueTarget = new Color(0.143, 0.427, 0.429);
-  private final Color RedTarget = new Color(0.561, 0.232, 0.114);
-
-  private final String color;
   
-  private final boolean shotRequested;
+  private boolean shotRequested;
+
+  private final Color RED = new Color(0.561, 0.232, 0.114);
+  private final Color BLUE = new Color(0.143, 0.427, 0.429);
 
   public InternalSubsystem() {
 
     jetson = new JetsonConnection();
 
-    TurretSubsystem turretSubsystem = new TurretSubsystem(jetson);
+    turretSubsystem = new TurretSubsystem(jetson);
 
     motor = new WPI_TalonSRX(motorPort);
 
@@ -54,8 +47,8 @@ public class InternalSubsystem extends SubsystemBase {
      * parameter. The device will be automatically initialized with default
      * parameters.
      */
-    sensorTop = new ColorSensorV3(i2cPortTop);
-    sensorBottom = new ColorSensorV3(i2cPortBottom);
+    sensorTop = new ColorSensorV3(I2C.Port.kOnboard);
+    sensorBottom = new ColorSensorV3(I2C.Port.kOnboard);
 
     /**
      * A Rev Color Match object is used to register and detect known colors. This
@@ -73,31 +66,30 @@ public class InternalSubsystem extends SubsystemBase {
   public void periodic() {
     controlFeed();
 
-    if (turretSubsystem.flywheelReady() && shotRequested){ 
-      // also add turntable aligned condition
+    if (turretSubsystem.flywheelReady() && shotRequested && turretSubsystem.turntableAligned()){ 
       //TODO launch ball into turret
     }
   }
 
   public boolean isRed(ColorSensorV3 s) {
-    Color detectedColor = s.getColor();
-    ColorMatchResult match = colorMatcher.matchClosestColor(detectedColor);
-    return match.color == RedTarget;
+    return getColor(s).equals(RED);
   }
 
   public boolean isBlue(ColorSensorV3 s) {
+    return getColor(s).equals(BLUE);
+  }
+
+  public Color getColor(ColorSensorV3 s) {
     Color detectedColor = s.getColor();
     ColorMatchResult match = colorMatcher.matchClosestColor(detectedColor);
-    return match.color == BlueTarget;
+    return match.color;
   }
 
   public void controlFeed() {
     if (isRed(sensorTop) || isBlue(sensorTop)) {
       motor.set(ControlMode.PercentOutput, 0);
     } else if (isBlue(sensorBottom) || isRed(sensorBottom)) {
-      while (isBlue(sensorBottom) || isRed(sensorBottom)) {
-        motor.set(ControlMode.PercentOutput, .5);
-      }
+      motor.set(ControlMode.PercentOutput, .5);
     }
   }
 

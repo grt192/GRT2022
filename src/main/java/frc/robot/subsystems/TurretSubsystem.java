@@ -40,7 +40,10 @@ public class TurretSubsystem extends SubsystemBase {
   private final double kD = 0;
 
   private double flywheelSpeed = 30;
-  private boolean shotRequested = false;
+  private double turntablePosition = 0;
+
+  // Temp boolean for testing
+  private boolean on = false;
 
   private final JetsonConnection jetson;
 
@@ -94,9 +97,11 @@ public class TurretSubsystem extends SubsystemBase {
   public void periodic() {
     // TODO: implement vision tracking and turntable
     /*
-    flywheelPidController.setReference(flywheelSpeed, ControlType.kVelocity);
-
     double theta = jetson.getDouble("theta");
+    turntablePosition = theta;
+
+    flywheelPidController.setReference(flywheelSpeed, ControlType.kVelocity);
+    turntable.set(ControlMode.Position, turntablePosition);
     */
   }
 
@@ -110,17 +115,26 @@ public class TurretSubsystem extends SubsystemBase {
   }
 
   /**
+   * Checks whether the turntable is aligned to the hub.
+   * @return Whether the turntable is aligned and ready to shoot.
+   */
+  public boolean turntableAligned() {
+    // TODO: test and get better thresholding value
+    return Math.abs(turntable.getSelectedSensorPosition() - turntablePosition) > 10;
+  }
+
+  /**
    * A PID constant testing function.
    * For the turntable and hood, this will toggle the position closed loop between a negative and positive value.
    * For the flywheel, this will toggle the velocity closed loop between two speeds. Once testing ends, this will 
    * be made private.
    */
   public void testPid() {
-    System.out.println(shotRequested);
-    //hoodPidController.setReference(shotRequested ? 5 : -5, ControlType.kPosition);
-    flywheelPidController.setReference(shotRequested ? 30 : 60, ControlType.kVelocity);
-    //turntable.set(ControlMode.Position, shotRequested ? 1000 : -1000);
-    shotRequested = !shotRequested;
+    System.out.println(on);
+    //hoodPidController.setReference(on ? 5 : -5, ControlType.kPosition);
+    flywheelPidController.setReference(on ? 30 : 60, ControlType.kVelocity);
+    //turntable.set(ControlMode.Position, on ? 1000 : -1000);
+    on = !on;
   }
 
   /**
@@ -128,11 +142,11 @@ public class TurretSubsystem extends SubsystemBase {
    * This will toggle the motor between 50% and 0% output.
    */
   public void testVel() {
-    System.out.println(shotRequested);
-    //hood.set(!shotRequested ? 0.5 : 0);
-    flywheel.set(!shotRequested ? 0.5 : 0);
-    //turntable.set(ControlMode.PercentOutput, !shotRequested ? 0.5 : 0);
-    shotRequested = !shotRequested;
+    System.out.println(on);
+    //hood.set(!on ? 0.5 : 0);
+    flywheel.set(!on ? 0.5 : 0);
+    //turntable.set(ControlMode.PercentOutput, !on ? 0.5 : 0);
+    on = !on;
   }
 
   /**
