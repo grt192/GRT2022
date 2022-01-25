@@ -31,6 +31,7 @@ public class InternalSubsystem extends SubsystemBase {
   
   private boolean shotRequested;
 
+  // will replace color values after testing
   private final Color RED = new Color(0.561, 0.232, 0.114);
   private final Color BLUE = new Color(0.143, 0.427, 0.429);
 
