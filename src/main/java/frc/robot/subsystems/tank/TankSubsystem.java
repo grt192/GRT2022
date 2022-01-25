@@ -44,9 +44,14 @@ public class TankSubsystem extends SubsystemBase {
   private final NetworkTableEntry shuffleboardYEntry;
   private final Field2d shuffleboardField;
 
+  private int currentLimit;
+
   public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
 
   public TankSubsystem() {
+    currentLimit = 350;
+    //TODO DETERMINE VALUE
+
     // Init left main and follower motors and encoders
     leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
     leftMain.restoreFactoryDefaults();
@@ -210,6 +215,16 @@ public class TankSubsystem extends SubsystemBase {
     return new DifferentialDriveWheelSpeeds(
       leftEncoder.getVelocity(), 
       rightEncoder.getVelocity());
+  }
+
+  public void setCurrentLimit(int limit) {
+    this.currentLimit = limit;
+
+    leftMain.setSmartCurrentLimit(currentLimit);
+    leftFollow.setSmartCurrentLimit(currentLimit);
+    rightMain.setSmartCurrentLimit(currentLimit);
+    rightFollow.setSmartCurrentLimit(currentLimit);
+
   }
 
   /**
