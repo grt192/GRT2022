@@ -52,6 +52,14 @@ public class JetsonConnection {
     return getDouble("distance");
   }
 
+  /**
+   * Gets whether a ball is in range of the intake camera.
+   * @return Whether a ball is in intake range.
+   */
+  public boolean ballDetected() {
+    return getBoolean("ball-detected");
+  }
+
   public boolean hasKey(String key) {
     return table.getEntry(key).exists();
   }
@@ -61,11 +69,14 @@ public class JetsonConnection {
   }
 
   public double getDouble(String key) {
-    System.out.println("/" + TABLE_NAME + "/" + key + " = " + table.getEntry(key).getDouble(0));
     return table.getEntry(key).getDouble(0);
   }
 
   public double[] getDoubleArray(String key) {
     return table.getEntry(key).getDoubleArray(new double[0]);
+  }
+
+  public boolean getBoolean(String key) {
+    return table.getEntry(key).getBoolean(false);
   }
 }

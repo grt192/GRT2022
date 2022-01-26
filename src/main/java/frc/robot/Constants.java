@@ -38,6 +38,11 @@ public final class Constants {
         public static final int tenMotorPort = 1;
     }
 
+    public static final class IntakeConstants {
+        public static final int intakePort = 0;
+        public static final int deploymentPort = 1;
+    }
+
     public static final class JetsonConstants {
         public static final int jetsonCameraPort = 1337;
         public static final String jetsonAddress = "10.1.92.14";
