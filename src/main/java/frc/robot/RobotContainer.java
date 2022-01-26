@@ -39,127 +39,112 @@ import frc.robot.subsystems.TankSubsystem;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-  // Path of config file, relative to the deploy folder
-  private static final String CONFIG_PATH = "config.txt";
-  // config file
-  //private Properties config;
+    // Path of config file, relative to the deploy folder
+    private static final String CONFIG_PATH = "config.txt";
+    // config file
+    //private Properties config;
 
-  // Subsystems
-  //private final TankSubsystem tankSubsystem;
-  private final TurretSubsystem turretSubsystem;
-  private final InternalSubsystem internalSubsystem;
+    // Subsystems
+    //private final TankSubsystem tankSubsystem;
+    private final TurretSubsystem turretSubsystem;
+    private final InternalSubsystem internalSubsystem;
 
-  private final PowerController powerController;
-  private final JetsonConnection jetson;
+    private final JetsonConnection jetson;
+    private final PowerController powerController;
 
-  // Controllers
-  private final XboxController controlXbox = new XboxController(0);
-  private final JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
-  private final JoystickButton xboxXButton = new JoystickButton(controlXbox, XboxController.Button.kX.value);
+    // Controllers
+    private final XboxController controlXbox = new XboxController(0);
+    private final JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
+    private final JoystickButton xboxXButton = new JoystickButton(controlXbox, XboxController.Button.kX.value);
 
-  // Joysticks
-  private Joystick joystickLeft = new Joystick(1);
-  private Joystick joystickRight = new Joystick(2);
+    // Commands
+    private final Command tankCommand = new InstantCommand();
 
-  // Commands
-  private final Command tankCommand = new InstantCommand();
+    /**
+     * The container for the robot. Contains subsystems, OI devices, and commands.
+     */
+    public RobotContainer() {
 
-  public boolean runJetson = true;
+        // Load the config file
+        /*
+        this.config = new Properties();
 
-  /**
-   * The container for the robot. Contains subsystems, OI devices, and commands.
-   * 
-   */
-  public RobotContainer() {
-    // Load the config file
-    /*
-    this.config = new Properties();
+        try {
+            FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
+            config.load(stream);
+        } catch (IOException ie) {
+            System.out.println("Config file not found");
+        }
+        */
 
-    try {
-      FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
-      config.load(stream);
-    } catch (IOException ie) {
-      System.out.println("Config file not found");
+        // Instantiate the Jetson connection
+        jetson = new JetsonConnection();
+
+        // Instantiate subsystems
+        //tankSubsystem = new TankSubsystem();
+        turretSubsystem = new TurretSubsystem(jetson);
+        internalSubsystem = new InternalSubsystem(turretSubsystem);
+
+        // Instantiate power controller
+        powerController = new PowerController();
+
+        // Instantiate commands
+        // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
+        /*
+        tankCommand = new FollowPathCommand(
+            tankSubsystem, 
+            new Pose2d(), 
+            List.of(
+                new Translation2d(1, 1), 
+                new Translation2d(2, -1)
+            ), 
+            new Pose2d(3, 0, new Rotation2d())
+        );
+        /*
+        new FollowPathCommand(tankSubsystem, new Pose2d(), List.of(), new Pose2d(3, 0, new Rotation2d()))
+            .andThen(new InstantCommand(() -> tankSubsystem.setTankDriveVoltages(0, 0)));
+        */
+
+        // Configure the button bindings
+        configureButtonBindings();
     }
-    */
 
-    // Instantiate the Jetson connection
-    jetson = new JetsonConnection();
-
-    // Load the config file
-    this.config = new Properties();
-
-    try {
-      FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
-      config.load(stream);
-    } catch (IOException ie) {
-      System.out.println("config file not found");
+    /**
+     * Use this method to define your button->command mappings. Buttons can be
+     * created by instantiating a {@link GenericHID} or one of its subclasses
+     * ({@link edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then
+     * passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
+     */
+    private void configureButtonBindings() {
+        controllerBindings();
     }
 
-    // Instantiate subsystems
-    //tankSubsystem = new TankSubsystem();
-    turretSubsystem = new TurretSubsystem(jetson);
-    internalSubsystem = new InternalSubsystem(turretSubsystem);
+    private void controllerBindings() {
+        // A button -> zero odometry readings
+        // X button -> shoot ball from shooter
+        xboxAButton.whenPressed(new InstantCommand(turretSubsystem::testVel));
+        xboxXButton.whenPressed(new InstantCommand(turretSubsystem::testPid));
 
-    powerController = new PowerController(tankSubsystem);
+        Runnable tank = () -> {
+            //tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
+        };
+        //tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
+    }
 
-    // Instantiate commands
-    // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
-    /*
-    tankCommand = new FollowPathCommand(
-      tankSubsystem, 
-      new Pose2d(), 
-      List.of(
-        new Translation2d(1, 1), 
-        new Translation2d(2, -1)
-      ), 
-      new Pose2d(3, 0, new Rotation2d())
-    );
-    /*
-    new FollowPathCommand(tankSubsystem, new Pose2d(), List.of(), new Pose2d(3, 0, new Rotation2d()))
-      .andThen(new InstantCommand(() -> tankSubsystem.setTankDriveVoltages(0, 0)));
-    */
+    /**
+     * Use this to pass the autonomous command to the main {@link Robot} class.
+     *
+     * @return the command to run in autonomous
+     */
+    public Command getAutonomousCommand() {
+        return tankCommand;
+    }
 
-    // Configure the button bindings
-    configureButtonBindings();
-  }
-
-  /**
-   * Use this method to define your button->command mappings. Buttons can be
-   * created by instantiating a {@link GenericHID} or one of its subclasses
-   * ({@link edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then
-   * passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-   */
-  private void configureButtonBindings() {
-    controllerBindings();
-  }
-
-  private void controllerBindings() {
-    // A button -> zero odometry readings
-    // X button -> shoot ball from shooter
-    xboxAButton.whenPressed(new InstantCommand(turretSubsystem::testVel));
-    xboxXButton.whenPressed(new InstantCommand(turretSubsystem::testPid));
-
-    Runnable tank = () -> {
-      //tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
-    };
-    //tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
-  }
-
-  /**
-   * Use this to pass the autonomous command to the main {@link Robot} class.
-   *
-   * @return the command to run in autonomous
-   */
-  public Command getAutonomousCommand() {
-    return tankCommand;
-  }
-
-  /**
-   * Gets the PowerController instance.
-   * @return The PowerController instance.
-   */
-  public PowerController getPowerController() {
-    return powerController;
-  }
+    /**
+     * Gets the PowerController instance.
+     * @return The PowerController instance.
+     */
+    public PowerController getPowerController() {
+        return powerController;
+    }
 }
