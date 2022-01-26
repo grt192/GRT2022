@@ -12,9 +12,11 @@ public class ClimbSubsystem extends SubsystemBase {
     private final CANSparkMax ten;
 
     public ClimbSubsystem() {
+        // Initialize six point arm motor
         six = new CANSparkMax(sixMotorPort, MotorType.kBrushless);
         six.restoreFactoryDefaults();
 
+        // Initialize ten point arm motor
         ten = new CANSparkMax(tenMotorPort, MotorType.kBrushless);
         ten.restoreFactoryDefaults();
     }

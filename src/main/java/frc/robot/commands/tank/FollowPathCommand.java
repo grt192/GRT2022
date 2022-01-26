@@ -17,14 +17,13 @@ import edu.wpi.first.wpilibj2.command.RamseteCommand;
 import frc.robot.subsystems.TankSubsystem;
 
 /**
- * A command to drive the robot from some start to end point, passing through given waypoints
- * in the path. Start and end are represented as `Pose2d`s while waypoints are given as a List of
- * `Translation2d`. All units are given in meters.
+ * A command to drive the robot from some start to end point, passing through given waypoints in the path. 
+ * The trajectory can be given outright, or can be generated from a start and end position given as a `Pose2d` 
+ * and waypoints given as a List of `Translation2d`. All units are in meters.
  * 
  * https://docs.wpilib.org/en/stable/docs/software/examples-tutorials/trajectory-tutorial/trajectory-tutorial-overview.html
  */
 public class FollowPathCommand extends RamseteCommand {
-
     // Robot constants
     private static final double TRACK_WIDTH = 0.7805022504396351;
     private static final DifferentialDriveKinematics KINEMATICS = 

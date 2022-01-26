@@ -24,9 +24,11 @@ public class IntakeSubsystem extends SubsystemBase {
     public IntakeSubsystem(JetsonConnection jetson) {
         this.jetson = jetson;
 
+        // Initialize the intake (roller) motor
         intake = new CANSparkMax(intakePort, MotorType.kBrushless);
         intake.restoreFactoryDefaults();
 
+        // Initialize the deploy (intake position) motor
         deploy = new WPI_TalonSRX(deploymentPort);
         deploy.configFactoryDefault();
         deploy.setNeutralMode(NeutralMode.Brake);
