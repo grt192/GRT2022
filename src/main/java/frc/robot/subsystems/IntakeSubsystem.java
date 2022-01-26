@@ -3,11 +3,13 @@ package frc.robot.subsystems;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import frc.robot.commands.intake.IntakePosition;
 import frc.robot.jetson.JetsonConnection;
 import static frc.robot.Constants.IntakeConstants.*;
 
@@ -17,7 +19,7 @@ public class IntakeSubsystem extends SubsystemBase {
   private final CANSparkMax intake;
   private final WPI_TalonSRX deploy;
 
-  private boolean isDeployed = true;
+  private IntakePosition currentPosition;
 
   public IntakeSubsystem(JetsonConnection jetson) {
     this.jetson = jetson;
@@ -32,15 +34,16 @@ public class IntakeSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    intake.set(jetson.ballDetected() ? 0.5 : 0);
+    // If the jetson detects a ball and the intake is deployed, run the motors
+    intake.set(jetson.ballDetected() && currentPosition == IntakePosition.DEPLOYED ? 0.5 : 0);
   }
 
   /**
-   * Toggle whether the intake is deployed.
+   * Sets the position of the intake mechanism.
+   * @param position The position to set the intake to.
    */
-  public void toggle() {
-    isDeployed = !isDeployed;
-    // TODO: measure this position
-    deploy.set(ControlMode.Position, isDeployed ? 5 : 0);
+  public void setPosition(IntakePosition position) {
+    currentPosition = position;
+    deploy.set(ControlMode.Position, position.value);
   }
 }
