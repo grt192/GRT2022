@@ -8,7 +8,7 @@ import frc.robot.subsystems.tank.TankSubsystem;
 
 public class PowerController {
 
-  private static PowerDistribution PDP = new PowerDistribution();
+  private static PowerDistribution PDH = new PowerDistribution();
 
   // TODO: find current max value
   // TODO: Calculate total sustainable current
@@ -24,14 +24,14 @@ public class PowerController {
   public void check() {
     System.out.println("Checking for a brownout...");
 
-    // If the PDP is close to a brownout, trigger brownout scaling
-    if (PDP.getVoltage() < 7) {
+    // If the PDH is close to a brownout, trigger brownout scaling
+    if (PDH.getVoltage() < 7.0) {
       System.out.println("close to brownout!");
       setBrownoutScaling();
     }
 
     // Sum up total current drawn from all subsystems
-    double totalCurrent = PDP.getTotalCurrent();
+    double totalCurrent = PDH.getTotalCurrent();
     System.out.println("total current drawn: " + totalCurrent);
 
     // If current goes over sustainable current, scale subsystems down
@@ -41,7 +41,7 @@ public class PowerController {
   }
 
   /**
-   * Gets the total current drawn from the PDP by the specified channels.
+   * Gets the total current drawn from the PDH by the specified channels.
    * @param channels The channels to sum.
    * @return The total current drawn by the provided channels.
    */
@@ -49,11 +49,11 @@ public class PowerController {
     double sum = 0;
 
     for (int channel : channels) {
-      sum += PDP.getCurrent(channel);
+      sum += PDH.getCurrent(channel);
     }
 
     // Is this necessary?
-    if (channels.length == 16 && (sum != PDP.getTotalCurrent())) {
+    if (channels.length == 16 && (sum != PDH.getTotalCurrent())) {
       System.out.println("something is wrong, total current does not match");
     }
 
