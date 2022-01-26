@@ -99,7 +99,7 @@ public class RobotContainer {
     // Instantiate subsystems
     //tankSubsystem = new TankSubsystem();
     turretSubsystem = new TurretSubsystem(jetson);
-    internalSubsystem = new InternalSubsystem(turretSubsystem, jetson);
+    internalSubsystem = new InternalSubsystem(turretSubsystem);
 
     powerController = new PowerController(tankSubsystem);
 

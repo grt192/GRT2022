@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import frc.robot.jetson.JetsonConnection;
-import static frc.robot.Constants.ShooterConstants.*;
+import static frc.robot.Constants.TurretConstants.*;
 
 /**
  * A subsystem which controls the turret mechanism on the robot. 
@@ -39,8 +39,8 @@ public class TurretSubsystem extends SubsystemBase {
   private final double kI = 0;
   private final double kD = 0;
 
-  private double flywheelSpeed = 30;
-  private double turntablePosition = 0;
+  private double flywheelSpeed = 30.0;
+  private double turntablePosition = 0.0;
 
   // Temp boolean for testing
   private boolean on = false;
@@ -96,13 +96,14 @@ public class TurretSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     // TODO: implement vision tracking and turntable
-    /*
-    double theta = jetson.getDouble("theta");
-    turntablePosition = theta;
+    turntablePosition = jetson.getTurretTheta();
+
+    double distance = jetson.getHubDistance();
+    // TODO: calculations
+    flywheelSpeed = 30;
 
     flywheelPidController.setReference(flywheelSpeed, ControlType.kVelocity);
     turntable.set(ControlMode.Position, turntablePosition);
-    */
   }
 
   /**
@@ -119,7 +120,7 @@ public class TurretSubsystem extends SubsystemBase {
    * @return Whether the turntable is aligned and ready to shoot.
    */
   public boolean turntableAligned() {
-    // TODO: test and get better thresholding value
+    // TODO: test thresholding value
     return Math.abs(turntable.getSelectedSensorPosition() - turntablePosition) > 10;
   }
 

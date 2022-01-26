@@ -12,14 +12,11 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.util.Color;
 
-import frc.robot.subsystems.TurretSubsystem;
-import frc.robot.jetson.JetsonConnection;
 import static frc.robot.Constants.InternalConstants.*;
 
 public class InternalSubsystem extends SubsystemBase {
 
   private final TurretSubsystem turretSubsystem;
-  private final JetsonConnection jetson;
 
   private final WPI_TalonSRX motor;
 
@@ -27,16 +24,15 @@ public class InternalSubsystem extends SubsystemBase {
   private final ColorSensorV3 sensorBottom;
 
   private final ColorMatch colorMatcher;
-  
+
   private boolean shotRequested;
 
   // will replace color values after testing
   private final Color RED = new Color(0.561, 0.232, 0.114);
   private final Color BLUE = new Color(0.143, 0.427, 0.429);
 
-  public InternalSubsystem(TurretSubsystem turretSubsystem, JetsonConnection jetson) {
+  public InternalSubsystem(TurretSubsystem turretSubsystem) {
     this.turretSubsystem = turretSubsystem;
-    this.jetson = jetson;
 
     motor = new WPI_TalonSRX(motorPort);
     motor.configFactoryDefault();

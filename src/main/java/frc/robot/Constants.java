@@ -23,7 +23,7 @@ public final class Constants {
         public static final int bRightMotorPort = 1;
     }
 
-    public static final class ShooterConstants {
+    public static final class TurretConstants {
         public static final int turntablePort = 0;
         public static final int hoodPort = 1;
         public static final int flywheelPort = 2;
@@ -31,6 +31,11 @@ public final class Constants {
 
     public static final class InternalConstants {
         public static final int motorPort = 1;
+    }
+
+    public static final class ClimbConstants {
+        public static final int sixMotorPort = 0;
+        public static final int tenMotorPort = 1;
     }
 
     public static final class JetsonConstants {

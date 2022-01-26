@@ -36,6 +36,22 @@ public class JetsonConnection {
     System.out.println("yawAngle: " + getDouble("yawAngle"));
   }
 
+  /**
+   * Gets the calculated turret angle.
+   * @return The desired turntable angle.
+   */
+  public double getTurretTheta() {
+    return getDouble("theta");
+  }
+
+  /**
+   * Gets the calculated hub distance.
+   * @return The distance from the camera to the hub.
+   */
+  public double getHubDistance() {
+    return getDouble("distance");
+  }
+
   public boolean hasKey(String key) {
     return table.getEntry(key).exists();
   }
