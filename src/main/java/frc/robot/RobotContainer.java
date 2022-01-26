@@ -28,6 +28,8 @@ import frc.robot.brownout.PowerController;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.subsystems.TurretSubsystem;
+import frc.robot.subsystems.ClimbSubsystem;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.InternalSubsystem;
 import frc.robot.subsystems.TankSubsystem;
 
@@ -48,6 +50,8 @@ public class RobotContainer {
     //private final TankSubsystem tankSubsystem;
     private final TurretSubsystem turretSubsystem;
     private final InternalSubsystem internalSubsystem;
+    private final ClimbSubsystem climbSubsystem;
+    private final IntakeSubsystem intakeSubsystem;
 
     private final JetsonConnection jetson;
     private final PowerController powerController;
@@ -84,6 +88,8 @@ public class RobotContainer {
         //tankSubsystem = new TankSubsystem();
         turretSubsystem = new TurretSubsystem(jetson);
         internalSubsystem = new InternalSubsystem(turretSubsystem);
+        climbSubsystem = new ClimbSubsystem();
+        intakeSubsystem = new IntakeSubsystem(jetson);
 
         // Instantiate power controller
         powerController = new PowerController();
