@@ -15,6 +15,7 @@ import frc.robot.jetson.JetsonConnection;
 import static frc.robot.Constants.IntakeConstants.*;
 
 public class IntakeSubsystem extends SubsystemBase {
+    private final InternalSubsystem internalSubsystem;
     private final JetsonConnection jetson;
 
     private final CANSparkMax intake;
@@ -30,7 +31,8 @@ public class IntakeSubsystem extends SubsystemBase {
     // TODO: measure this
     private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
 
-    public IntakeSubsystem(JetsonConnection jetson) {
+    public IntakeSubsystem(InternalSubsystem internalSubsystem, JetsonConnection jetson) {
+        this.internalSubsystem = internalSubsystem;
         this.jetson = jetson;
 
         // Initialize the intake (roller) motor
@@ -52,13 +54,12 @@ public class IntakeSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // If the jetson detects a ball and the intake is deployed, run the motors and alert internals
-        if (jetson.ballDetected() && currentPosition == IntakePosition.DEPLOYED) {
-            intake.set(0.5);
-            // TODO: internals bottom roller
-        } else {
-            intake.set(0);
-        }
+        // If the jetson detects a ball, the intake is deployed, and there are less than 2 balls in internals, 
+        // run the motors
+        intake.set(jetson.ballDetected() 
+            && currentPosition == IntakePosition.DEPLOYED 
+            && internalSubsystem.getBallCount() < 2
+            ? 0.5 : 0);
     }
 
     /**

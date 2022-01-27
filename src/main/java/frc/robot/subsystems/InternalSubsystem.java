@@ -22,8 +22,9 @@ public class InternalSubsystem extends SubsystemBase {
     private final WPI_TalonSRX motorBottom;
     private final WPI_TalonSRX motorTop;
 
-    private final ColorSensorV3 sensorTop;
-    private final ColorSensorV3 sensorBottom;
+    // Sensors
+    private final ColorSensorV3 staging;
+    private final ColorSensorV3 storage;
 
     private final ColorMatch colorMatcher;
 
@@ -33,7 +34,7 @@ public class InternalSubsystem extends SubsystemBase {
     private final Color RED = new Color(0.561, 0.232, 0.114);
     private final Color BLUE = new Color(0.143, 0.427, 0.429);
 
-    private final int ballCount;
+    private final int ballCount = 0;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         this.turretSubsystem = turretSubsystem;
@@ -46,19 +47,25 @@ public class InternalSubsystem extends SubsystemBase {
         motorTop.configFactoryDefault();
         motorTop.setNeutralMode(NeutralMode.Brake);
 
-        sensorTop = new ColorSensorV3(I2C.Port.kOnboard);
-        sensorBottom = new ColorSensorV3(I2C.Port.kOnboard);
+        staging = new ColorSensorV3(I2C.Port.kOnboard);
+        storage = new ColorSensorV3(I2C.Port.kOnboard);
 
         colorMatcher = new ColorMatch();
         shotRequested = false;
-
-        ballCount = 0;
     }
 
     @Override
     public void periodic() {
-        controlFeed();
+        // TODO: this motor stopping needs to work together with shotRequested and intake
+        // If there is a ball in storage, stop the bottom motor
+        if (ballDetected(storage))
+            motorBottom.set(ControlMode.PercentOutput, 0);
 
+        // If there is a ball in staging, stop the top motor
+        if (ballDetected(staging))
+            motorTop.set(ControlMode.PercentOutput, 0);
+
+        // If a shot was requested and the turret is ready, load a ball into the turret
         if (shotRequested && turretSubsystem.flywheelReady() && turretSubsystem.turntableAligned()) { 
             // TODO launch ball into turret
         }
@@ -70,6 +77,14 @@ public class InternalSubsystem extends SubsystemBase {
      */
     public void requestShot() {
         this.shotRequested = true;
+    }
+
+    /**
+     * Gets how many balls are inside internals.
+     * @return The current ball count.
+     */
+    public int getBallCount() {
+        return ballCount;
     }
 
     public boolean isRed(ColorSensorV3 s) {
@@ -87,18 +102,6 @@ public class InternalSubsystem extends SubsystemBase {
     }
 
     public boolean ballDetected(ColorSensorV3 s){
-      return (isRed(s) || isBlue(s));
-    }
-
-    public void updateBallCount(){
-      
-    }
-
-    public void controlFeed() {
-        if (ballDetected(sensorTop)) {
-            motorBottom.set(ControlMode.PercentOutput, 0);
-        } else if (ballDetected(sensorBottom)) {
-            motorBottom.set(ControlMode.PercentOutput, .5);
-        }
+        return isRed(s) || isBlue(s);
     }
 }
