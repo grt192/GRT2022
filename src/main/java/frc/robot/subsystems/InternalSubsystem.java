@@ -14,11 +14,13 @@ import edu.wpi.first.wpilibj.util.Color;
 
 import static frc.robot.Constants.InternalConstants.*;
 
+// think about being able to indicate alliance color on driver station at least
 public class InternalSubsystem extends SubsystemBase {
 
     private final TurretSubsystem turretSubsystem;
 
-    private final WPI_TalonSRX motor;
+    private final WPI_TalonSRX motorBottom;
+    private final WPI_TalonSRX motorTop;
 
     private final ColorSensorV3 sensorTop;
     private final ColorSensorV3 sensorBottom;
@@ -31,18 +33,26 @@ public class InternalSubsystem extends SubsystemBase {
     private final Color RED = new Color(0.561, 0.232, 0.114);
     private final Color BLUE = new Color(0.143, 0.427, 0.429);
 
+    private final int ballCount;
+
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         this.turretSubsystem = turretSubsystem;
 
-        motor = new WPI_TalonSRX(motorPort);
-        motor.configFactoryDefault();
-        motor.setNeutralMode(NeutralMode.Brake);
+        motorBottom = new WPI_TalonSRX(motorPortBottom);
+        motorBottom.configFactoryDefault();
+        motorBottom.setNeutralMode(NeutralMode.Brake);
+
+        motorTop = new WPI_TalonSRX(motorPortTop);
+        motorTop.configFactoryDefault();
+        motorTop.setNeutralMode(NeutralMode.Brake);
 
         sensorTop = new ColorSensorV3(I2C.Port.kOnboard);
         sensorBottom = new ColorSensorV3(I2C.Port.kOnboard);
 
         colorMatcher = new ColorMatch();
         shotRequested = false;
+
+        ballCount = 0;
     }
 
     @Override
@@ -76,11 +86,19 @@ public class InternalSubsystem extends SubsystemBase {
         return match.color;
     }
 
+    public boolean ballDetected(ColorSensorV3 s){
+      return (isRed(s) || isBlue(s));
+    }
+
+    public void updateBallCount(){
+      if ()
+    }
+
     public void controlFeed() {
-        if (isRed(sensorTop) || isBlue(sensorTop)) {
-            motor.set(ControlMode.PercentOutput, 0);
-        } else if (isBlue(sensorBottom) || isRed(sensorBottom)) {
-            motor.set(ControlMode.PercentOutput, .5);
+        if (ballDetected(sensorTop)) {
+            motorBottom.set(ControlMode.PercentOutput, 0);
+        } else if (ballDetected(sensorBottom)) {
+            motorBottom.set(ControlMode.PercentOutput, .5);
         }
     }
 }
