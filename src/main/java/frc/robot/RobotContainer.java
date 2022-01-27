@@ -90,7 +90,7 @@ public class RobotContainer {
         turretSubsystem = new TurretSubsystem(jetson);
         internalSubsystem = new InternalSubsystem(turretSubsystem);
         climbSubsystem = new ClimbSubsystem();
-        intakeSubsystem = new IntakeSubsystem(jetson);
+        intakeSubsystem = new IntakeSubsystem(internalSubsystem, jetson);
 
         // Instantiate power controller
         powerController = new PowerController();

@@ -23,37 +23,51 @@ public class InternalSubsystem extends SubsystemBase {
     private final WPI_TalonSRX motorTop;
 
     // Sensors
+    private final ColorSensorV3 entrance;
     private final ColorSensorV3 staging;
     private final ColorSensorV3 storage;
+    private final ColorSensorV3 exit;
 
     private final ColorMatch colorMatcher;
 
-    private boolean shotRequested;
+    private boolean shotRequested = false;
 
-    private final int ballCount = 0;
+    // will replace color values after testing
+    private final Color RED = new Color(0.561, 0.232, 0.114);
+    private final Color BLUE = new Color(0.143, 0.427, 0.429);
+
+    // Previous entrance / exit color states
+    private Color prevEntranceColor;
+    private Color prevExitColor;
+
+    private int ballCount = 0;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         this.turretSubsystem = turretSubsystem;
 
+        // Initialize bottom motor
         motorBottom = new WPI_TalonSRX(motorPortBottom);
         motorBottom.configFactoryDefault();
         motorBottom.setNeutralMode(NeutralMode.Brake);
 
+        // Initialize top motor
         motorTop = new WPI_TalonSRX(motorPortTop);
         motorTop.configFactoryDefault();
         motorTop.setNeutralMode(NeutralMode.Brake);
 
+        // Initialize color sensors
+        entrance = new ColorSensorV3(I2C.Port.kOnboard);
         staging = new ColorSensorV3(I2C.Port.kOnboard);
         storage = new ColorSensorV3(I2C.Port.kOnboard);
-        top = new ColorSensorV3(I2C.Port.kOnboard);
-        bottom = new ColorSensorV3(I2C.Port.kOnboard);
+        exit = new ColorSensorV3(I2C.Port.kOnboard);
 
         colorMatcher = new ColorMatch();
-        shotRequested = false;
     }
 
     @Override
     public void periodic() {
+        updateBallCount();
+
         // TODO: this motor stopping needs to work together with shotRequested and intake
         // If there is a ball in storage, stop the bottom motor
         if (ballDetected(storage))
@@ -78,6 +92,22 @@ public class InternalSubsystem extends SubsystemBase {
      */
     public void requestShot() {
         this.shotRequested = true;
+    }
+
+    /**
+     * Checks sensors for incoming and outbound balls and update ball count accordingly.
+     */
+    public void updateBallCount() {
+        Color entranceColor = getColor(entrance);
+        if (!entranceColor.equals(prevEntranceColor) && (entranceColor.equals(RED) || entranceColor.equals(BLUE)))
+            ballCount++;
+
+        Color exitColor = getColor(exit);
+        if (!exitColor.equals(prevEntranceColor) && (exitColor.equals(RED) || exitColor.equals(BLUE)))
+            ballCount--;
+
+        prevEntranceColor = entranceColor;
+        prevExitColor = exitColor;
     }
 
     /**
