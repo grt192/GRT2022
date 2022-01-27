@@ -30,7 +30,8 @@ public final class Constants {
     }
 
     public static final class InternalConstants {
-        public static final int motorPort = 1;
+        public static final int motorPortBottom = 1;
+        public static final int motorPortTop = 2;
     }
 
     public static final class ClimbConstants {
