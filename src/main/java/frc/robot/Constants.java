@@ -37,6 +37,8 @@ public final class Constants {
     public static final class ClimbConstants {
         public static final int sixMotorPort = 0;
         public static final int tenMotorPort = 1;
+        public static final int fifteenLeftPort = 2;
+        public static final int fifteenRightPort = 3;
     }
 
     public static final class IntakeConstants {
