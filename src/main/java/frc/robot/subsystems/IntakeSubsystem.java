@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
@@ -21,6 +22,14 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private IntakePosition currentPosition;
 
+    // Deploy position PID constants
+    private static final double kP = 0.125;
+    private static final double kI = 0;
+    private static final double kD = 0;
+
+    // TODO: measure this
+    private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
+
     public IntakeSubsystem(JetsonConnection jetson) {
         this.jetson = jetson;
 
@@ -32,12 +41,24 @@ public class IntakeSubsystem extends SubsystemBase {
         deploy = new WPI_TalonSRX(deploymentPort);
         deploy.configFactoryDefault();
         deploy.setNeutralMode(NeutralMode.Brake);
+
+        deploy.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
+        deploy.setSelectedSensorPosition(0);
+        deploy.setSensorPhase(false);
+        deploy.config_kP(0, kP);
+        deploy.config_kI(0, kI);
+        deploy.config_kD(0, kD);
     }
 
     @Override
     public void periodic() {
-        // If the jetson detects a ball and the intake is deployed, run the motors
-        intake.set(jetson.ballDetected() && currentPosition == IntakePosition.DEPLOYED ? 0.5 : 0);
+        // If the jetson detects a ball and the intake is deployed, run the motors and alert internals
+        if (jetson.ballDetected() && currentPosition == IntakePosition.DEPLOYED) {
+            intake.set(0.5);
+            // TODO: internals bottom roller
+        } else {
+            intake.set(0);
+        }
     }
 
     /**
@@ -46,6 +67,6 @@ public class IntakeSubsystem extends SubsystemBase {
      */
     public void setPosition(IntakePosition position) {
         currentPosition = position;
-        deploy.set(ControlMode.Position, position.value);
+        deploy.set(ControlMode.Position, position.value * DEGREES_TO_ENCODER_TICKS);
     }
 }

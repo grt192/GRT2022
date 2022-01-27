@@ -35,10 +35,22 @@ public class TurretSubsystem extends SubsystemBase {
     private final RelativeEncoder flywheelEncoder;
     private final SparkMaxPIDController flywheelPidController;
 
-    private final double kP = 0.125;
-    private final double kI = 0;
-    private final double kD = 0;
+    // Turntable position PID constants
+    private static final double turntableP = 0.125;
+    private static final double turntableI = 0;
+    private static final double turntableD = 0;
 
+    // Hood position PID constants
+    private static final double hoodP = 0.125;
+    private static final double hoodI = 0;
+    private static final double hoodD = 0;
+
+    // Flywheel velocity PID constants
+    private static final double flywheelP = 0.125;
+    private static final double flywheelI = 0;
+    private static final double flywheelD = 0;
+
+    // State variables
     private double flywheelSpeed = 30.0;
     private double turntablePosition = 0.0;
 
@@ -59,10 +71,11 @@ public class TurretSubsystem extends SubsystemBase {
         turntable.setNeutralMode(NeutralMode.Brake);
 
         turntable.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
+        turntable.setSelectedSensorPosition(0);
         turntable.setSensorPhase(false);
-        turntable.config_kP(0, kP);
-        turntable.config_kI(0, kI);
-        turntable.config_kD(0, kD);
+        turntable.config_kP(0, turntableP);
+        turntable.config_kI(0, turntableI);
+        turntable.config_kD(0, turntableD);
 
         // Initialize hood SparkMax and encoder PID
         hood = new CANSparkMax(hoodPort, MotorType.kBrushless);
@@ -73,22 +86,23 @@ public class TurretSubsystem extends SubsystemBase {
         hoodEncoder.setPosition(0);
 
         hoodPidController = hood.getPIDController();
-        hoodPidController.setP(kP);
-        hoodPidController.setI(kI);
-        hoodPidController.setD(kD);
+        hoodPidController.setP(hoodP);
+        hoodPidController.setI(hoodI);
+        hoodPidController.setD(hoodD);
 
         // Initialize flywheel SparkMax and encoder PID
         flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
         flywheel.restoreFactoryDefaults();
         //flywheel.setIdleMode(IdleMode.kBrake);
+        flywheel.setInverted(true);
 
         flywheelEncoder = flywheel.getEncoder();
         flywheelEncoder.setPosition(0);
 
         flywheelPidController = flywheel.getPIDController();
-        flywheelPidController.setP(kP);
-        flywheelPidController.setI(kI);
-        flywheelPidController.setD(kD);
+        flywheelPidController.setP(flywheelP);
+        flywheelPidController.setI(flywheelI);
+        flywheelPidController.setD(flywheelD);
 
         this.jetson = connection;
     }

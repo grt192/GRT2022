@@ -60,6 +60,7 @@ public class RobotContainer {
     private final XboxController controlXbox = new XboxController(0);
     private final JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
     private final JoystickButton xboxXButton = new JoystickButton(controlXbox, XboxController.Button.kX.value);
+    private final JoystickButton xboxYButton = new JoystickButton(controlXbox, XboxController.Button.kY.value);
 
     // Commands
     private final Command tankCommand = new InstantCommand();
