@@ -30,10 +30,6 @@ public class InternalSubsystem extends SubsystemBase {
 
     private boolean shotRequested;
 
-    // will replace color values after testing
-    private final Color RED = new Color(0.561, 0.232, 0.114);
-    private final Color BLUE = new Color(0.143, 0.427, 0.429);
-
     private final int ballCount = 0;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
@@ -49,6 +45,8 @@ public class InternalSubsystem extends SubsystemBase {
 
         staging = new ColorSensorV3(I2C.Port.kOnboard);
         storage = new ColorSensorV3(I2C.Port.kOnboard);
+        top = new ColorSensorV3(I2C.Port.kOnboard);
+        bottom = new ColorSensorV3(I2C.Port.kOnboard);
 
         colorMatcher = new ColorMatch();
         shotRequested = false;
@@ -67,7 +65,10 @@ public class InternalSubsystem extends SubsystemBase {
 
         // If a shot was requested and the turret is ready, load a ball into the turret
         if (shotRequested && turretSubsystem.flywheelReady() && turretSubsystem.turntableAligned()) { 
-            // TODO launch ball into turret
+            //launch ball into turret
+            if (!ballDetected(top)){
+                motorTop.set(ControlMode.PercentOutput, .5);
+            }
         }
     }
 
@@ -103,5 +104,11 @@ public class InternalSubsystem extends SubsystemBase {
 
     public boolean ballDetected(ColorSensorV3 s){
         return isRed(s) || isBlue(s);
+    }
+
+    public void topBall(){
+        if (getColor(staging) != allianceColor){
+            turretSubsystem.setHoodAngle();
+        }
     }
 }

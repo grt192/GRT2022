@@ -4,6 +4,9 @@
 
 package frc.robot;
 
+import frc.robot.subsystems.TurretSubsystem;
+import edu.wpi.first.wpilibj.util.Color;
+
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide
  * numerical or boolean constants. This class should not be used for any other
@@ -27,11 +30,15 @@ public final class Constants {
         public static final int turntablePort = 0;
         public static final int hoodPort = 1;
         public static final int flywheelPort = 2;
+        public static final double badHoodAngle = 75;
     }
 
     public static final class InternalConstants {
         public static final int motorPortBottom = 1;
         public static final int motorPortTop = 2;
+        public static final Color RED = new Color(0.561, 0.232, 0.114);
+        public static final Color BLUE = new Color(0.143, 0.427, 0.429); 
+        public static Color allianceColor = RED;
     }
 
     public static final class ClimbConstants {

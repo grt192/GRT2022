@@ -165,6 +165,14 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     /**
+     * Controls hood angle.
+     * Sets the hood angle to the specified value.
+     */
+    public void setHoodAngle() {
+        hoodPidController.setReference(badHoodAngle, ControlType.kPosition);
+    }
+
+    /**
      * Cleans up the subsystem for climb.
      * Sets the turntable to face the same direction as the robot, retracts the hood, and turns off the flywheel.
      */
