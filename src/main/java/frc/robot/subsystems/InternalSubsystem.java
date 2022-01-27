@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj.util.Color;
 
 import static frc.robot.Constants.InternalConstants.*;
 
-// think about being able to indicate alliance color on driver station at least
 public class InternalSubsystem extends SubsystemBase {
 
     private final TurretSubsystem turretSubsystem;
@@ -31,10 +30,6 @@ public class InternalSubsystem extends SubsystemBase {
     private final ColorMatch colorMatcher;
 
     private boolean shotRequested = false;
-
-    // will replace color values after testing
-    private final Color RED = new Color(0.561, 0.232, 0.114);
-    private final Color BLUE = new Color(0.143, 0.427, 0.429);
 
     // Previous entrance / exit color states
     private Color prevEntranceColor;
@@ -62,26 +57,36 @@ public class InternalSubsystem extends SubsystemBase {
         exit = new ColorSensorV3(I2C.Port.kOnboard);
 
         colorMatcher = new ColorMatch();
+        colorMatcher.addColorMatch(RED);
+        colorMatcher.addColorMatch(BLUE);
+        // TODO: add third color to color match to support wall color
     }
 
     @Override
     public void periodic() {
         updateBallCount();
 
-        // TODO: this motor stopping needs to work together with shotRequested and intake
         // If there is a ball in storage, stop the bottom motor
         if (ballDetected(storage))
             motorBottom.set(ControlMode.PercentOutput, 0);
 
         // If there is a ball in staging, stop the top motor
-        if (ballDetected(staging))
+        if (ballDetected(staging)) {
+            // Reject the ball if it doesn't match alliance color
+            turretSubsystem.setReject(getColor(staging) != allianceColor);
             motorTop.set(ControlMode.PercentOutput, 0);
+        }
 
         // If a shot was requested and the turret is ready, load a ball into the turret
+        // TODO: will this jam if the drivetrain starts moving during this?
+        // TODO: will this cause the second ball in storage to move beyond staging and mess up detection logic?
+        // TODO: should we shoot 2 at once if we have 2 loaded?
         if (shotRequested && turretSubsystem.flywheelReady() && turretSubsystem.turntableAligned()) { 
-            //launch ball into turret
-            if (!ballDetected(top)){
-                motorTop.set(ControlMode.PercentOutput, .5);
+            // If the ball hasn't left the mechanism, spin the top motor
+            if (!ballDetected(exit)) {
+                motorTop.set(ControlMode.PercentOutput, 0.5);
+            } else {
+                shotRequested = false;
             }
         }
     }
@@ -103,7 +108,7 @@ public class InternalSubsystem extends SubsystemBase {
             ballCount++;
 
         Color exitColor = getColor(exit);
-        if (!exitColor.equals(prevEntranceColor) && (exitColor.equals(RED) || exitColor.equals(BLUE)))
+        if (!exitColor.equals(prevExitColor) && (exitColor.equals(RED) || exitColor.equals(BLUE)))
             ballCount--;
 
         prevEntranceColor = entranceColor;
@@ -134,11 +139,5 @@ public class InternalSubsystem extends SubsystemBase {
 
     public boolean ballDetected(ColorSensorV3 s){
         return isRed(s) || isBlue(s);
-    }
-
-    public void topBall(){
-        if (getColor(staging) != allianceColor){
-            turretSubsystem.setHoodAngle();
-        }
     }
 }

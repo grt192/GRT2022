@@ -5,6 +5,8 @@ import edu.wpi.first.cscore.HttpCamera;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 
+import static frc.robot.Constants.JetsonConstants.*;
+
 /**
  * A connection to the Jetson over network tables. 
  * Contains logic to read vision data for use in other subsystems.
@@ -19,8 +21,11 @@ public class JetsonConnection {
         // Start camera stream on Shuffleboard
         // TODO if this HttpCamera thing works, make it work for multiple streams 
         // "mjpg:http://%s:%d/?action=stream" % (address, port)
-        HttpCamera jetsonCamera = new HttpCamera("Jetson Camera - Port 1181", "mjpg:http://10.1.92.94:1181/?action=stream");
-        CameraServer.startAutomaticCapture(jetsonCamera);
+        HttpCamera turretCamera = createCamera(turretCameraPort);
+        CameraServer.startAutomaticCapture(turretCamera);
+
+        HttpCamera intakeCamera = createCamera(intakeCameraPort);
+        CameraServer.startAutomaticCapture(intakeCamera);
 
         // Start thread to update this periodically
         JetsonThread jetsonThread = new JetsonThread(this);
@@ -62,6 +67,15 @@ public class JetsonConnection {
      */
     public boolean ballDetected() {
         return getBoolean("ball-detected");
+    }
+
+    /**
+     * Creates an MJPEG camera over the Jetson connection.
+     * @param port The port to connect to.
+     * @return The camera object.
+     */
+    public HttpCamera createCamera(int port) {
+        return new HttpCamera("Jetson Camera - Port " + port, "mjpg:http://" + jetsonAddress + ":" + port + "/?action=stream");
     }
 
     public boolean hasKey(String key) {

@@ -30,12 +30,12 @@ public final class Constants {
         public static final int turntablePort = 0;
         public static final int hoodPort = 1;
         public static final int flywheelPort = 2;
-        public static final double badHoodAngle = 75;
     }
 
     public static final class InternalConstants {
         public static final int motorPortBottom = 1;
         public static final int motorPortTop = 2;
+
         public static final Color RED = new Color(0.561, 0.232, 0.114);
         public static final Color BLUE = new Color(0.143, 0.427, 0.429); 
         public static Color allianceColor = RED;
@@ -54,7 +54,8 @@ public final class Constants {
     }
 
     public static final class JetsonConstants {
-        public static final int jetsonCameraPort = 1337;
-        public static final String jetsonAddress = "10.1.92.14";
+        public static final int intakeCameraPort = 1181;
+        public static final int turretCameraPort = 1182;
+        public static final String jetsonAddress = "10.1.92.94";
     }
 }

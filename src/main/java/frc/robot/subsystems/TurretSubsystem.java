@@ -51,8 +51,10 @@ public class TurretSubsystem extends SubsystemBase {
     private static final double flywheelD = 0;
 
     // State variables
+    // TODO: measure these, add constants
     private double flywheelSpeed = 30.0;
     private double turntablePosition = 0.0;
+    private double hoodAngle = 60.0;
 
     // Temp boolean for testing
     private boolean on = false;
@@ -113,11 +115,21 @@ public class TurretSubsystem extends SubsystemBase {
         turntablePosition = jetson.getTurretTheta();
 
         double distance = jetson.getHubDistance();
-        // TODO: calculations
+        // TODO: constants, interpolation
         flywheelSpeed = 30;
 
         flywheelPidController.setReference(flywheelSpeed, ControlType.kVelocity);
+        hoodPidController.setReference(hoodAngle, ControlType.kPosition);
         turntable.set(ControlMode.Position, turntablePosition);
+    }
+
+    /**
+     * Set whether the turret should reject the current ball.
+     * @param reject Whether to reject the ball.
+     */
+    public void setReject(boolean reject) {
+        // TODO: measure this
+        hoodAngle = reject ? 30 : 60;
     }
 
     /**
@@ -136,6 +148,15 @@ public class TurretSubsystem extends SubsystemBase {
     public boolean turntableAligned() {
         // TODO: test thresholding value
         return Math.abs(turntable.getSelectedSensorPosition() - turntablePosition) > 10;
+    }
+
+    /**
+     * Checks whether the hood is at its desired angle.
+     * @return Whether the hood is in position.
+     */
+    public boolean hoodReady() {
+        // TODO: test thresholding value
+        return Math.abs(hoodEncoder.getPosition() - hoodAngle) > 10;
     }
 
     /**
@@ -162,14 +183,6 @@ public class TurretSubsystem extends SubsystemBase {
         flywheel.set(!on ? 0.5 : 0);
         //turntable.set(ControlMode.PercentOutput, !on ? 0.5 : 0);
         on = !on;
-    }
-
-    /**
-     * Controls hood angle.
-     * Sets the hood angle to the specified value.
-     */
-    public void setHoodAngle() {
-        hoodPidController.setReference(badHoodAngle, ControlType.kPosition);
     }
 
     /**
