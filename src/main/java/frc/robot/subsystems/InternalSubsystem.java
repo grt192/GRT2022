@@ -91,7 +91,7 @@ public class InternalSubsystem extends SubsystemBase {
     }
 
     public void updateBallCount(){
-      if ()
+      
     }
 
     public void controlFeed() {
