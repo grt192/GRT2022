@@ -61,10 +61,18 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final JetsonConnection jetson;
 
-    private ShuffleboardTab sTab = Shuffleboard.getTab("shooter");
-    private NetworkTableEntry targetPower = sTab.add("power", 0.8).getEntry();
-    private NetworkTableEntry sPos = sTab.add("pos", 69).getEntry();
-    private NetworkTableEntry sVelo = sTab.add("velo", 1337).getEntry();
+    private final ShuffleboardTab shuffleboardTab;
+    private final NetworkTableEntry shuffleboardTurntablePEntry;
+    private final NetworkTableEntry shuffleboardTurntableIEntry;
+    private final NetworkTableEntry shuffleboardTurntableDEntry;
+
+    private final NetworkTableEntry shuffleboardHoodPEntry;
+    private final NetworkTableEntry shuffleboardHoodIEntry;
+    private final NetworkTableEntry shuffleboardHoodDEntry;
+
+    private final NetworkTableEntry shuffleboardFlywheelPEntry;
+    private final NetworkTableEntry shuffleboardFlywheelIEntry;
+    private final NetworkTableEntry shuffleboardFlywheelDEntry;
 
     public TurretSubsystem(JetsonConnection connection) {
         // Initialize turntable Talon and encoder PID
@@ -107,10 +115,37 @@ public class TurretSubsystem extends SubsystemBase {
         flywheelPidController.setD(flywheelD);
 
         this.jetson = connection;
+
+        // Initialize Shuffleboard entries
+        shuffleboardTab = Shuffleboard.getTab("Shooter");
+        shuffleboardTurntablePEntry = shuffleboardTab.add("Turntable kP", turntableP).getEntry();
+        shuffleboardTurntableIEntry = shuffleboardTab.add("Turntable kP", turntableI).getEntry();
+        shuffleboardTurntableDEntry = shuffleboardTab.add("Turntable kP", turntableD).getEntry();
+
+        shuffleboardHoodPEntry = shuffleboardTab.add("Hood kP", hoodP).getEntry();
+        shuffleboardHoodIEntry = shuffleboardTab.add("Hood kP", hoodI).getEntry();
+        shuffleboardHoodDEntry = shuffleboardTab.add("Hood kP", hoodD).getEntry();
+
+        shuffleboardFlywheelPEntry = shuffleboardTab.add("Flywheel kP", flywheelP).getEntry();
+        shuffleboardFlywheelIEntry = shuffleboardTab.add("Flywheel kP", flywheelI).getEntry();
+        shuffleboardFlywheelDEntry = shuffleboardTab.add("Flywheel kP", flywheelD).getEntry();
     }
 
     @Override
     public void periodic() {
+        // Get PID constants from Shuffleboard for testing
+        turntable.config_kP(0, shuffleboardTurntablePEntry.getDouble(turntableP));
+        turntable.config_kI(0, shuffleboardTurntableIEntry.getDouble(turntableI));
+        turntable.config_kD(0, shuffleboardTurntableDEntry.getDouble(turntableD));
+
+        hoodPidController.setP(shuffleboardHoodPEntry.getDouble(hoodP));
+        hoodPidController.setI(shuffleboardHoodIEntry.getDouble(hoodI));
+        hoodPidController.setD(shuffleboardHoodDEntry.getDouble(hoodD));
+
+        flywheelPidController.setP(shuffleboardFlywheelPEntry.getDouble(flywheelP));
+        flywheelPidController.setI(shuffleboardFlywheelIEntry.getDouble(flywheelI));
+        flywheelPidController.setD(shuffleboardFlywheelDEntry.getDouble(flywheelD));
+
         // TODO: implement vision tracking and turntable
         turntablePosition = jetson.getTurretTheta();
 
