@@ -45,8 +45,8 @@ public class TankSubsystem extends SubsystemBase {
   private final NetworkTableEntry shuffleboardYEntry;
   private final Field2d shuffleboardField;
 
-  private int currentLimit;
-  private int minCurrent;
+  private double currentLimit;
+  private double minCurrent;
 
   public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
 
@@ -220,15 +220,19 @@ public class TankSubsystem extends SubsystemBase {
       rightEncoder.getVelocity());
   }
 
-  public void setCurrentLimit(int limit) {
+  public void setCurrentLimit(int limit) { //limit has already been cast to an integer
     this.currentLimit = limit;
 
-    int motorLimit = currentLimit/4; //number of motors
+    int motorLimit = (int)Math.ceil(currentLimit/4); //number of motors
     leftMain.setSmartCurrentLimit(motorLimit);
     leftFollow.setSmartCurrentLimit(motorLimit);
     rightMain.setSmartCurrentLimit(motorLimit);
     rightFollow.setSmartCurrentLimit(motorLimit);
 
+  }
+
+  public double getCurrentLimit() {
+    return currentLimit;
   }
 
   /**
@@ -261,13 +265,14 @@ public class TankSubsystem extends SubsystemBase {
     return Math.copySign(value * value, value);
   }
 
-  public int getTotalCurrentDrawn() {
+  public double getTotalCurrentDrawn() {
     return PowerController.getCurrentDrawnFromPDP(fLeftMotorPort, fRightMotorPort, bLeftMotorPort, bRightMotorPort);
   }
 
-  public int minCurrent() {
-
+  public double minCurrent() {
     return minCurrent;
   }
+
+
 
 }

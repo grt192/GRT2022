@@ -3,5 +3,6 @@ package frc.robot;
 public interface ControllableSubsystem {
   int getTotalCurrentDrawn();
   int minCurrent();
-  void setCurrentLimit(int limit);
+  void setCurrentLimit(double limit);
+  double getCurrentLimit();
 }
