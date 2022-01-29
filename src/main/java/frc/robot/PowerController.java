@@ -28,6 +28,7 @@ public class PowerController {
     private List<ControllableSubsystem> subsystems;
 
     private Hashtable<ControllableSubsystem, Double> priorityList;
+    private Hashtable<ControllableSubsystem, Double> dynamicpriorityList;
 
 
     public PowerController(ControllableSubsystem tankSubsystem) {
@@ -45,6 +46,14 @@ public class PowerController {
         /*priorityList.put(intakeSubsystem, 2);
         priorityList.put(shooterSubsystem, 3);
         priorityList.put(climbSubsystem, 4);*/
+
+        //initialize the priorities you
+        dynamicpriorityList.put(tankSubsystem, 5.0);
+        /*dynamicpriorityList.put(intakeSubsystem, 5.0);
+        dynamicpriorityList.put(shooterSubsystem, 5.0);
+        dynamicpriorityList.put(climbSubsystem, 5.0);*/
+
+
 
     }
 
@@ -160,10 +169,41 @@ public class PowerController {
         return priorityList.get(subsystem);
 
     }
+    private double getDynamicPriority(ControllableSubsystem subsystem) {
+        
+        return dynamicpriorityList.get(subsystem);
+
+    }
+
+    public double checkDynamicPriority(ControllableSubsystem subsystem1,ControllableSubsystem subsystem2){
+        if(getDynamicPriority(subsystem1) > getDynamicPriority(subsystem2)) {
+            //TODO things that I am not sure what we need to do
+            //return 
+        }
+        else if (getDynamicPriority(subsystem1) == getDynamicPriority(subsystem2)) {
+            if (checkPriority(subsystem1) > checkPriority(subsystem2)) {
+                //return 
+            
+            }
+            else { // when checkPriority(subsystem1) < checkPriority(subsystem2)
+                //return
+
+            }
+        }
+        }
+        else { 
+            //TODO something
+        }
+    }
+
+
+
+
 
     public void changePriority(ControllableSubsystem subsystem, boolean increase) {
 
         //make logic for changing priority up or down
+
         //and then resolving dictionary list to make sense
         Hashtable<ControllableSubsystem, Double> newList = new Hashtable<ControllableSubsystem, Double>();
 
