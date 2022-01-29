@@ -82,9 +82,6 @@ public class InternalSubsystem extends SubsystemBase {
         }
 
         // If a shot was requested and the turret is ready, load a ball into the turret
-        // TODO: will this jam if the drivetrain starts moving during this (and causing turret to stop being ready)?
-        // TODO: will this cause the second ball in storage to move beyond staging and mess up detection logic?
-        // TODO: should we shoot 2 at once if we have 2 loaded?
         if (shotRequested && turretSubsystem.flywheelReady() && turretSubsystem.turntableAligned()) { 
             // If the ball hasn't left the mechanism, spin the top motor
             if (!ballDetected(exit)) {
