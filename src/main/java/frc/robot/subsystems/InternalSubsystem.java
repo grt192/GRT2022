@@ -1,6 +1,5 @@
 package frc.robot.subsystems;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
@@ -66,25 +65,30 @@ public class InternalSubsystem extends SubsystemBase {
     public void periodic() {
         updateBallCount();
 
-        // If there is a ball in storage, stop the bottom motor
-        if (ballDetected(storage))
-            motorBottom.set(ControlMode.PercentOutput, 0);
+        // If a ball has entered internals, start the bottom motor
+        if (ballDetected(entrance)) motorBottom.set(0.5);
+
+        // If there is a ball in storage, stop the bottom motor and start the top motor
+        if (ballDetected(storage)) {
+            motorBottom.set(0);
+            motorTop.set(0.5);
+        }
 
         // If there is a ball in staging, stop the top motor
         if (ballDetected(staging)) {
             // Reject the ball if it doesn't match alliance color
             turretSubsystem.setReject(getColor(staging) != allianceColor);
-            motorTop.set(ControlMode.PercentOutput, 0);
+            motorTop.set(0);
         }
 
         // If a shot was requested and the turret is ready, load a ball into the turret
-        // TODO: will this jam if the drivetrain starts moving during this?
+        // TODO: will this jam if the drivetrain starts moving during this (and causing turret to stop being ready)?
         // TODO: will this cause the second ball in storage to move beyond staging and mess up detection logic?
         // TODO: should we shoot 2 at once if we have 2 loaded?
         if (shotRequested && turretSubsystem.flywheelReady() && turretSubsystem.turntableAligned()) { 
             // If the ball hasn't left the mechanism, spin the top motor
             if (!ballDetected(exit)) {
-                motorTop.set(ControlMode.PercentOutput, 0.5);
+                motorTop.set(0.5);
             } else {
                 shotRequested = false;
             }

@@ -119,16 +119,16 @@ public class TurretSubsystem extends SubsystemBase {
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Shooter");
         shuffleboardTurntablePEntry = shuffleboardTab.add("Turntable kP", turntableP).getEntry();
-        shuffleboardTurntableIEntry = shuffleboardTab.add("Turntable kP", turntableI).getEntry();
-        shuffleboardTurntableDEntry = shuffleboardTab.add("Turntable kP", turntableD).getEntry();
+        shuffleboardTurntableIEntry = shuffleboardTab.add("Turntable kI", turntableI).getEntry();
+        shuffleboardTurntableDEntry = shuffleboardTab.add("Turntable kD", turntableD).getEntry();
 
         shuffleboardHoodPEntry = shuffleboardTab.add("Hood kP", hoodP).getEntry();
-        shuffleboardHoodIEntry = shuffleboardTab.add("Hood kP", hoodI).getEntry();
-        shuffleboardHoodDEntry = shuffleboardTab.add("Hood kP", hoodD).getEntry();
+        shuffleboardHoodIEntry = shuffleboardTab.add("Hood kI", hoodI).getEntry();
+        shuffleboardHoodDEntry = shuffleboardTab.add("Hood kD", hoodD).getEntry();
 
         shuffleboardFlywheelPEntry = shuffleboardTab.add("Flywheel kP", flywheelP).getEntry();
-        shuffleboardFlywheelIEntry = shuffleboardTab.add("Flywheel kP", flywheelI).getEntry();
-        shuffleboardFlywheelDEntry = shuffleboardTab.add("Flywheel kP", flywheelD).getEntry();
+        shuffleboardFlywheelIEntry = shuffleboardTab.add("Flywheel kI", flywheelI).getEntry();
+        shuffleboardFlywheelDEntry = shuffleboardTab.add("Flywheel kD", flywheelD).getEntry();
     }
 
     @Override
@@ -172,8 +172,8 @@ public class TurretSubsystem extends SubsystemBase {
      * @return Whether the flywheel is up to speed.
      */
     public boolean flywheelReady() {
-        // TODO: implement thresholding?
-        return flywheelEncoder.getVelocity() >= flywheelSpeed;
+        // TODO: test thresholding value
+        return Math.abs(flywheelEncoder.getVelocity() - flywheelSpeed) < 10;
     }
 
     /**
@@ -182,7 +182,7 @@ public class TurretSubsystem extends SubsystemBase {
      */
     public boolean turntableAligned() {
         // TODO: test thresholding value
-        return Math.abs(turntable.getSelectedSensorPosition() - turntablePosition) > 10;
+        return Math.abs(turntable.getSelectedSensorPosition() - turntablePosition) < 10;
     }
 
     /**
@@ -191,7 +191,7 @@ public class TurretSubsystem extends SubsystemBase {
      */
     public boolean hoodReady() {
         // TODO: test thresholding value
-        return Math.abs(hoodEncoder.getPosition() - hoodAngle) > 10;
+        return Math.abs(hoodEncoder.getPosition() - hoodAngle) < 10;
     }
 
     /**
@@ -225,8 +225,8 @@ public class TurretSubsystem extends SubsystemBase {
      * Sets the turntable to face the same direction as the robot, retracts the hood, and turns off the flywheel.
      */
     public void climbInit() {
-        turntable.set(ControlMode.Position, 0);
-        hoodPidController.setReference(0, ControlType.kPosition);
+        turntablePosition = 0;
+        hoodAngle = 0;
         flywheelSpeed = 0;
     }
 }
