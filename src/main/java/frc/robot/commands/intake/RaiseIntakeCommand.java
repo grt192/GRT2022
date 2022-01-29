@@ -13,6 +13,6 @@ public class RaiseIntakeCommand extends InstantCommand {
 
     @Override
     public void initialize() {
-        intake.setPosition(IntakePosition.RAISED);
+        intake.setPosition(IntakeSubsystem.IntakePosition.RAISED);
     }
 }

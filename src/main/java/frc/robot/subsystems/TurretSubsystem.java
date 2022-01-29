@@ -25,6 +25,8 @@ import static frc.robot.Constants.TurretConstants.*;
  * Note that the act of shooting is handled by internals; this subsystem only handles aiming (calculations and shot readiness).
  */
 public class TurretSubsystem extends SubsystemBase {
+    private final JetsonConnection jetson;
+
     private final WPI_TalonSRX turntable;
 
     private final CANSparkMax hood;
@@ -56,10 +58,7 @@ public class TurretSubsystem extends SubsystemBase {
     private double turntablePosition = 0.0;
     private double hoodAngle = 60.0;
 
-    // Temp boolean for testing
-    private boolean on = false;
-
-    private final JetsonConnection jetson;
+    private TurretMode mode = TurretMode.SHOOTING;
 
     private final ShuffleboardTab shuffleboardTab;
     private final NetworkTableEntry shuffleboardTurntablePEntry;
@@ -146,12 +145,22 @@ public class TurretSubsystem extends SubsystemBase {
         flywheelPidController.setI(shuffleboardFlywheelIEntry.getDouble(flywheelI));
         flywheelPidController.setD(shuffleboardFlywheelDEntry.getDouble(flywheelD));
 
-        // TODO: implement vision tracking and turntable
-        turntablePosition = jetson.getTurretTheta();
+        // If retracted, skip jetson logic and calculations
+        if (mode == TurretMode.RETRACTED) {
+            turntablePosition = 0;
+            hoodAngle = 0;
+            flywheelSpeed = 0;
+        } else {
+            // TODO: implement vision tracking and turntable
+            turntablePosition = jetson.getTurretTheta();
 
-        double distance = jetson.getHubDistance();
-        // TODO: constants, interpolation
-        flywheelSpeed = 30;
+            double distance = jetson.getHubDistance();
+            // TODO: constants, interpolation
+            flywheelSpeed = 30;
+
+            // If rejecting, scale down flywheel speed
+            if (mode == TurretMode.REJECTING) flywheelSpeed *= 0.5;
+        }
 
         flywheelPidController.setReference(flywheelSpeed, ControlType.kVelocity);
         hoodPidController.setReference(hoodAngle, ControlType.kPosition);
@@ -163,8 +172,10 @@ public class TurretSubsystem extends SubsystemBase {
      * @param reject Whether to reject the ball.
      */
     public void setReject(boolean reject) {
-        // TODO: measure this
-        hoodAngle = reject ? 30 : 60;
+        // Don't do anything if the turret is retracted
+        // TODO: is this necessary? will internals still be executing periodic logic during climb?
+        if (mode == TurretMode.RETRACTED) return;
+        mode = reject ? TurretMode.REJECTING : TurretMode.SHOOTING;
     }
 
     /**
@@ -195,38 +206,21 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     /**
-     * A PID constant testing function.
-     * For the turntable and hood, this will toggle the position closed loop between a negative and positive value.
-     * For the flywheel, this will toggle the velocity closed loop between two speeds. Once testing ends, this will 
-     * be made private.
-     */
-    public void testPid() {
-        System.out.println(on);
-        //hoodPidController.setReference(on ? 5 : -5, ControlType.kPosition);
-        flywheelPidController.setReference(on ? 30 : 60, ControlType.kVelocity);
-        //turntable.set(ControlMode.Position, on ? 1000 : -1000);
-        on = !on;
-    }
-
-    /**
-     * A test function to see if the plugged in motor works (and to spin it for position PID testing).
-     * This will toggle the motor between 50% and 0% output.
-     */
-    public void testVel() {
-        System.out.println(on);
-        //hood.set(!on ? 0.5 : 0);
-        flywheel.set(!on ? 0.5 : 0);
-        //turntable.set(ControlMode.PercentOutput, !on ? 0.5 : 0);
-        on = !on;
-    }
-
-    /**
-     * Cleans up the subsystem for climb.
-     * Sets the turntable to face the same direction as the robot, retracts the hood, and turns off the flywheel.
+     * Cleans up the subsystem for climb (sets the Turret's mode to RETRACTED).
+     * In RETRACTED, the turntable faces the same direction as the robot, the hood is retracted, and the flywheel is off.
      */
     public void climbInit() {
-        turntablePosition = 0;
-        hoodAngle = 0;
-        flywheelSpeed = 0;
+        mode = TurretMode.RETRACTED;
+    }
+
+    /**
+     * An enum representing the mode the shooter is currently in.
+     * In SHOOTING, the turret will aim to score balls in the upper hub.
+     * In REJECTING, the turret will scale down its flywheel speed to reject wrong-colored balls.
+     * In RETRACTED, the turret will retract itself for climb.
+     * TODO: split SHOOTING into UPPER and LOWER modes?
+     */
+    public enum TurretMode {
+        SHOOTING, REJECTING, RETRACTED
     }
 }

@@ -13,6 +13,6 @@ public class DeployIntakeCommand extends InstantCommand {
 
     @Override
     public void initialize() {
-        intake.setPosition(IntakePosition.DEPLOYED);
+        intake.setPosition(IntakeSubsystem.IntakePosition.DEPLOYED);
     }
 }

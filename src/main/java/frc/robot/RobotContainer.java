@@ -25,6 +25,8 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.brownout.PowerController;
+import frc.robot.commands.intake.DeployIntakeCommand;
+import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.subsystems.TurretSubsystem;
@@ -59,8 +61,7 @@ public class RobotContainer {
     // Controllers
     private final XboxController controlXbox = new XboxController(0);
     private final JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
-    private final JoystickButton xboxXButton = new JoystickButton(controlXbox, XboxController.Button.kX.value);
-    private final JoystickButton xboxYButton = new JoystickButton(controlXbox, XboxController.Button.kY.value);
+    private final JoystickButton xboxBButton = new JoystickButton(controlXbox, XboxController.Button.kB.value);
 
     // Commands
     private final Command tankCommand = new InstantCommand();
@@ -127,10 +128,10 @@ public class RobotContainer {
     }
 
     private void controllerBindings() {
-        // A button -> zero odometry readings
-        // X button -> shoot ball from shooter
-        xboxAButton.whenPressed(new InstantCommand(turretSubsystem::testVel));
-        xboxXButton.whenPressed(new InstantCommand(turretSubsystem::testPid));
+        // A button -> lower intake
+        // X button -> raise intake
+        xboxAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
+        xboxBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
 
         Runnable tank = () -> {
             //tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
