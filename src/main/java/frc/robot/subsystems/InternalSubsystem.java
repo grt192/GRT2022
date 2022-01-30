@@ -8,6 +8,7 @@ import com.revrobotics.ColorMatchResult;
 import com.revrobotics.ColorMatch;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.util.Color;
 
@@ -20,19 +21,18 @@ public class InternalSubsystem extends SubsystemBase {
     private final WPI_TalonSRX motorBottom;
     private final WPI_TalonSRX motorTop;
 
-    // Sensors
-    private final ColorSensorV3 entrance;
+    private final AnalogPotentiometer entrance;
     private final ColorSensorV3 staging;
     private final ColorSensorV3 storage;
-    private final ColorSensorV3 exit;
+    private final AnalogPotentiometer exit;
 
     private final ColorMatch colorMatcher;
 
     private boolean shotRequested = false;
 
-    // Previous entrance / exit color states
-    private Color prevEntranceColor;
-    private Color prevExitColor;
+    // Previous entrance / exit detection states
+    private boolean prevEntranceDetected;
+    private boolean prevExitDetected;
 
     private int ballCount = 0;
 
@@ -49,11 +49,11 @@ public class InternalSubsystem extends SubsystemBase {
         motorTop.configFactoryDefault();
         motorTop.setNeutralMode(NeutralMode.Brake);
 
-        // Initialize color sensors
-        entrance = new ColorSensorV3(I2C.Port.kOnboard);
+        // Initialize sensors
+        entrance = new AnalogPotentiometer(entranceIRPort);
         staging = new ColorSensorV3(I2C.Port.kOnboard);
-        storage = new ColorSensorV3(I2C.Port.kOnboard);
-        exit = new ColorSensorV3(I2C.Port.kOnboard);
+        storage = new ColorSensorV3(I2C.Port.kMXP);
+        exit = new AnalogPotentiometer(exitIRPort);
 
         colorMatcher = new ColorMatch();
         colorMatcher.addColorMatch(RED);
@@ -70,6 +70,10 @@ public class InternalSubsystem extends SubsystemBase {
 
         // If there is a ball in storage, stop the bottom motor and start the top motor
         if (ballDetected(storage)) {
+            // Reject the ball if it doesn't match alliance color
+            // Call this in storage *and* staging to give the turret more time to aim in a one-ball scenario; 
+            // a second ball in staging will override this call and not have any effect.
+            turretSubsystem.setReject(getColor(storage) != allianceColor);
             motorBottom.set(0);
             motorTop.set(0.5);
         }
@@ -101,19 +105,19 @@ public class InternalSubsystem extends SubsystemBase {
     }
 
     /**
-     * Checks sensors for incoming and outbound balls and update ball count accordingly.
+     * Checks sensors for incoming and outbound balls and updates ball count accordingly.
      */
     public void updateBallCount() {
-        Color entranceColor = getColor(entrance);
-        if (!entranceColor.equals(prevEntranceColor) && (entranceColor.equals(RED) || entranceColor.equals(BLUE)))
+        boolean entranceDetected = ballDetected(entrance);
+        if (!prevEntranceDetected && entranceDetected)
             ballCount++;
 
-        Color exitColor = getColor(exit);
-        if (!exitColor.equals(prevExitColor) && (exitColor.equals(RED) || exitColor.equals(BLUE)))
+        boolean exitDetected = ballDetected(exit);
+        if (!prevExitDetected && exitDetected)
             ballCount--;
 
-        prevEntranceColor = entranceColor;
-        prevExitColor = exitColor;
+        prevEntranceDetected = entranceDetected;
+        prevExitDetected = exitDetected;
     }
 
     /**
@@ -124,21 +128,35 @@ public class InternalSubsystem extends SubsystemBase {
         return ballCount;
     }
 
-    public boolean isRed(ColorSensorV3 s) {
-        return getColor(s).equals(RED);
-    }
-
-    public boolean isBlue(ColorSensorV3 s) {
-        return getColor(s).equals(BLUE);
-    }
-
+    /**
+     * Gets the detected color from a color sensor, normalizing it to the closest stored color in colorMatcher.
+     * @param s The color sensor to get.
+     * @return The normalized detected color.
+     */
     public Color getColor(ColorSensorV3 s) {
         Color detectedColor = s.getColor();
         ColorMatchResult match = colorMatcher.matchClosestColor(detectedColor);
         return match.color;
     }
 
+    /**
+     * Checks whether a ball has been detected by a color sensor.
+     * @param s The color sensor to check.
+     * @return Whether a ball has been detected by the sensor.
+     */
     public boolean ballDetected(ColorSensorV3 s){
-        return isRed(s) || isBlue(s);
+        Color detected = getColor(s);
+        return detected == RED || detected == BLUE;
+    }
+
+    /**
+     * Checks whether a ball has been detected by an IR sensor.
+     * @param s The IR sensor to check.
+     * @return Whether a ball has been detected by the sensor.
+     * TODO: test this and make sure it works
+     */
+    public boolean ballDetected(AnalogPotentiometer s) {
+        // TODO: measure the resting value of the IR sensor on the wall
+        return s.get() > 0.40;
     }
 }
