@@ -81,7 +81,7 @@ public class ClimbSubsystem extends SubsystemBase {
         sixBrake = new WPI_TalonSRX(sixBrakePort);
         sixBrake.configFactoryDefault();
 
-        // Initialize ten point arm NEO, encoder PID, and solenoide brake
+        // Initialize ten point arm NEO, encoder PID, and solenoid brake
         ten = new CANSparkMax(tenMotorPort, MotorType.kBrushless);
         ten.restoreFactoryDefaults();
         ten.setIdleMode(IdleMode.kBrake);
@@ -112,6 +112,7 @@ public class ClimbSubsystem extends SubsystemBase {
 
         fifteenMain.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
         fifteenMain.setSelectedSensorPosition(0);
+        fifteenMain.setSensorPhase(false);
         fifteenMain.config_kP(0, fifteenP);
         fifteenMain.config_kI(0, fifteenI);
         fifteenMain.config_kD(0, fifteenD);

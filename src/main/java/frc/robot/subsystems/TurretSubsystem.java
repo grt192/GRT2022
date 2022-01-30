@@ -29,9 +29,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final WPI_TalonSRX turntable;
 
-    private final CANSparkMax hood;
-    private final RelativeEncoder hoodEncoder;
-    private final SparkMaxPIDController hoodPidController;
+    private final WPI_TalonSRX hood;
 
     private final CANSparkMax flywheel;
     private final RelativeEncoder flywheelEncoder;
@@ -86,18 +84,17 @@ public class TurretSubsystem extends SubsystemBase {
         turntable.config_kI(0, turntableI);
         turntable.config_kD(0, turntableD);
 
-        // Initialize hood SparkMax and encoder PID
-        hood = new CANSparkMax(hoodPort, MotorType.kBrushless);
-        hood.restoreFactoryDefaults();
-        hood.setIdleMode(IdleMode.kBrake);
+        // Initialize hood Talon and encoder PID
+        hood = new WPI_TalonSRX(hoodPort);
+        hood.configFactoryDefault();
+        hood.setNeutralMode(NeutralMode.Brake);
 
-        hoodEncoder = hood.getEncoder();
-        hoodEncoder.setPosition(0);
-
-        hoodPidController = hood.getPIDController();
-        hoodPidController.setP(hoodP);
-        hoodPidController.setI(hoodI);
-        hoodPidController.setD(hoodD);
+        hood.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
+        hood.setSelectedSensorPosition(0);
+        hood.setSensorPhase(false);
+        hood.config_kP(0, hoodP);
+        hood.config_kI(0, hoodI);
+        hood.config_kD(0, hoodD);
 
         // Initialize flywheel SparkMax and encoder PID
         flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
@@ -137,9 +134,9 @@ public class TurretSubsystem extends SubsystemBase {
         turntable.config_kI(0, shuffleboardTurntableIEntry.getDouble(turntableI));
         turntable.config_kD(0, shuffleboardTurntableDEntry.getDouble(turntableD));
 
-        hoodPidController.setP(shuffleboardHoodPEntry.getDouble(hoodP));
-        hoodPidController.setI(shuffleboardHoodIEntry.getDouble(hoodI));
-        hoodPidController.setD(shuffleboardHoodDEntry.getDouble(hoodD));
+        hood.config_kP(0, shuffleboardHoodPEntry.getDouble(hoodP));
+        hood.config_kI(0, shuffleboardHoodIEntry.getDouble(hoodI));
+        hood.config_kD(0, shuffleboardHoodDEntry.getDouble(hoodD));
 
         flywheelPidController.setP(shuffleboardFlywheelPEntry.getDouble(flywheelP));
         flywheelPidController.setI(shuffleboardFlywheelIEntry.getDouble(flywheelI));
@@ -163,7 +160,7 @@ public class TurretSubsystem extends SubsystemBase {
         }
 
         flywheelPidController.setReference(flywheelSpeed, ControlType.kVelocity);
-        hoodPidController.setReference(hoodAngle, ControlType.kPosition);
+        hood.set(ControlMode.Position, hoodAngle);
         turntable.set(ControlMode.Position, turntablePosition);
     }
 
@@ -202,7 +199,7 @@ public class TurretSubsystem extends SubsystemBase {
      */
     public boolean hoodReady() {
         // TODO: test thresholding value
-        return Math.abs(hoodEncoder.getPosition() - hoodAngle) < 10;
+        return Math.abs(hood.getSelectedSensorPosition() - hoodAngle) < 10;
     }
 
     /**
