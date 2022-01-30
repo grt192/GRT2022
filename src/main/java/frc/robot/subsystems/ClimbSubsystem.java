@@ -15,7 +15,10 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 
 import static frc.robot.Constants.ClimbConstants.*;
 
@@ -154,30 +157,102 @@ public class ClimbSubsystem extends SubsystemBase {
     }
 
     /**
-     * Start the climb sequence!
-     * TODO: measure these positions
-     * TODO: think about how we can add delays between the climb actions/phases (timer? driver input?)
+     * PHASE 1 (6 point rung)
+     * TODO: measure these positions (for all phases)
      */
-    public void climb() {
-        // PHASE 1 (6 point rung): disengage the six point arm brake and extend the arm, engaging the brake and partially 
-        // retracting the arm after grabbing the bar.
-        sixBrake.set(0);
-        sixPidController.setReference(20, ControlType.kPosition);
-        sixBrake.set(1);
-        sixPidController.setReference(10, ControlType.kPosition);
+    public class ClimbPhase1Command extends CommandBase {
+        @Override
+        public void initialize() {
+            // Disengage the six point arm brake and extend the arm to grab the rung
+            sixBrake.set(0);
+            sixPidController.setReference(20, ControlType.kPosition);
+        }
 
-        // PHASE 2 (10 point rung): disengage the ten point arm brake and extend the arm, engaging the brake and partially 
-        // retracting the arm after grabbing the bar. Simultaneously further retract the six point arm.
-        tenBrake.set(0);
-        tenPidController.setReference(20, ControlType.kPosition);
-        sixPidController.setReference(5, ControlType.kPosition);
-        tenBrake.set(1);
+        @Override
+        public boolean isFinished() {
+            return withinThreshold(sixEncoder.getPosition(), 20);
+        }
 
-        // PHASE 3 (15 point rung): extend the fifteen point arm and grab the bar, releasing the six point arm by extending it
-        // and the ten point arm using a solenoid mechanism.
-        fifteenMain.set(ControlMode.Position, 20);
-        sixBrake.set(0);
-        sixPidController.setReference(20, ControlType.kPosition);
-        tenSolenoidMain.set(1);
+        @Override
+        public void end(boolean interrupted) {
+            // Engage the brake and partially retract the arm after grabbing
+            sixBrake.set(1);
+            sixPidController.setReference(10, ControlType.kPosition);
+        }
+    }
+
+    /**
+     * PHASE 2 (10 point rung)
+     */
+    public class ClimbPhase2Command extends CommandBase {
+        @Override
+        public void initialize() {
+            // Disengage the ten point arm brake and extend the arm, simultaneously further retracting the six point arm.
+            // After this motion the robot should be flat under the 10 point rung.
+            tenBrake.set(0);
+            tenPidController.setReference(20, ControlType.kPosition);
+            sixPidController.setReference(5, ControlType.kPosition);
+        }
+
+        @Override
+        public boolean isFinished() {
+            return withinThreshold(tenEncoder.getPosition(), 20)
+                && withinThreshold(sixEncoder.getPosition(), 5);
+        }
+
+        @Override
+        public void end(boolean interrupted) {
+            // Engage the brake and partially retract the arm after grabbing
+            tenBrake.set(1);
+            tenPidController.setReference(10, ControlType.kPosition);
+        }
+    }
+
+    /**
+     * PHASE 3 (15 point rung)
+     */
+    public class ClimbPhase3Command extends CommandBase {
+        @Override
+        public void initialize() {
+            // Extend the 15 point arms and grab the bar
+            fifteenMain.set(ControlMode.Position, 20);
+        }
+
+        @Override
+        public boolean isFinished() {
+            return withinThreshold(fifteenMain.getSelectedSensorPosition(), 20);
+        }
+
+        @Override
+        public void end(boolean interrupted) {
+            // Release the six point arm by extending it, and the ten point arm using a solenoid mechanism
+            sixBrake.set(0);
+            sixPidController.setReference(20, ControlType.kPosition);
+            tenSolenoidMain.set(1);
+        }
+    }
+
+    /**
+     * Convenience method to perform thresholding with the same value on all climb position PID loops.
+     * @param value The current encoder reading.
+     * @param desired The desired motor position.
+     * @return Whether the reading is within threshold of the desired value.
+     * TODO: tune this threshold value
+     */
+    public boolean withinThreshold(double value, double desired) {
+        return Math.abs(value - desired) < 1;
+    }
+
+    /**
+     * Gets the climb sequence as a SequentialCommandGroup.
+     * @return The command group representing the climb sequence.
+     */
+    public SequentialCommandGroup climb() {
+        return new ClimbPhase1Command().andThen(
+            new WaitUntilCommand(() -> withinThreshold(sixEncoder.getPosition(), 10)),
+            new ClimbPhase2Command(),
+            new WaitUntilCommand(() -> withinThreshold(tenEncoder.getPosition(), 10)),
+            new ClimbPhase3Command()
+        );
     }
 }
