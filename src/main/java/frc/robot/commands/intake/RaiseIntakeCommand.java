@@ -9,6 +9,7 @@ public class RaiseIntakeCommand extends InstantCommand {
 
     public RaiseIntakeCommand(IntakeSubsystem intake) {
         this.intake = intake;
+        addRequirements(intake);
     }
 
     @Override

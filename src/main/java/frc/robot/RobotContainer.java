@@ -20,13 +20,13 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.brownout.PowerController;
 import frc.robot.commands.intake.DeployIntakeCommand;
 import frc.robot.commands.intake.RaiseIntakeCommand;
+import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.subsystems.TurretSubsystem;
@@ -49,7 +49,7 @@ public class RobotContainer {
     //private Properties config;
 
     // Subsystems
-    //private final TankSubsystem tankSubsystem;
+    private final TankSubsystem tankSubsystem;
     private final TurretSubsystem turretSubsystem;
     private final InternalSubsystem internalSubsystem;
     private final ClimbSubsystem climbSubsystem;
@@ -59,12 +59,16 @@ public class RobotContainer {
     private final PowerController powerController;
 
     // Controllers
-    private final XboxController controlXbox = new XboxController(0);
-    private final JoystickButton xboxAButton = new JoystickButton(controlXbox, XboxController.Button.kA.value);
-    private final JoystickButton xboxBButton = new JoystickButton(controlXbox, XboxController.Button.kB.value);
+    private final XboxController driveController = new XboxController(0);
+    private final JoystickButton driveAButton = new JoystickButton(driveController, XboxController.Button.kA.value);
+    private final JoystickButton driveBButton = new JoystickButton(driveController, XboxController.Button.kB.value);
+
+    private final XboxController mechController = new XboxController(1);
+    private final JoystickButton mechAButton = new JoystickButton(mechController, XboxController.Button.kA.value);
+    private final JoystickButton mechXButton = new JoystickButton(mechController, XboxController.Button.kX.value);
 
     // Commands
-    private final Command tankCommand = new InstantCommand();
+    private final Command tankCommand;
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -87,7 +91,7 @@ public class RobotContainer {
         jetson = new JetsonConnection();
 
         // Instantiate subsystems
-        //tankSubsystem = new TankSubsystem();
+        tankSubsystem = new TankSubsystem();
         turretSubsystem = new TurretSubsystem(jetson);
         internalSubsystem = new InternalSubsystem(turretSubsystem);
         climbSubsystem = new ClimbSubsystem();
@@ -98,7 +102,6 @@ public class RobotContainer {
 
         // Instantiate commands
         // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
-        /*
         tankCommand = new FollowPathCommand(
             tankSubsystem, 
             new Pose2d(), 
@@ -127,16 +130,29 @@ public class RobotContainer {
         controllerBindings();
     }
 
+    /**
+     * TODO: finalize these, talk to drivers
+     * 
+     * Controller 1 (driver):
+     * Joysticks -> car drive (tank)
+     * A button -> lower intake (intake)
+     * B button -> raise intake (intake)
+     * 
+     * Controller 2 (mechanisms):
+     * A button -> request shot (internals)
+     * X button -> start climb sequence (climb)
+     */
     private void controllerBindings() {
-        // A button -> lower intake
-        // X button -> raise intake
-        xboxAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
-        xboxBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+        driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
+        driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+
+        mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
+        mechXButton.whenPressed(climbSubsystem.climb());
 
         Runnable tank = () -> {
-            //tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
+            tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
         };
-        //tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
+        tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
     }
 
     /**

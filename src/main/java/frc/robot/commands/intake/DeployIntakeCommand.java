@@ -9,6 +9,7 @@ public class DeployIntakeCommand extends InstantCommand {
 
     public DeployIntakeCommand(IntakeSubsystem intake) {
         this.intake = intake;
+        addRequirements(intake);
     }
 
     @Override

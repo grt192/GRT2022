@@ -148,7 +148,6 @@ public class TurretSubsystem extends SubsystemBase {
             hoodAngle = 0;
             flywheelSpeed = 0;
         } else {
-            // TODO: implement vision tracking and turntable
             // Set the turntable position from the relative theta given by vision
             // TODO: check if jetson is out of range and fall back to odometry
             // TODO: hardcode blindspot and adjust logic with `Math.max()` or `Math.min()`
