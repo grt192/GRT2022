@@ -64,6 +64,7 @@ public class InternalSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         updateBallCount();
+        boolean reject = false;
 
         // If a ball has entered internals, start the bottom motor
         if (ballDetected(entrance)) motorBottom.set(0.5);
@@ -73,7 +74,7 @@ public class InternalSubsystem extends SubsystemBase {
             // Reject the ball if it doesn't match alliance color
             // Call this in storage *and* staging to give the turret more time to aim in a one-ball scenario; 
             // a second ball in staging will override this call and not have any effect.
-            turretSubsystem.setReject(getColor(storage) != allianceColor);
+            reject = getColor(storage) != allianceColor;
             motorBottom.set(0);
             motorTop.set(0.5);
         }
@@ -81,12 +82,15 @@ public class InternalSubsystem extends SubsystemBase {
         // If there is a ball in staging, stop the top motor
         if (ballDetected(staging)) {
             // Reject the ball if it doesn't match alliance color
-            turretSubsystem.setReject(getColor(staging) != allianceColor);
+            reject = getColor(staging) != allianceColor;
             motorTop.set(0);
         }
 
-        // If a shot was requested and the turret is ready, load a ball into the turret
-        if (shotRequested && turretSubsystem.flywheelReady() && turretSubsystem.turntableAligned()) { 
+        // If a shot was requested and the turret is ready, load a ball into the turret.
+        // If rejecting, the turret can be in an orange state; otherwise, require it to be green (fully lined up).
+        turretSubsystem.setReject(reject);
+        if (shotRequested && turretSubsystem.getState() == TurretSubsystem.ModuleState.GREEN
+            || reject && turretSubsystem.getState() == TurretSubsystem.ModuleState.ORANGE) { 
             // If the ball hasn't left the mechanism, spin the top motor
             if (!ballDetected(exit)) {
                 motorTop.set(0.5);

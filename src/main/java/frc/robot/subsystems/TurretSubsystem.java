@@ -72,7 +72,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final NetworkTableEntry shuffleboardFlywheelDEntry;
 
     public TurretSubsystem(JetsonConnection connection) {
-        // Initialize turntable Talon and encoder PID
+        // Initialize turntable CIM and encoder PID
         turntable = new WPI_TalonSRX(turntablePort);
         turntable.configFactoryDefault();
         turntable.setNeutralMode(NeutralMode.Brake);
@@ -84,7 +84,7 @@ public class TurretSubsystem extends SubsystemBase {
         turntable.config_kI(0, turntableI);
         turntable.config_kD(0, turntableD);
 
-        // Initialize hood Talon and encoder PID
+        // Initialize hood 775 and encoder PID
         hood = new WPI_TalonSRX(hoodPort);
         hood.configFactoryDefault();
         hood.setNeutralMode(NeutralMode.Brake);
@@ -96,7 +96,7 @@ public class TurretSubsystem extends SubsystemBase {
         hood.config_kI(0, hoodI);
         hood.config_kD(0, hoodD);
 
-        // Initialize flywheel SparkMax and encoder PID
+        // Initialize flywheel NEO and encoder PID
         flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
         flywheel.restoreFactoryDefaults();
         //flywheel.setIdleMode(IdleMode.kBrake);
@@ -149,7 +149,10 @@ public class TurretSubsystem extends SubsystemBase {
             flywheelSpeed = 0;
         } else {
             // TODO: implement vision tracking and turntable
-            turntablePosition = jetson.getTurretTheta();
+            // Set the turntable position from the relative theta given by vision
+            // TODO: check if jetson is out of range and fall back to odometry
+            // TODO: hardcode blindspot and adjust logic with `Math.max()` or `Math.min()`
+            turntablePosition = turntable.getSelectedSensorPosition() + jetson.getTurretTheta();
 
             double distance = jetson.getHubDistance();
             // TODO: constants, interpolation
@@ -176,30 +179,56 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     /**
-     * Checks whether the flywheel is ready to shoot.
-     * @return Whether the flywheel is up to speed.
+     * Gets the state of the flywheel (whether it is up to speed).
+     * @return The state of the flywheel.
      */
-    public boolean flywheelReady() {
-        // TODO: test thresholding value
-        return Math.abs(flywheelEncoder.getVelocity() - flywheelSpeed) < 10;
+    private ModuleState flywheelReady() {
+        // TODO: test thresholding values
+        double diff = Math.abs(flywheelEncoder.getVelocity() - flywheelSpeed);
+        return diff < 10 ? ModuleState.GREEN
+            : diff < 20 ? ModuleState.ORANGE
+            : ModuleState.RED;
     }
 
     /**
-     * Checks whether the turntable is aligned to the hub.
-     * @return Whether the turntable is aligned and ready to shoot.
+     * Gets the state of the turntable (whether it is aligned to the hub).
+     * @return The state of the turntable.
      */
-    public boolean turntableAligned() {
-        // TODO: test thresholding value
-        return Math.abs(turntable.getSelectedSensorPosition() - turntablePosition) < 10;
+    private ModuleState turntableAligned() {
+        // TODO: test thresholding values
+        double diff = Math.abs(turntable.getSelectedSensorPosition() - turntablePosition);
+        return diff < 10 ? ModuleState.GREEN
+            : diff < 20 ? ModuleState.ORANGE
+            : ModuleState.RED;
     }
 
     /**
-     * Checks whether the hood is at its desired angle.
-     * @return Whether the hood is in position.
+     * Gets the state of the hood (whether it is at its desired angle).
+     * @return The state of the hood.
      */
-    public boolean hoodReady() {
-        // TODO: test thresholding value
-        return Math.abs(hood.getSelectedSensorPosition() - hoodAngle) < 10;
+    private ModuleState hoodReady() {
+        // TODO: test thresholding values
+        double diff = Math.abs(hood.getSelectedSensorPosition() - hoodAngle);
+        return diff < 5 ? ModuleState.GREEN
+            : diff < 10 ? ModuleState.ORANGE
+            : ModuleState.RED;
+    }
+    
+    /**
+     * Gets the current state of the turret by taking the lowest state of all of its modules.
+     * Ex: RED, ORANGE, GREEN -> RED
+     * Ex. ORANGE, ORANGE, GREEN -> ORANGE
+     * @return The state of the turret.
+     */
+    public ModuleState getState() {
+        // TODO: is there a better way to implement this?
+        ModuleState flywheelState = flywheelReady();
+        ModuleState turntableState = turntableAligned();
+        ModuleState hoodState = hoodReady();
+
+        return flywheelState == ModuleState.RED || turntableState == ModuleState.RED || hoodState == ModuleState.RED ? ModuleState.RED
+            : flywheelState == ModuleState.ORANGE || turntableState == ModuleState.ORANGE || hoodState == ModuleState.ORANGE ? ModuleState.ORANGE
+            : ModuleState.GREEN;
     }
 
     /**
@@ -219,5 +248,16 @@ public class TurretSubsystem extends SubsystemBase {
      */
     public enum TurretMode {
         SHOOTING, REJECTING, RETRACTED
+    }
+
+    /**
+     * Represents the state of a turret module (flywheel, turntable, hood).
+     * If a module is GREEN, it is completely ready to shoot.
+     * If a module is ORANGE, it is nearly ready and will become ready after a robot stop.
+     * If a module is RED, it is not ready; it will require more than a second to get it to GREEN status. 
+     * For turntable, this includes being in the blind spot.
+     */
+    public enum ModuleState {
+        GREEN, ORANGE, RED
     }
 }
