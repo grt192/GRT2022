@@ -266,7 +266,7 @@ public class TankSubsystem extends SubsystemBase {
   }
 
   public double getTotalCurrentDrawn() {
-    return PowerController.getCurrentDrawnFromPDP(fLeftMotorPort, fRightMotorPort, bLeftMotorPort, bRightMotorPort);
+    return PowerController.getCurrentDrawnFromPDH(fLeftMotorPort, fRightMotorPort, bLeftMotorPort, bRightMotorPort);
   }
 
   public double minCurrent() {

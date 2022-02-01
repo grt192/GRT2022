@@ -2,17 +2,15 @@ package frc.robot;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Enumeration;
 import java.util.Hashtable;
 
 import edu.wpi.first.wpilibj.PowerDistribution;
-import frc.robot.subsystems.tank.TankSubsystem;
 import static frc.robot.Constants.TankConstants.*;
 import java.lang.Math;
 
 public class PowerController {
 
-    private static PowerDistribution PDP = new PowerDistribution();
+    private static PowerDistribution PDH = new PowerDistribution();
 
     private ControllableSubsystem tankSubsystem;
 
@@ -29,9 +27,10 @@ public class PowerController {
 
     private Hashtable<ControllableSubsystem, Double> priorityList;
     private Hashtable<ControllableSubsystem, Double> dynamicPriorityList;
-
+    
 
     public PowerController(ControllableSubsystem tankSubsystem) {
+
         subsystems = new ArrayList<ControllableSubsystem>();
 
         subsystems.add(tankSubsystem);
@@ -59,14 +58,14 @@ public class PowerController {
 
         System.out.println("Checking for a brownout...");
         // Check PDP voltage; if close to a brownout:
-        if (PDP.getVoltage() < 7) {
+        if (PDH.getVoltage() < 7) {
             System.out.println("close to brownout!");
             setBrownoutScaling(false);
         }
 
         // Sum up total current drawn from all subsystems
-        double totalCurrent = PDP.getTotalCurrent();
-        double nonTankCurrent = totalCurrent - getCurrentDrawnFromPDP(fLeftMotorPort,fRightMotorPort,bLeftMotorPort,bRightMotorPort);
+        double totalCurrent = PDH.getTotalCurrent();
+        double nonTankCurrent = totalCurrent - getCurrentDrawnFromPDH(fLeftMotorPort,fRightMotorPort,bLeftMotorPort,bRightMotorPort);
         System.out.println("total current drawn: " + totalCurrent + 
                             "; non tank current drawn: " + nonTankCurrent);
 
@@ -179,7 +178,7 @@ public class PowerController {
     }
 
 
-    // returns if inQuestion subsystenm is higher priority than baseline subsystem
+    // returns if inQuestion subsystem is higher priority than baseline subsystem
     public boolean higherPriority(ControllableSubsystem inQuestion,ControllableSubsystem baseline){
         if(getDynamicPriority(inQuestion) > getDynamicPriority(baseline)) {
             return true;
@@ -216,16 +215,16 @@ public class PowerController {
 
     }
 
-    public static double getCurrentDrawnFromPDP(int... PDPChannel) {
+    public static double getCurrentDrawnFromPDH(int... PDHChannel) {
         double sum = 0;
         int channels = 0;
 
-        for (int channel : PDPChannel) {
-            sum += PDP.getCurrent(channel);
+        for (int channel : PDHChannel) {
+            sum += PDH.getCurrent(channel);
             channels++;
         }
 
-        if ((channels == 16) && (sum != PDP.getTotalCurrent())) {
+        if ((channels == 16) && (sum != PDH.getTotalCurrent())) {
             System.out.println("something is wrong, total current does not match");
         }
 
@@ -248,6 +247,7 @@ public class PowerController {
             }
         }
     }
+
 
     private double getBasePriority(ControllableSubsystem subsystem) {
         
