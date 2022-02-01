@@ -71,15 +71,13 @@ public class PowerController {
     }
 
     /**
-     * Scales all subsystems by a set sensible amount to prevent brownout.
+     * Scales all subsystems by 80% to prevent brownout.
      * Call this as a last resort when the voltage drops to near brownout or if subsystem scaling fails to 
      * maintain the sustainable current.
      */
     private void setBrownoutScaling() {
         for (ControllableSubsystem subsystem : subsystems) {
-            double currDrawn = subsystem.getTotalCurrentDrawn();
-            int tempscale = (int) (currDrawn * 0.8);
-            subsystem.setCurrentLimit(tempscale);
+            subsystem.setCurrentLimit(subsystem.getCurrentLimit() * 0.8);
         }
     }
 
@@ -179,22 +177,6 @@ public class PowerController {
         }
 
         dynamicPriorityList.put(subsystem, newPriority);
-    }
-
-    private void setBrownoutScaling(boolean scaled) {
-
-        //scale all subsystems by set (sensible) amount
-        for (ControllableSubsystem subsystem : subsystems) {
-            if (scaled) {
-                double tempscale = subsystem.getCurrentLimit()*0.8;
-                subsystem.setCurrentLimit((int) Math.ceil(tempscale));
-                
-            } else { 
-                double currDrawn = subsystem.getTotalCurrentDrawn();
-                double tempscale = currDrawn * 0.8;
-                subsystem.setCurrentLimit((int) Math.ceil(tempscale));
-            }
-        }
     }
 
     private double getBasePriority(ControllableSubsystem subsystem) {

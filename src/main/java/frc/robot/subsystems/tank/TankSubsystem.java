@@ -249,7 +249,7 @@ public class TankSubsystem extends SubsystemBase implements ControllableSubsyste
   }
 
   @Override
-  public void setCurrentLimit(double limit) { //limit has already been cast to an integer
+  public void setCurrentLimit(double limit) {
     this.currentLimit = (int) limit;
 
     int motorLimit = (int) Math.ceil(currentLimit / 4.0); //number of motors
