@@ -24,11 +24,11 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import frc.robot.ControllableSubsystem;
+import frc.robot.GRTSubsystem;
 import frc.robot.PowerController;
 import static frc.robot.Constants.TankConstants.*;
 
-public class TankSubsystem extends SubsystemBase implements ControllableSubsystem {
+public class TankSubsystem extends GRTSubsystem {
   private final CANSparkMax leftMain;
   private final CANSparkMax leftFollow;
 
@@ -46,13 +46,13 @@ public class TankSubsystem extends SubsystemBase implements ControllableSubsyste
   private final NetworkTableEntry shuffleboardYEntry;
   private final Field2d shuffleboardField;
 
-  // TODO: determine values
-  private int currentLimit = 350;
-  private final double minCurrent = 50.0;
-
   public static final double ENCODER_ROTATIONS_TO_METERS = 5.0 / 92.08;
 
   public TankSubsystem() {
+    // Initialize the subsystem's minimum current and limit
+    // TODO: determine values
+    super(350, 50.0);
+
     // Init left main and follower motors and encoders
     leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
     leftMain.restoreFactoryDefaults();
@@ -260,17 +260,7 @@ public class TankSubsystem extends SubsystemBase implements ControllableSubsyste
   }
 
   @Override
-  public int getCurrentLimit() {
-    return currentLimit;
-  }
-
-  @Override
   public double getTotalCurrentDrawn() {
     return PowerController.getCurrentDrawnFromPDH(fLeftMotorPort, fRightMotorPort, bLeftMotorPort, bRightMotorPort);
-  }
-
-  @Override
-  public double minCurrent() {
-    return minCurrent;
   }
 }

@@ -16,16 +16,16 @@ public class PowerController {
     private final double currentCurrentLimit = 350.0;
     private final double totalSustainableCurrent = 200.0;
 
-    private ControllableSubsystem[] subsystems;
+    private GRTSubsystem[] subsystems;
 
-    private final Hashtable<ControllableSubsystem, Double> priorityList = new Hashtable<>();
-    private final Hashtable<ControllableSubsystem, Double> dynamicPriorityList = new Hashtable<>();
+    private final Hashtable<GRTSubsystem, Double> priorityList = new Hashtable<>();
+    private final Hashtable<GRTSubsystem, Double> dynamicPriorityList = new Hashtable<>();
 
-    public PowerController(ControllableSubsystem... subsystems) {
+    public PowerController(GRTSubsystem... subsystems) {
         this.subsystems = subsystems;
 
         // Initialize priority lists with default and dynamic priorities
-        for (ControllableSubsystem subsystem : subsystems) {
+        for (GRTSubsystem subsystem : subsystems) {
             priorityList.put(subsystem, checkPriority(subsystem));
             dynamicPriorityList.put(subsystem, 5.0);
         }
@@ -76,7 +76,7 @@ public class PowerController {
      * maintain the sustainable current.
      */
     private void setBrownoutScaling() {
-        for (ControllableSubsystem subsystem : subsystems) {
+        for (GRTSubsystem subsystem : subsystems) {
             subsystem.setCurrentLimit(subsystem.getCurrentLimit() * 0.8);
         }
     }
@@ -87,8 +87,8 @@ public class PowerController {
      * @param current The current total current.
      * @param checked A set of already scaled subsystems.
      */
-    private void scaleDown(double current, HashSet<ControllableSubsystem> checked) {
-        ControllableSubsystem lowest = null;
+    private void scaleDown(double current, HashSet<GRTSubsystem> checked) {
+        GRTSubsystem lowest = null;
 
         // If we've already scaled many subsystems, just scale more dramatically for everything
         if (checked.size() > 3) {
@@ -96,7 +96,7 @@ public class PowerController {
             return;
         }
 
-        for (ControllableSubsystem subsystem : subsystems) {
+        for (GRTSubsystem subsystem : subsystems) {
             if (checked.contains(subsystem)) continue;
 
             if (lowest == null || higherPriority(lowest, subsystem)) {
@@ -109,7 +109,7 @@ public class PowerController {
         // their minimum current requirement or their drawn current scaled to 80% of what it was, whichever is higher
         // (so we don't go below minimum required current)
         double currDrawn = lowest.getTotalCurrentDrawn();
-        double newCurrDrawn = Math.max(lowest.minCurrent(), currDrawn * 0.8);
+        double newCurrDrawn = Math.max(lowest.getMinCurrent(), currDrawn * 0.8);
         lowest.setCurrentLimit(newCurrDrawn);
 
         // If the change in expected current will not be enough, scale again with the next lowest priority mech
@@ -125,9 +125,9 @@ public class PowerController {
      * @param extraCurrent The extra current to distribute.
      */
     public void scaleUp(double extraCurrent) {
-        for (ControllableSubsystem subsystem : subsystems) {
+        for (GRTSubsystem subsystem : subsystems) {
             // We can do this smartly later on
-            if ((subsystem.getCurrentLimit() - subsystem.minCurrent()) >= 25) {
+            if ((subsystem.getCurrentLimit() - subsystem.getMinCurrent()) >= 25) {
 
                 if (extraCurrent >= 0) {
                     double currentChange = extraCurrent >= 100
@@ -151,7 +151,7 @@ public class PowerController {
      * @param baseline The subsystem to compare to.
      * @return Whether `inQuestion` is higher priority than `baseline`.
      */
-    public boolean higherPriority(ControllableSubsystem inQuestion, ControllableSubsystem baseline) {
+    public boolean higherPriority(GRTSubsystem inQuestion, GRTSubsystem baseline) {
         // If the dynamic priorities are the same, break ties with baseline priority
         if (getDynamicPriority(inQuestion) == getDynamicPriority(baseline))
             return getBasePriority(inQuestion) > getBasePriority(baseline);
@@ -164,7 +164,7 @@ public class PowerController {
      * @param subsystem The subsystem to increase or decrease the priority of.
      * @param increase Whether to increase or decrease the priority.
      */
-    public void changePriority(ControllableSubsystem subsystem, boolean increase) {
+    public void changePriority(GRTSubsystem subsystem, boolean increase) {
         double priority = dynamicPriorityList.get(subsystem);
         double newPriority = increase ? priority + 2.5 : priority - 2.5;
 
@@ -179,11 +179,11 @@ public class PowerController {
         dynamicPriorityList.put(subsystem, newPriority);
     }
 
-    private double getBasePriority(ControllableSubsystem subsystem) {
+    private double getBasePriority(GRTSubsystem subsystem) {
         return priorityList.get(subsystem);
     }
 
-    private double getDynamicPriority(ControllableSubsystem subsystem) {
+    private double getDynamicPriority(GRTSubsystem subsystem) {
         return dynamicPriorityList.get(subsystem);
     }
 
@@ -192,7 +192,7 @@ public class PowerController {
    * @param subsystem The subsystem to check.
    * @return An int rescribing the subsystem's priority.
    */
-  private double checkPriority(ControllableSubsystem subsystem) {
+  private double checkPriority(GRTSubsystem subsystem) {
     if (subsystem instanceof TankSubsystem) return 1.0;
     /*
     if (subsystem instanceof IntakeSubsystem) return 2.0;
