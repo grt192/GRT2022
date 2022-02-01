@@ -13,21 +13,14 @@ import java.util.Properties;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
-<<<<<<< HEAD
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-=======
->>>>>>> b87526b3161c203dc458a02f37ca2bda76a19083
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-<<<<<<< HEAD
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.commands.tank.FollowPathCommand;
-=======
-import frc.robot.commands.tank.DriveTankCommand;
->>>>>>> b87526b3161c203dc458a02f37ca2bda76a19083
 import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
@@ -105,28 +98,12 @@ public class RobotContainer {
   }
 
   private void controllerBindings() {
-<<<<<<< HEAD
     // Bind A button to zero robot position when pressed
     xboxAButton.whenPressed(new InstantCommand(tankSubsystem::resetPosition));
-=======
-    Runnable tank = () -> {
-
-      // Check which controller is being used
-      boolean isXbox = (Math.abs(controlXbox.getLeftY())
-          + Math.abs(controlXbox.getRightX())) > (Math.abs(joystickLeft.getY()) + Math.abs(joystickRight.getY()));
->>>>>>> b87526b3161c203dc458a02f37ca2bda76a19083
 
     Runnable tank = () -> {
       // Set the drive powers based on which controller is being used
-<<<<<<< HEAD
       tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
-=======
-      if (isXbox) {
-        tankSubsystem.setCarDrivePowers(-controlXbox.getLeftY(), controlXbox.getRightX());
-      } else {
-        tankSubsystem.setTankDrivePowers(-joystickLeft.getY(), -joystickRight.getY());
-      }
->>>>>>> b87526b3161c203dc458a02f37ca2bda76a19083
     };
     tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
   }
