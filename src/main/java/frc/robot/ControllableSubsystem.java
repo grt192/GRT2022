@@ -4,6 +4,6 @@ public interface ControllableSubsystem {
     double getTotalCurrentDrawn();
     double minCurrent();
 
-    void setCurrentLimit(int limit);
+    void setCurrentLimit(double limit);
     int getCurrentLimit();
 }
