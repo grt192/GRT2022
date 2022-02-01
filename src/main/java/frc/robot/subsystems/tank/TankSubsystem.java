@@ -249,23 +249,28 @@ public class TankSubsystem extends SubsystemBase implements ControllableSubsyste
   }
 
   @Override
+  public void setCurrentLimit(int limit) { //limit has already been cast to an integer
+    this.currentLimit = limit;
+
+    int motorLimit = (int) Math.ceil(currentLimit / 4); //number of motors
+    leftMain.setSmartCurrentLimit(motorLimit);
+    leftFollow.setSmartCurrentLimit(motorLimit);
+    rightMain.setSmartCurrentLimit(motorLimit);
+    rightFollow.setSmartCurrentLimit(motorLimit);
+  }
+
+  @Override
+  public int getCurrentLimit() {
+    return currentLimit;
+  }
+
+  @Override
   public double getTotalCurrentDrawn() {
-    return PowerController.getCurrentDrawnFromPDP(fLeftMotorPort, fRightMotorPort, bLeftMotorPort, bRightMotorPort);
+    return PowerController.getCurrentDrawnFromPDH(fLeftMotorPort, fRightMotorPort, bLeftMotorPort, bRightMotorPort);
   }
 
   @Override
   public double minCurrent() {
     return minCurrent;
-  }
-
-  @Override
-  public void setCurrentLimit(int limit) {
-    this.currentLimit = limit;
-
-    int motorLimit = currentLimit / 4; // Split limit between motors
-    leftMain.setSmartCurrentLimit(motorLimit);
-    leftFollow.setSmartCurrentLimit(motorLimit);
-    rightMain.setSmartCurrentLimit(motorLimit);
-    rightFollow.setSmartCurrentLimit(motorLimit);
   }
 }
