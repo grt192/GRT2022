@@ -25,7 +25,8 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import frc.robot.GRTSubsystem;
-import frc.robot.PowerController;
+import frc.robot.brownout.PowerController;
+
 import static frc.robot.Constants.TankConstants.*;
 
 public class TankSubsystem extends GRTSubsystem {

@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.brownout.PowerController;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.subsystems.tank.TankSubsystem;
 
@@ -38,6 +39,8 @@ public class RobotContainer {
 
   // Subsystems
   private final TankSubsystem tankSubsystem;
+
+  private final PowerController powerController;
 
   // Controllers
   private XboxController controlXbox = new XboxController(0);
@@ -66,6 +69,8 @@ public class RobotContainer {
 
     // Instantiate subsystems
     tankSubsystem = new TankSubsystem();
+
+    powerController = new PowerController(tankSubsystem);
 
     // Instantiate commands
     // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
