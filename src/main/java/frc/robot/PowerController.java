@@ -160,22 +160,15 @@ public class PowerController {
     }
 
     /**
-     * Increase or decrease a subsystem's priority by 2.5.
+     * Increase or decrease a subsystem's priority by an amount.
      * @param subsystem The subsystem to increase or decrease the priority of.
-     * @param increase Whether to increase or decrease the priority.
+     * @param change The amount to change the priority by.
      */
-    public void changePriority(GRTSubsystem subsystem, boolean increase) {
+    public void changePriority(GRTSubsystem subsystem, double change) {
         double priority = dynamicPriorityList.get(subsystem);
-        double newPriority = increase ? priority + 2.5 : priority - 2.5;
 
-        if (Math.abs(10.0 - newPriority) > 0) {
-            if (newPriority > 0) {
-                newPriority = 0.0;
-            } else {
-                newPriority = 10.0;
-            }
-        }
-
+        // Constrain the new priority within [0, 10]
+        double newPriority = Math.max(Math.min(priority + change, 10), 0);
         dynamicPriorityList.put(subsystem, newPriority);
     }
 
