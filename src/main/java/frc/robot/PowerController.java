@@ -87,8 +87,8 @@ public class PowerController {
         for (GRTSubsystem subsystem : subsystems) {
             if (excluded.contains(subsystem)) continue;
 
-            // Subsystem weight: base + dynamic
-            double weight = basePriority(subsystem) + dynamicPriorities.get(subsystem);
+            // Subsystem weight: base * dynamic
+            double weight = basePriority(subsystem) * dynamicPriorities.get(subsystem);
             weightedPriorities.put(subsystem, weight);
             totalPriority += weight;
         }
@@ -167,7 +167,7 @@ public class PowerController {
      * @param subsystem The subsystem to increase or decrease the priority of.
      * @param change The amount to change the priority by.
      */
-    public void changePriority(GRTSubsystem subsystem, double change) {
+    public void setPriority(GRTSubsystem subsystem, double change) {
         double priority = dynamicPriorities.get(subsystem);
 
         // Constrain the new priority within [0, 10]
@@ -178,14 +178,15 @@ public class PowerController {
     /**
      * Returns the base priority assigned to a subsystem.
      * @param subsystem The subsystem to check.
-     * @return An int rescribing the subsystem's base priority.
+     * @return An int describing the subsystem's base priority (higher = better).
      */
     private double basePriority(GRTSubsystem subsystem) {
-        if (subsystem instanceof TankSubsystem) return 1.0;
+        if (subsystem instanceof TankSubsystem) return 2.4;
         /*
-        if (subsystem instanceof IntakeSubsystem) return 2.0;
-        if (subsystem instanceof ShooterSubsystem) return 3.0;
-        if (subsystem instanceof ClimbSubsystem) return 4.0;
+        if (subsystem instanceof IntakeSubsystem) return 2.2;
+        if (susbsystem instanceof InternalSubsystem) return 2.0;
+        if (subsystem instanceof TurretSubsystem) return 1.9;
+        if (subsystem instanceof ClimbSubsystem) return 1.7;
         */
         return 0.0;
     }
