@@ -51,7 +51,6 @@ public class RobotContainer {
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
-   * 
    */
   public RobotContainer() {
 
@@ -120,5 +119,13 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     return tankCommand;
+  }
+
+  /**
+   * Gets the PowerController instance.
+   * @return The PowerController instance.
+   */
+  public PowerController getPowerController() {
+    return powerController;
   }
 }

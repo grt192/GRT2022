@@ -19,10 +19,6 @@ public class PowerController {
 
     public PowerController(GRTSubsystem... subsystems) {
         this.subsystems = subsystems;
-
-        // Start the power controller thread
-        Thread powerControllerThread = new Thread(new PowerControllerThread(this));
-        powerControllerThread.start();
     }
 
     /**
