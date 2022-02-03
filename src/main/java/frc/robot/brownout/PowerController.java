@@ -1,7 +1,9 @@
 package frc.robot.brownout;
 
 import java.util.HashSet;
+import java.util.Set;
 
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import frc.robot.GRTSubsystem;
 
@@ -27,37 +29,46 @@ public class PowerController {
     /**
      * Calculates the current limits for each subsystem based on their usage.
      * This method ensures that all subsystem limits sum to `totalSustainableCurrent`, with dynamic limit distribution
-     * based on usage ratios.
+     * based on usage ratios and minimum current values.
      */
     public void calculateLimits() {
+        calculateLimits(totalSustainableCurrent, PDH.getTotalCurrent(), Set.of(subsystems));
+    }
+
+    /**
+     * Calculates the current limits for each subsystem based on their usage.
+     * This method ensures that all subsystem limits sum to `totalSustainableCurrent`, with dynamic limit distribution
+     * based on usage ratios and minimum current values.
+     * 
+     * @param totalCurrent The total current limit.
+     * @param totalDraw The total current draw.
+     * @param remaining The remaining (non-scaled) subsystems.
+     */
+    private void calculateLimits(double totalCurrent, double totalDraw, Set<GRTSubsystem> remaining) {
         // Calculate the "ideal ratio" from the total drawn current
-        double totalCurrentLimit = totalSustainableCurrent;
-        double totalCurrentDrawn = PDH.getTotalCurrent();
-        double idealRatio = totalCurrentLimit / totalCurrentDrawn;
+        double idealRatio = totalCurrent / totalDraw;
 
         // Check each subsystem to see if they cannot be scaled (if the resultant limit would be below their minimum current).
         // If this is the case, limit the system by its minimum and adjust the ideal ratio accordingly.
-        HashSet<GRTSubsystem> belowMin = new HashSet<>();
-        for (GRTSubsystem subsystem : subsystems) {
+        for (GRTSubsystem subsystem : remaining) {
             double drawn = subsystem.getTotalCurrentDrawn();
             double min = subsystem.getMinCurrent();
 
             if (drawn * idealRatio < min) {
-                // Adjust the ratio to as if the below-minimum subsystem were excluded entirely from the calculation
-                totalCurrentDrawn -= drawn;
-                totalCurrentLimit -= min;
-                idealRatio = totalCurrentLimit / totalCurrentDrawn;
-
                 subsystem.setCurrentLimit(min);
-                belowMin.add(subsystem);
+
+                HashSet<GRTSubsystem> cloned = new HashSet<GRTSubsystem>(remaining);
+                cloned.remove(subsystem);
+
+                // Adjust the ratio to as if the below-minimum subsystem were excluded entirely from the calculation
+                calculateLimits(totalCurrent - min, totalDraw - drawn, cloned);
             }
         }
 
         // For all other subsystems, limit each subsystem by scaling their current draw by the ideal ratio.
         // This acts to distribute unused limit to subsystems which are approaching their limits while maintaining that the
         // sum of all the current limits adds up to the total sustainable threshold.
-        for (GRTSubsystem subsystem : subsystems) {
-            if (belowMin.contains(subsystem)) continue;
+        for (GRTSubsystem subsystem : remaining) {
             subsystem.setCurrentLimit(subsystem.getTotalCurrentDrawn() * idealRatio);
         }
     }
