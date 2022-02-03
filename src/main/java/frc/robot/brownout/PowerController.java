@@ -3,7 +3,6 @@ package frc.robot.brownout;
 import java.util.HashSet;
 import java.util.Set;
 
-import edu.wpi.first.math.Pair;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import frc.robot.GRTSubsystem;
 
@@ -57,10 +56,9 @@ public class PowerController {
             if (drawn * idealRatio < min) {
                 subsystem.setCurrentLimit(min);
 
+                // Adjust the ratio to as if the below-minimum subsystem were excluded entirely from the calculation
                 HashSet<GRTSubsystem> cloned = new HashSet<GRTSubsystem>(remaining);
                 cloned.remove(subsystem);
-
-                // Adjust the ratio to as if the below-minimum subsystem were excluded entirely from the calculation
                 calculateLimits(totalCurrent - min, totalDraw - drawn, cloned);
             }
         }
@@ -80,16 +78,9 @@ public class PowerController {
      */
     public static double getCurrentDrawnFromPDH(int... channels) {
         double sum = 0;
-
         for (int channel : channels) {
             sum += PDH.getCurrent(channel);
         }
-
-        // Is this necessary?
-        if (channels.length == 16 && (sum != PDH.getTotalCurrent())) {
-            System.out.println("something is wrong, total current does not match");
-        }
-
         return sum;
     }
 }
