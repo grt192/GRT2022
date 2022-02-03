@@ -1,5 +1,7 @@
 package frc.robot.brownout;
 
+import java.util.HashSet;
+
 import edu.wpi.first.wpilibj.PowerDistribution;
 import frc.robot.GRTSubsystem;
 
@@ -29,17 +31,34 @@ public class PowerController {
      */
     public void calculateLimits() {
         // Calculate the "ideal ratio" from the total drawn current
-        double idealRatio = totalSustainableCurrent / PDH.getTotalCurrent();
+        double totalCurrentLimit = totalSustainableCurrent;
+        double totalCurrentDrawn = PDH.getTotalCurrent();
+        double idealRatio = totalCurrentLimit / totalCurrentDrawn;
 
-        // Limit each subsystem by scaling their current draw by the ideal ratio.
+        // Check each subsystem to see if they cannot be scaled (if the resultant limit would be below their minimum current).
+        // If this is the case, limit the system by its minimum and adjust the ideal ratio accordingly.
+        HashSet<GRTSubsystem> belowMin = new HashSet<>();
+        for (GRTSubsystem subsystem : subsystems) {
+            double drawn = subsystem.getTotalCurrentDrawn();
+            double min = subsystem.getMinCurrent();
+
+            if (drawn * idealRatio < min) {
+                // Adjust the ratio to as if the below-minimum subsystem were excluded entirely from the calculation
+                totalCurrentDrawn -= drawn;
+                totalCurrentLimit -= min;
+                idealRatio = totalCurrentLimit / totalCurrentDrawn;
+
+                subsystem.setCurrentLimit(min);
+                belowMin.add(subsystem);
+            }
+        }
+
+        // For all other subsystems, limit each subsystem by scaling their current draw by the ideal ratio.
         // This acts to distribute unused limit to subsystems which are approaching their limits while maintaining that the
         // sum of all the current limits adds up to the total sustainable threshold.
-        // As the ideal ratio approaches 1, no distribution can occur until a subsystem drops its current usage.
         for (GRTSubsystem subsystem : subsystems) {
-            double limit = subsystem.getTotalCurrentDrawn() * idealRatio;
-            // TODO: minCurrent enforcement? This would only be applicable in the case where idealRatio = 1 and a subsystem
-            // which was using less power than its minimum gets "locked" at that low usage until other subsystems stop using current
-            subsystem.setCurrentLimit(limit);
+            if (belowMin.contains(subsystem)) continue;
+            subsystem.setCurrentLimit(subsystem.getTotalCurrentDrawn() * idealRatio);
         }
     }
 

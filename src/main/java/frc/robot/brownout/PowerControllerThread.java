@@ -1,7 +1,8 @@
 package frc.robot.brownout;
 
 /**
- * A thread to continuously call `PowerController.calculateLimits()` every second.
+ * A thread to continuously call `PowerController.calculateLimits()` every millisecond.
+ * This time interval needs to be small as `PowerController` needs to be incredibly responsive to current draw changes.
  */
 public class PowerControllerThread implements Runnable {
     private final PowerController powerController;
@@ -16,7 +17,7 @@ public class PowerControllerThread implements Runnable {
             powerController.calculateLimits();
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(1);
             } catch (InterruptedException e) {
                 System.out.println("PowerController thread sleep interrupted");
             }
