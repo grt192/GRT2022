@@ -27,7 +27,9 @@ public class PowerController {
      * based on usage ratios and minimum current values.
      */
     public void calculateLimits() {
-        calculateLimits(totalSustainableCurrent, PDH.getTotalCurrent(), Set.of(subsystems));
+        double totalDraw = PDH.getTotalCurrent();
+        if (totalDraw == 0) return;
+        calculateLimits(totalSustainableCurrent, totalDraw, Set.of(subsystems));
     }
 
     /**
@@ -56,6 +58,7 @@ public class PowerController {
                 HashSet<GRTSubsystem> cloned = new HashSet<GRTSubsystem>(remaining);
                 cloned.remove(subsystem);
                 calculateLimits(totalCurrent - min, totalDraw - drawn, cloned);
+                return;
             }
         }
 

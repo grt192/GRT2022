@@ -22,7 +22,6 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
@@ -189,8 +188,6 @@ public class TankSubsystem extends GRTSubsystem {
     shuffleboardXEntry.setDouble(pose.getX());
     shuffleboardYEntry.setDouble(pose.getY());
     shuffleboardField.setRobotPose(pose);
-
-    System.out.println("Odometry readings: " + poseEstimator.getEstimatedPosition());
   }
 
     /**
