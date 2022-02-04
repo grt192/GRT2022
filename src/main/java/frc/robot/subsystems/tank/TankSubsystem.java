@@ -22,11 +22,13 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+import frc.robot.GRTSubsystem;
+import frc.robot.brownout.PowerController;
 
 import static frc.robot.Constants.TankConstants.*;
 
-public class TankSubsystem extends SubsystemBase {
+public class TankSubsystem extends GRTSubsystem {
   private final CANSparkMax leftMain;
   private final CANSparkMax leftFollow;
 
@@ -44,9 +46,13 @@ public class TankSubsystem extends SubsystemBase {
   private final NetworkTableEntry shuffleboardYEntry;
   private final Field2d shuffleboardField;
 
-  public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
+  public static final double ENCODER_ROTATIONS_TO_METERS = 5.0 / 92.08;
 
   public TankSubsystem() {
+    // Initialize the subsystem's minimum current and limit
+    // TODO: determine values
+    super(350, 50.0);
+
     // Init left main and follower motors and encoders
     leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
     leftMain.restoreFactoryDefaults();
@@ -182,8 +188,6 @@ public class TankSubsystem extends SubsystemBase {
     shuffleboardXEntry.setDouble(pose.getX());
     shuffleboardYEntry.setDouble(pose.getY());
     shuffleboardField.setRobotPose(pose);
-
-    System.out.println("Odometry readings: " + poseEstimator.getEstimatedPosition());
   }
 
     /**
@@ -240,5 +244,21 @@ public class TankSubsystem extends SubsystemBase {
    */
   private double squareInput(double value) {
     return Math.copySign(value * value, value);
+  }
+
+  @Override
+  public void setCurrentLimit(double limit) {
+    this.currentLimit = (int) limit;
+
+    int motorLimit = (int) Math.ceil(currentLimit / 4.0); //number of motors
+    leftMain.setSmartCurrentLimit(motorLimit);
+    leftFollow.setSmartCurrentLimit(motorLimit);
+    rightMain.setSmartCurrentLimit(motorLimit);
+    rightFollow.setSmartCurrentLimit(motorLimit);
+  }
+
+  @Override
+  public double getTotalCurrentDrawn() {
+    return PowerController.getCurrentDrawnFromPDH(fLeftMotorPort, fRightMotorPort, bLeftMotorPort, bRightMotorPort);
   }
 }
