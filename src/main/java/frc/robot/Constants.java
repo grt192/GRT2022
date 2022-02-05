@@ -19,22 +19,22 @@ import edu.wpi.first.wpilibj.util.Color;
  */
 public final class Constants {
     public static final class TankConstants {
-        public static final int fLeftMotorPort = 14;
-        public static final int bLeftMotorPort = 15;
+        public static final int fLeftMotorPort = 19;
+        public static final int bLeftMotorPort = 20;
 
         public static final int fRightMotorPort = 2;
         public static final int bRightMotorPort = 1;
     }
 
     public static final class TurretConstants {
-        public static final int turntablePort = 0;
-        public static final int hoodPort = 1;
-        public static final int flywheelPort = 2;
+        public static final int turntablePort = 5;
+        public static final int hoodPort = 6;
+        public static final int flywheelPort = 7;
     }
 
     public static final class InternalConstants {
-        public static final int motorPortBottom = 1;
-        public static final int motorPortTop = 2;
+        public static final int motorPortBottom = 8;
+        public static final int motorPortTop = 9;
 
         public static final int entranceIRPort = 0;
         public static final int exitIRPort = 1;
@@ -45,21 +45,21 @@ public final class Constants {
     }
 
     public static final class ClimbConstants {
-        public static final int sixMotorPort = 0;
-        public static final int sixBrakePort = 1;
+        public static final int sixMotorPort = 10;
+        public static final int sixBrakePort = 11;
 
-        public static final int tenMotorPort = 2;
-        public static final int tenBrakePort = 3;
-        public static final int tenLeftSolenoidPort = 4;
-        public static final int tenRightSolenoidPort = 5;
+        public static final int tenMotorPort = 12;
+        public static final int tenBrakePort = 13;
+        public static final int tenLeftSolenoidPort = 14;
+        public static final int tenRightSolenoidPort = 15;
 
-        public static final int fifteenLeftPort = 6;
-        public static final int fifteenRightPort = 7;
+        public static final int fifteenLeftPort = 16;
+        public static final int fifteenRightPort = 17;
     }
 
     public static final class IntakeConstants {
-        public static final int intakePort = 0;
-        public static final int deploymentPort = 1;
+        public static final int intakePort = 3;
+        public static final int deploymentPort = 4;
     }
 
     public static final class JetsonConstants {

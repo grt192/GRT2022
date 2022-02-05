@@ -137,6 +137,7 @@ public class RobotContainer {
      * 
      * Controller 1 (driver):
      * Joysticks -> car drive (tank)
+     * Left trigger -> run intake (intake)
      * A button -> lower intake (intake)
      * B button -> raise intake (intake)
      * 
