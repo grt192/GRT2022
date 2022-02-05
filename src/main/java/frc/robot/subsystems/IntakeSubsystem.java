@@ -30,6 +30,8 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     private IntakePosition currentPosition;
 
+    private boolean driverRequesting = false;
+
     // Deploy position PID constants
     private static final double kP = 0.125;
     private static final double kI = 0;
@@ -82,12 +84,21 @@ public class IntakeSubsystem extends GRTSubsystem {
         deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
 
-        // If the jetson detects a ball, the intake is deployed, and there are less than 2 balls in internals, 
-        // run the motors
-        intake.set(jetson.ballDetected() 
+        // If the jetson detects a ball or the driver is running the intake, the intake is deployed, 
+        // and there are less than 2 balls in internals, run the intake motor
+        intake.set((jetson.ballDetected() || driverRequesting) 
             && currentPosition == IntakePosition.DEPLOYED 
             && internalSubsystem.getBallCount() < 2
             ? 0.5 : 0);
+    }
+
+    /**
+     * Sets whether the driver is attempting to run the intake. Note that this will override `jetson.ballDetected()` but *not*
+     * the other conditions; intake will not run if the mechanism is not deployed or there are too many balls in internals.
+     * @param requesting Whether the driver is running the intake.
+     */
+    public void setDriverInput(boolean requesting) {
+        driverRequesting = requesting;
     }
 
     /**

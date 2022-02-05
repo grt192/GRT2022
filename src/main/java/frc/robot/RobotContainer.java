@@ -151,10 +151,12 @@ public class RobotContainer {
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechXButton.whenPressed(climbSubsystem.climb());
 
-        Runnable tank = () -> {
-            tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
-        };
+        Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
         tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
+
+        // TODO: tune deadband
+        Runnable intake = () -> intakeSubsystem.setDriverInput(driveController.getLeftTriggerAxis() > 0.1);
+        intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
     }
 
     /**

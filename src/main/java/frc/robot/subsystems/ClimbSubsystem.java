@@ -264,12 +264,15 @@ public class ClimbSubsystem extends GRTSubsystem {
 
     @Override
     public double getTotalCurrentDrawn() {
-        return PowerController.getCurrentDrawnFromPDH(sixMotorPort, sixBrakePort, tenMotorPort, tenBrakePort, fifteenLeftPort, fifteenRightPort);
+        return PowerController.getCurrentDrawnFromPDH(
+            sixMotorPort, sixBrakePort, tenMotorPort, tenBrakePort, 
+            fifteenLeftPort, fifteenRightPort, tenLeftSolenoidPort, tenRightSolenoidPort
+        );
     }
 
     @Override
     public void setCurrentLimit(double limit) {
-        // TODO: do the brakes draw significant power? should they be factored in to the limit calculation?
+        // TODO: do the solenoids draw significant power? should they be factored in to the limit calculation?
         int motorLimit = (int) Math.floor(limit / 4);
 
         six.setSmartCurrentLimit(motorLimit);
