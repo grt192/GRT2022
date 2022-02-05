@@ -48,9 +48,9 @@ public class RobotContainer {
     // Subsystems
     private final TankSubsystem tankSubsystem;
     private final TurretSubsystem turretSubsystem;
+    private final IntakeSubsystem intakeSubsystem;
     private final InternalSubsystem internalSubsystem;
     private final ClimbSubsystem climbSubsystem;
-    private final IntakeSubsystem intakeSubsystem;
 
     private final JetsonConnection jetson;
     private final PowerController powerController;
@@ -90,11 +90,17 @@ public class RobotContainer {
         tankSubsystem = new TankSubsystem();
         turretSubsystem = new TurretSubsystem(jetson);
         internalSubsystem = new InternalSubsystem(turretSubsystem);
-        climbSubsystem = new ClimbSubsystem();
         intakeSubsystem = new IntakeSubsystem(internalSubsystem, jetson);
+        climbSubsystem = new ClimbSubsystem();
 
         // Instantiate power controller
-        powerController = new PowerController();
+        powerController = new PowerController(
+            tankSubsystem, 
+            turretSubsystem, 
+            internalSubsystem, 
+            intakeSubsystem, 
+            climbSubsystem
+        );
 
         // Instantiate commands
         // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints

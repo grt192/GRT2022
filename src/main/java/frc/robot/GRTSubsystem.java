@@ -6,16 +6,13 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * A convenience class wrapping SubsystemBase for brownout and other shared subsystem logic.
  */
 public abstract class GRTSubsystem extends SubsystemBase {
-    protected int currentLimit;
     protected final double minCurrent;
 
     /**
-     * Creates a GRTSubsystem from a given initial current limit and minimum current.
-     * @param currentLimit The initial (maximum) current limit.
+     * Creates a GRTSubsystem from the given minimum current.
      * @param minCurrent The minimum current.
      */
-    public GRTSubsystem(int currentLimit, double minCurrent) {
-        this.currentLimit = currentLimit;
+    public GRTSubsystem(double minCurrent) {
         this.minCurrent = minCurrent;
     }
 
@@ -28,14 +25,6 @@ public abstract class GRTSubsystem extends SubsystemBase {
     }
 
     /**
-     * Gets the subsystem's current current limit.
-     * @return The current limit.
-     */
-    public int getCurrentLimit() {
-        return currentLimit;
-    }
-
-    /**
      * Gets the total current being drawn by the subsystem. Implementers should use `PowerController.getCurrentDrawnFromPDH`
      * with all the subsystem's motor controller ports.
      * @return The total current being drawn by the subsystem.
@@ -43,7 +32,8 @@ public abstract class GRTSubsystem extends SubsystemBase {
     abstract public double getTotalCurrentDrawn();
 
     /**
-     * Sets the subsystem's current limit.
+     * Sets the subsystem's current limit. Implementers should split the subsystem's limit between their motor controllers and 
+     * call `setSmartCurrentLimit()` or the Talon equivalent to enforce the limit.
      * @param limit The current limit (in amps) for the subsystem.
      */
     abstract public void setCurrentLimit(double limit);

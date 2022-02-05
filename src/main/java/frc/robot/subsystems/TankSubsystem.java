@@ -18,14 +18,16 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+import frc.robot.GRTSubsystem;
+import frc.robot.brownout.PowerController;
 
 import static frc.robot.Constants.TankConstants.*;
 
 /**
  * A subsystem which controls the robot's drivetrain. This subsystem handles both driving and odometry.
  */
-public class TankSubsystem extends SubsystemBase {
+public class TankSubsystem extends GRTSubsystem {
     private final CANSparkMax leftMain;
     private final CANSparkMax leftFollow;
 
@@ -46,6 +48,9 @@ public class TankSubsystem extends SubsystemBase {
     public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
 
     public TankSubsystem() {
+        // TODO: measure this
+        super(50);
+
         // Init left main and follower motors and encoders
         leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
         leftMain.restoreFactoryDefaults();
@@ -237,5 +242,18 @@ public class TankSubsystem extends SubsystemBase {
      */
     private double squareInput(double value) {
         return Math.copySign(value * value, value);
+    }
+
+    @Override
+    public double getTotalCurrentDrawn() {
+        return PowerController.getCurrentDrawnFromPDH(fRightMotorPort, fLeftMotorPort, bRightMotorPort, bLeftMotorPort);
+    }
+
+    @Override
+    public void setCurrentLimit(double limit) {
+        int motorLimit = (int) Math.floor(limit / 4);
+
+        leftMain.setSmartCurrentLimit(motorLimit);
+        rightMain.setSmartCurrentLimit(motorLimit);
     }
 }

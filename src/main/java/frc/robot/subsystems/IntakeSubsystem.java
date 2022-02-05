@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import com.revrobotics.CANSparkMax;
@@ -11,13 +12,16 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+import frc.robot.GRTSubsystem;
+import frc.robot.brownout.PowerController;
 import frc.robot.commands.intake.DeployIntakeCommand;
 import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.jetson.JetsonConnection;
+
 import static frc.robot.Constants.IntakeConstants.*;
 
-public class IntakeSubsystem extends SubsystemBase {
+public class IntakeSubsystem extends GRTSubsystem {
     private final InternalSubsystem internalSubsystem;
     private final JetsonConnection jetson;
 
@@ -40,6 +44,9 @@ public class IntakeSubsystem extends SubsystemBase {
     private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
 
     public IntakeSubsystem(InternalSubsystem internalSubsystem, JetsonConnection jetson) {
+        // TODO: measure this
+        super(50);
+
         this.internalSubsystem = internalSubsystem;
         this.jetson = jetson;
 
@@ -104,5 +111,18 @@ public class IntakeSubsystem extends SubsystemBase {
         private IntakePosition(double value) {
             this.value = value;
         }
+    }
+
+    @Override
+    public double getTotalCurrentDrawn() {
+        return PowerController.getCurrentDrawnFromPDH(intakePort, deploymentPort);
+    }
+
+    @Override
+    public void setCurrentLimit(double limit) {
+        int motorLimit = (int) Math.floor(limit / 2);
+
+        deploy.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
+        intake.setSmartCurrentLimit(motorLimit);
     }
 }

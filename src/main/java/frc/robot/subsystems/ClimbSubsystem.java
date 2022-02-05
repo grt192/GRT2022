@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import com.revrobotics.CANSparkMax;
@@ -17,12 +18,14 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
+
+import frc.robot.GRTSubsystem;
+import frc.robot.brownout.PowerController;
 
 import static frc.robot.Constants.ClimbConstants.*;
 
-public class ClimbSubsystem extends SubsystemBase {
+public class ClimbSubsystem extends GRTSubsystem {
     private final CANSparkMax six;
     private final RelativeEncoder sixEncoder;
     private final SparkMaxPIDController sixPidController;
@@ -68,6 +71,9 @@ public class ClimbSubsystem extends SubsystemBase {
     private final NetworkTableEntry shuffleboardFifteenDEntry;
 
     public ClimbSubsystem() {
+        // TODO: measure this
+        super(20);
+
         // Initialize six point arm NEO, encoder PID, and solenoid brake
         six = new CANSparkMax(sixMotorPort, MotorType.kBrushless);
         six.restoreFactoryDefaults();
@@ -254,5 +260,20 @@ public class ClimbSubsystem extends SubsystemBase {
             new WaitUntilCommand(() -> withinThreshold(tenEncoder.getPosition(), 10)),
             new ClimbPhase3Command()
         );
+    }
+
+    @Override
+    public double getTotalCurrentDrawn() {
+        return PowerController.getCurrentDrawnFromPDH(sixMotorPort, sixBrakePort, tenMotorPort, tenBrakePort, fifteenLeftPort, fifteenRightPort);
+    }
+
+    @Override
+    public void setCurrentLimit(double limit) {
+        // TODO: do the brakes draw significant power? should they be factored in to the limit calculation?
+        int motorLimit = (int) Math.floor(limit / 4);
+
+        six.setSmartCurrentLimit(motorLimit);
+        ten.setSmartCurrentLimit(motorLimit);
+        fifteenMain.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
     }
 }

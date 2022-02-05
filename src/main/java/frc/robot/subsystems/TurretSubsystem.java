@@ -3,28 +3,30 @@ package frc.robot.subsystems;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
-import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import frc.robot.GRTSubsystem;
+import frc.robot.brownout.PowerController;
 import frc.robot.jetson.JetsonConnection;
+
 import static frc.robot.Constants.TurretConstants.*;
 
 /**
  * A subsystem which controls the turret mechanism on the robot. 
  * Note that the act of shooting is handled by internals; this subsystem only handles aiming (calculations and shot readiness).
  */
-public class TurretSubsystem extends SubsystemBase {
+public class TurretSubsystem extends GRTSubsystem {
     private final JetsonConnection jetson;
 
     private final WPI_TalonSRX turntable;
@@ -72,6 +74,9 @@ public class TurretSubsystem extends SubsystemBase {
     private final NetworkTableEntry shuffleboardFlywheelDEntry;
 
     public TurretSubsystem(JetsonConnection connection) {
+        // TODO: measure this
+        super(50);
+
         // Initialize turntable CIM and encoder PID
         turntable = new WPI_TalonSRX(turntablePort);
         turntable.configFactoryDefault();
@@ -220,11 +225,11 @@ public class TurretSubsystem extends SubsystemBase {
      * @return The state of the turret.
      */
     public ModuleState getState() {
-        // TODO: is there a better way to implement this?
         ModuleState flywheelState = flywheelReady();
         ModuleState turntableState = turntableAligned();
         ModuleState hoodState = hoodReady();
 
+        // TODO: is there a better way to implement this?
         return flywheelState == ModuleState.RED || turntableState == ModuleState.RED || hoodState == ModuleState.RED ? ModuleState.RED
             : flywheelState == ModuleState.ORANGE || turntableState == ModuleState.ORANGE || hoodState == ModuleState.ORANGE ? ModuleState.ORANGE
             : ModuleState.GREEN;
@@ -234,6 +239,7 @@ public class TurretSubsystem extends SubsystemBase {
      * Cleans up the subsystem for climb (sets the Turret's mode to RETRACTED).
      * In RETRACTED, the turntable faces the same direction as the robot, the hood is retracted, and the flywheel is off.
      */
+    @Override
     public void climbInit() {
         mode = TurretMode.RETRACTED;
     }
@@ -258,5 +264,19 @@ public class TurretSubsystem extends SubsystemBase {
      */
     public enum ModuleState {
         GREEN, ORANGE, RED
+    }
+
+    @Override
+    public double getTotalCurrentDrawn() {
+        return PowerController.getCurrentDrawnFromPDH(turntablePort, hoodPort, flywheelPort);
+    }
+
+    @Override
+    public void setCurrentLimit(double limit) {
+        int motorLimit = (int) Math.floor(limit / 3);
+
+        turntable.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
+        hood.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
+        flywheel.setSmartCurrentLimit(motorLimit);
     }
 }
