@@ -22,6 +22,8 @@ import frc.robot.subsystems.TankSubsystem;
  * and waypoints given as a List of `Translation2d`. All units are in meters.
  * 
  * https://docs.wpilib.org/en/stable/docs/software/examples-tutorials/trajectory-tutorial/trajectory-tutorial-overview.html
+ * 
+ * TODO: remeasure constants for new robot
  */
 public class FollowPathCommand extends RamseteCommand {
     // Robot constants

@@ -29,10 +29,12 @@ import static frc.robot.Constants.TankConstants.*;
  */
 public class TankSubsystem extends GRTSubsystem {
     private final CANSparkMax leftMain;
-    private final CANSparkMax leftFollow;
+    private final CANSparkMax leftMiddle;
+    private final CANSparkMax leftBack;
 
     private final CANSparkMax rightMain;
-    private final CANSparkMax rightFollow;
+    private final CANSparkMax rightMiddle;
+    private final CANSparkMax rightBack;
 
     private final RelativeEncoder leftEncoder;
     private final RelativeEncoder rightEncoder;
@@ -45,6 +47,7 @@ public class TankSubsystem extends GRTSubsystem {
     private final NetworkTableEntry shuffleboardYEntry;
     private final Field2d shuffleboardField;
 
+    // TODO: measure this for new robot
     public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
 
     public TankSubsystem() {
@@ -63,10 +66,15 @@ public class TankSubsystem extends GRTSubsystem {
         leftEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
         leftEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
 
-        leftFollow = new CANSparkMax(bLeftMotorPort, MotorType.kBrushless);
-        leftFollow.restoreFactoryDefaults();
-        leftFollow.follow(leftMain);
-        leftFollow.setIdleMode(IdleMode.kBrake);
+        leftMiddle = new CANSparkMax(mLeftMotorPort, MotorType.kBrushless);
+        leftMiddle.restoreFactoryDefaults();
+        leftMiddle.follow(leftMain);
+        leftMiddle.setIdleMode(IdleMode.kBrake);
+
+        leftBack = new CANSparkMax(bLeftMotorPort, MotorType.kBrushless);
+        leftBack.restoreFactoryDefaults();
+        leftBack.follow(leftMain);
+        leftBack.setIdleMode(IdleMode.kBrake);
 
         // Init right main and follower motors
         rightMain = new CANSparkMax(fRightMotorPort, MotorType.kBrushless);
@@ -78,10 +86,15 @@ public class TankSubsystem extends GRTSubsystem {
         rightEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
         rightEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
 
-        rightFollow = new CANSparkMax(bRightMotorPort, MotorType.kBrushless);
-        rightFollow.restoreFactoryDefaults();
-        rightFollow.follow(rightMain);
-        rightFollow.setIdleMode(IdleMode.kBrake);
+        rightMiddle = new CANSparkMax(mRightMotorPort, MotorType.kBrushless);
+        rightMiddle.restoreFactoryDefaults();
+        rightMiddle.follow(rightMain);
+        rightMiddle.setIdleMode(IdleMode.kBrake);
+
+        rightBack = new CANSparkMax(bRightMotorPort, MotorType.kBrushless);
+        rightBack.restoreFactoryDefaults();
+        rightBack.follow(rightMain);
+        rightBack.setIdleMode(IdleMode.kBrake);
 
         // Initialize navX AHRS
         // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
