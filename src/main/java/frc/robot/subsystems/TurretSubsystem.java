@@ -51,20 +51,23 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double flywheelI = 0;
     private static final double flywheelD = 0;
 
-    // State variables
+    // Desired state variables
     // TODO: measure these, add constants
     private double desiredFlywheelSpeed = 30.0;
     private double desiredTurntablePosition = 0.0;
     private double desiredHoodAngle = 0.0;
 
+    private static final double DEGREES_TO_TURNTABLE_TICKS = 1.0 / 1.0;
+    private static final double DEGREES_TO_HOOD_TICKS = 1.0 / 1.0;
+
     private TurretMode mode = TurretMode.SHOOTING;
 
     // Soft limit constants
-    private static final double TURNTABLE_MIN_ANGLE = -270.0;
-    private static final double TURNTABLE_MAX_ANGLE = 270.0;
+    private static final double TURNTABLE_MIN_POS = -270.0 * DEGREES_TO_TURNTABLE_TICKS;
+    private static final double TURNTABLE_MAX_POS = 270.0 * DEGREES_TO_TURNTABLE_TICKS;
 
-    private static final double HOOD_MAX_ANGLE = 50.0;
-    private static final double HOOD_MIN_ANGLE = 0.0;
+    private static final double HOOD_MAX_POS = 50.0 * DEGREES_TO_HOOD_TICKS;
+    private static final double HOOD_MIN_POS = 0.0 * DEGREES_TO_HOOD_TICKS;    
 
     private final ShuffleboardTab shuffleboardTab;
     private final NetworkTableEntry shuffleboardTurntablePEntry;
@@ -99,8 +102,8 @@ public class TurretSubsystem extends GRTSubsystem {
         // https://www.chiefdelphi.com/t/soft-limit-switches-with-talonsrx-and-victorspx-and-vendor-libraries/345054
         turntable.configForwardSoftLimitEnable(true);
         turntable.configReverseSoftLimitEnable(true);
-        turntable.configForwardSoftLimitThreshold(TURNTABLE_MAX_ANGLE);
-        turntable.configReverseSoftLimitThreshold(TURNTABLE_MIN_ANGLE);
+        turntable.configForwardSoftLimitThreshold(TURNTABLE_MAX_POS);
+        turntable.configReverseSoftLimitThreshold(TURNTABLE_MIN_POS);
 
         // Initialize hood 775 and encoder PID
         hood = new WPI_TalonSRX(hoodPort);
@@ -116,8 +119,8 @@ public class TurretSubsystem extends GRTSubsystem {
 
         hood.configForwardSoftLimitEnable(true);
         hood.configReverseSoftLimitEnable(true);
-        hood.configForwardSoftLimitThreshold(HOOD_MAX_ANGLE);
-        hood.configReverseSoftLimitThreshold(HOOD_MIN_ANGLE);
+        hood.configForwardSoftLimitThreshold(HOOD_MAX_POS);
+        hood.configReverseSoftLimitThreshold(HOOD_MIN_POS);
 
         // Initialize flywheel NEO and encoder PID
         flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
@@ -173,7 +176,7 @@ public class TurretSubsystem extends GRTSubsystem {
         } else {
             // Set the turntable position from the relative theta given by vision
             // TODO: check if jetson is out of range and fall back to odometry
-            desiredTurntablePosition = turntable.getSelectedSensorPosition() + jetson.getTurretTheta();
+            desiredTurntablePosition = turntable.getSelectedSensorPosition() + jetson.getTurretTheta() * DEGREES_TO_TURNTABLE_TICKS;
 
             double distance = jetson.getHubDistance();
             // TODO: constants, interpolation
@@ -185,7 +188,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
         flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
         hood.set(ControlMode.Position, desiredHoodAngle);
-        turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_ANGLE), TURNTABLE_MIN_ANGLE));
+        turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
     }
 
     /**
@@ -217,7 +220,7 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     private ModuleState turntableAligned() {
         // If the calculated theta is in the blind spot, return the RED state
-        if (desiredTurntablePosition < TURNTABLE_MIN_ANGLE || desiredTurntablePosition > TURNTABLE_MAX_ANGLE)
+        if (desiredTurntablePosition < TURNTABLE_MIN_POS || desiredTurntablePosition > TURNTABLE_MAX_POS)
             return ModuleState.RED;
 
         // TODO: test thresholding values
