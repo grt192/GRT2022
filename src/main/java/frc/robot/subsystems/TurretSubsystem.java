@@ -30,7 +30,6 @@ public class TurretSubsystem extends GRTSubsystem {
     private final JetsonConnection jetson;
 
     private final WPI_TalonSRX turntable;
-
     private final WPI_TalonSRX hood;
 
     private final CANSparkMax flywheel;
@@ -54,11 +53,18 @@ public class TurretSubsystem extends GRTSubsystem {
 
     // State variables
     // TODO: measure these, add constants
-    private double flywheelSpeed = 30.0;
-    private double turntablePosition = 0.0;
-    private double hoodAngle = 60.0;
+    private double desiredFlywheelSpeed = 30.0;
+    private double desiredTurntablePosition = 0.0;
+    private double desiredHoodAngle = 0.0;
 
     private TurretMode mode = TurretMode.SHOOTING;
+
+    // Soft limit constants
+    private static final double TURNTABLE_MIN_ANGLE = -270.0;
+    private static final double TURNTABLE_MAX_ANGLE = 270.0;
+
+    private static final double HOOD_MAX_ANGLE = 50.0;
+    private static final double HOOD_MIN_ANGLE = 0.0;
 
     private final ShuffleboardTab shuffleboardTab;
     private final NetworkTableEntry shuffleboardTurntablePEntry;
@@ -89,6 +95,13 @@ public class TurretSubsystem extends GRTSubsystem {
         turntable.config_kI(0, turntableI);
         turntable.config_kD(0, turntableD);
 
+        // Enable talon soft limiting, stopping the motor if it's going forwards past MAX_ANGLE and backwards past MIN_ANGLE
+        // https://www.chiefdelphi.com/t/soft-limit-switches-with-talonsrx-and-victorspx-and-vendor-libraries/345054
+        turntable.configForwardSoftLimitEnable(true);
+        turntable.configReverseSoftLimitEnable(true);
+        turntable.configForwardSoftLimitThreshold(TURNTABLE_MAX_ANGLE);
+        turntable.configReverseSoftLimitThreshold(TURNTABLE_MIN_ANGLE);
+
         // Initialize hood 775 and encoder PID
         hood = new WPI_TalonSRX(hoodPort);
         hood.configFactoryDefault();
@@ -100,6 +113,11 @@ public class TurretSubsystem extends GRTSubsystem {
         hood.config_kP(0, hoodP);
         hood.config_kI(0, hoodI);
         hood.config_kD(0, hoodD);
+
+        hood.configForwardSoftLimitEnable(true);
+        hood.configReverseSoftLimitEnable(true);
+        hood.configForwardSoftLimitThreshold(HOOD_MAX_ANGLE);
+        hood.configReverseSoftLimitThreshold(HOOD_MIN_ANGLE);
 
         // Initialize flywheel NEO and encoder PID
         flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
@@ -149,26 +167,25 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // If retracted, skip jetson logic and calculations
         if (mode == TurretMode.RETRACTED) {
-            turntablePosition = 0;
-            hoodAngle = 0;
-            flywheelSpeed = 0;
+            desiredTurntablePosition = 0;
+            desiredHoodAngle = 0;
+            desiredFlywheelSpeed = 0;
         } else {
             // Set the turntable position from the relative theta given by vision
             // TODO: check if jetson is out of range and fall back to odometry
-            // TODO: hardcode blindspot and adjust logic with `Math.max()` or `Math.min()`
-            turntablePosition = turntable.getSelectedSensorPosition() + jetson.getTurretTheta();
+            desiredTurntablePosition = turntable.getSelectedSensorPosition() + jetson.getTurretTheta();
 
             double distance = jetson.getHubDistance();
             // TODO: constants, interpolation
-            flywheelSpeed = 30;
+            desiredFlywheelSpeed = 30;
 
             // If rejecting, scale down flywheel speed
-            if (mode == TurretMode.REJECTING) flywheelSpeed *= 0.5;
+            if (mode == TurretMode.REJECTING) desiredFlywheelSpeed *= 0.5;
         }
 
-        flywheelPidController.setReference(flywheelSpeed, ControlType.kVelocity);
-        hood.set(ControlMode.Position, hoodAngle);
-        turntable.set(ControlMode.Position, turntablePosition);
+        flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
+        hood.set(ControlMode.Position, desiredHoodAngle);
+        turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_ANGLE), TURNTABLE_MIN_ANGLE));
     }
 
     /**
@@ -188,7 +205,7 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     private ModuleState flywheelReady() {
         // TODO: test thresholding values
-        double diff = Math.abs(flywheelEncoder.getVelocity() - flywheelSpeed);
+        double diff = Math.abs(flywheelEncoder.getVelocity() - desiredFlywheelSpeed);
         return diff < 10 ? ModuleState.GREEN
             : diff < 20 ? ModuleState.ORANGE
             : ModuleState.RED;
@@ -199,8 +216,12 @@ public class TurretSubsystem extends GRTSubsystem {
      * @return The state of the turntable.
      */
     private ModuleState turntableAligned() {
+        // If the calculated theta is in the blind spot, return the RED state
+        if (desiredTurntablePosition < TURNTABLE_MIN_ANGLE || desiredTurntablePosition > TURNTABLE_MAX_ANGLE)
+            return ModuleState.RED;
+
         // TODO: test thresholding values
-        double diff = Math.abs(turntable.getSelectedSensorPosition() - turntablePosition);
+        double diff = Math.abs(turntable.getSelectedSensorPosition() - desiredTurntablePosition);
         return diff < 10 ? ModuleState.GREEN
             : diff < 20 ? ModuleState.ORANGE
             : ModuleState.RED;
@@ -212,12 +233,12 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     private ModuleState hoodReady() {
         // TODO: test thresholding values
-        double diff = Math.abs(hood.getSelectedSensorPosition() - hoodAngle);
+        double diff = Math.abs(hood.getSelectedSensorPosition() - desiredHoodAngle);
         return diff < 5 ? ModuleState.GREEN
             : diff < 10 ? ModuleState.ORANGE
             : ModuleState.RED;
     }
-    
+
     /**
      * Gets the current state of the turret by taking the lowest state of all of its modules.
      * Ex: RED, ORANGE, GREEN -> RED

@@ -37,9 +37,10 @@ public class FollowPathCommand extends RamseteCommand {
     private static final double Kv = 2.3796; // Vs/m
     private static final double Ka = 0.31372; // Vs^2/m
 
-    // PID constants
+    // Velocity PID constants
     private static final double Kp = 0.018101;
     private static final double Ki = 0;
+    private static final double Kd = 0;
 
     // Velocity / Acceleration constants
     private static final double MAX_VEL = 3; // m/s
@@ -64,8 +65,8 @@ public class FollowPathCommand extends RamseteCommand {
             KINEMATICS,
             tankSubsystem::getWheelSpeeds, // Wheel speed supplier
             // PID controllers
-            new PIDController(Kp, Ki, 0),
-            new PIDController(Kp, Ki, 0),
+            new PIDController(Kp, Ki, Kd),
+            new PIDController(Kp, Ki, Kd),
             tankSubsystem::setTankDriveVoltages, // Wheel voltage consumer
             tankSubsystem
         );
