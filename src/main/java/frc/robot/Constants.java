@@ -65,8 +65,9 @@ public final class Constants {
     }
 
     public static final class JetsonConstants {
-        public static final int intakeCameraPort = 1181;
-        public static final int turretCameraPort = 1182;
-        public static final String jetsonAddress = "10.1.92.94";
+        public static final int turretCameraPort = 1181;
+        public static final int intakeCameraPort = 1182;
+        public static final int jetsonPort = 1337;
+        public static final String jetsonIP = "10.1.92.94";
     }
 }

@@ -85,6 +85,7 @@ public class RobotContainer {
 
         // Instantiate the Jetson connection
         jetson = new JetsonConnection();
+        jetson.run();
 
         // Instantiate subsystems
         tankSubsystem = new TankSubsystem();
