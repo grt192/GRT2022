@@ -75,7 +75,7 @@ public class JetsonConnection {
      * @return The camera object.
      */
     public HttpCamera createCamera(int port) {
-        return new HttpCamera("Jetson Camera - Port " + port, "mjpg:http://" + jetsonAddress + ":" + port + "/?action=stream");
+        return new HttpCamera("Jetson Camera - Port " + port, "http://" + jetsonAddress + ":" + port + "/?action=stream");
     }
 
     public boolean hasKey(String key) {
