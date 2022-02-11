@@ -17,7 +17,9 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.brownout.PowerController;
@@ -47,12 +49,12 @@ public class RobotContainer {
 
     // Subsystems
     private final TankSubsystem tankSubsystem;
-    private final TurretSubsystem turretSubsystem;
+    //private final TurretSubsystem turretSubsystem;
     private final IntakeSubsystem intakeSubsystem;
-    private final InternalSubsystem internalSubsystem;
-    private final ClimbSubsystem climbSubsystem;
+    //private final InternalSubsystem internalSubsystem;
+    //private final ClimbSubsystem climbSubsystem;
 
-    private final JetsonConnection jetson;
+    //private final JetsonConnection jetson;
     private final PowerController powerController;
 
     // Controllers
@@ -84,23 +86,25 @@ public class RobotContainer {
         */
 
         // Instantiate the Jetson connection
-        jetson = new JetsonConnection();
-        jetson.run();
+        //jetson = new JetsonConnection();
+        //jetson.run();
 
         // Instantiate subsystems
         tankSubsystem = new TankSubsystem();
-        turretSubsystem = new TurretSubsystem(jetson);
-        internalSubsystem = new InternalSubsystem(turretSubsystem);
-        intakeSubsystem = new IntakeSubsystem(internalSubsystem, jetson);
-        climbSubsystem = new ClimbSubsystem();
+        //turretSubsystem = new TurretSubsystem(jetson);
+        //internalSubsystem = new InternalSubsystem(turretSubsystem);
+        intakeSubsystem = new IntakeSubsystem();
+        //climbSubsystem = new ClimbSubsystem();
 
         // Instantiate power controller
         powerController = new PowerController(
-            tankSubsystem, 
+            tankSubsystem,
+            /*
             turretSubsystem, 
             internalSubsystem, 
-            intakeSubsystem, 
-            climbSubsystem
+            */
+            intakeSubsystem
+            //climbSubsystem
         );
 
         // Instantiate commands
@@ -147,17 +151,20 @@ public class RobotContainer {
      * X button -> start climb sequence (climb)
      */
     private void controllerBindings() {
-        driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
-        driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+        //driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
+        //driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
 
-        mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
-        mechXButton.whenPressed(climbSubsystem.climb());
+        driveAButton.whenPressed(new InstantCommand(() -> intakeSubsystem.setDeployPower(0.2)));
+        driveBButton.whenPressed(new InstantCommand(() -> intakeSubsystem.setDeployPower(0)));
+
+        //mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
+        //mechXButton.whenPressed(climbSubsystem.climb());
 
         Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
         tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
 
         // TODO: tune deadband
-        Runnable intake = () -> intakeSubsystem.setDriverInput(driveController.getLeftTriggerAxis() > 0.1);
+        Runnable intake = () -> intakeSubsystem.setDriverInput(driveController.getLeftTriggerAxis() > 0);
         intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
     }
 

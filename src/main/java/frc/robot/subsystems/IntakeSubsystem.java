@@ -22,13 +22,13 @@ import frc.robot.jetson.JetsonConnection;
 import static frc.robot.Constants.IntakeConstants.*;
 
 public class IntakeSubsystem extends GRTSubsystem {
-    private final InternalSubsystem internalSubsystem;
-    private final JetsonConnection jetson;
+    //private final InternalSubsystem internalSubsystem;
+    //private final JetsonConnection jetson;
 
     private final CANSparkMax intake;
     private final WPI_TalonSRX deploy;
 
-    private IntakePosition currentPosition;
+    private IntakePosition currentPosition = IntakePosition.DEPLOYED;
 
     private boolean driverRequesting = false;
 
@@ -45,12 +45,14 @@ public class IntakeSubsystem extends GRTSubsystem {
     // TODO: measure this
     private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
 
-    public IntakeSubsystem(InternalSubsystem internalSubsystem, JetsonConnection jetson) {
+    public IntakeSubsystem(/*InternalSubsystem internalSubsystem, JetsonConnection jetson*/) {
         // TODO: measure this
         super(50);
 
+        /*
         this.internalSubsystem = internalSubsystem;
         this.jetson = jetson;
+        */
 
         // Initialize the intake (roller) motor
         intake = new CANSparkMax(intakePort, MotorType.kBrushless);
@@ -86,10 +88,21 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         // If the jetson detects a ball or the driver is running the intake, the intake is deployed, 
         // and there are less than 2 balls in internals, run the intake motor
-        intake.set((jetson.ballDetected() || driverRequesting) 
+        intake.set(/*(jetson.ballDetected() || driverRequesting)*/ driverRequesting
             && currentPosition == IntakePosition.DEPLOYED 
-            && internalSubsystem.getBallCount() < 2
+            //&& internalSubsystem.getBallCount() < 2
             ? 0.5 : 0);
+
+        System.out.println("Intake power " + intake.get());
+        System.out.println("Deploy power " + deploy.get());
+    }
+
+    /**
+     * Temp testing function to supply raw power to the deploy motor.
+     * @param power The percent power to supply.
+     */
+    public void setDeployPower(double power) {
+        deploy.set(power);
     }
 
     /**

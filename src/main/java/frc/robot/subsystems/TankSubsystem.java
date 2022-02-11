@@ -57,7 +57,6 @@ public class TankSubsystem extends GRTSubsystem {
         // Init left main and follower motors and encoders
         leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
         leftMain.restoreFactoryDefaults();
-        leftMain.setInverted(true);
         leftMain.setIdleMode(IdleMode.kBrake);
 
         // Position conversion: Rotations -> m
@@ -79,7 +78,7 @@ public class TankSubsystem extends GRTSubsystem {
         // Init right main and follower motors
         rightMain = new CANSparkMax(fRightMotorPort, MotorType.kBrushless);
         rightMain.restoreFactoryDefaults();
-        //rightMain.setInverted(true);
+        rightMain.setInverted(true);
         rightMain.setIdleMode(IdleMode.kBrake);
 
         rightEncoder = rightMain.getEncoder();
