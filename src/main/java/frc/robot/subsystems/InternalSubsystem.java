@@ -27,7 +27,7 @@ public class InternalSubsystem extends GRTSubsystem {
     private final AnalogPotentiometer entrance;
     private final ColorSensorV3 staging;
     private final ColorSensorV3 storage;
-    private final AnalogPotentiometer exit;
+    //private final AnalogPotentiometer exit;
 
     private final ColorMatch colorMatcher;
 
@@ -35,7 +35,6 @@ public class InternalSubsystem extends GRTSubsystem {
 
     // Previous entrance / exit detection states
     private boolean prevEntranceDetected;
-    private boolean prevExitDetected;
 
     private int ballCount = 0;
 
@@ -59,7 +58,7 @@ public class InternalSubsystem extends GRTSubsystem {
         entrance = new AnalogPotentiometer(entranceIRPort);
         staging = new ColorSensorV3(I2C.Port.kOnboard);
         storage = new ColorSensorV3(I2C.Port.kMXP);
-        exit = new AnalogPotentiometer(exitIRPort);
+        //exit = new AnalogPotentiometer(exitIRPort);
 
         colorMatcher = new ColorMatch();
         colorMatcher.addColorMatch(RED);
@@ -97,11 +96,12 @@ public class InternalSubsystem extends GRTSubsystem {
         turretSubsystem.setReject(reject);
         if (shotRequested && turretSubsystem.getState() == TurretSubsystem.ModuleState.GREEN
             || reject && turretSubsystem.getState() == TurretSubsystem.ModuleState.ORANGE) { 
-            // If the ball hasn't left the mechanism, spin the top motor
-            if (!ballDetected(exit)) {
+            // If the ball hasn't left staging, spin the top motor
+            if (ballDetected(staging)) {
                 motorTop.set(0.5);
             } else {
                 shotRequested = false;
+                ballCount--;
             }
         }
     }
@@ -115,19 +115,14 @@ public class InternalSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Checks sensors for incoming and outbound balls and updates ball count accordingly.
+     * Checks sensors for incoming balls and updates ball count accordingly.
      */
     public void updateBallCount() {
         boolean entranceDetected = ballDetected(entrance);
         if (!prevEntranceDetected && entranceDetected)
             ballCount++;
 
-        boolean exitDetected = ballDetected(exit);
-        if (!prevExitDetected && exitDetected)
-            ballCount--;
-
         prevEntranceDetected = entranceDetected;
-        prevExitDetected = exitDetected;
     }
 
     /**
