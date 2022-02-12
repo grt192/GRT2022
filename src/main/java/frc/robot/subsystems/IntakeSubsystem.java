@@ -24,7 +24,7 @@ import static frc.robot.Constants.IntakeConstants.*;
 public class IntakeSubsystem extends GRTSubsystem {
     /**
      * An enum representing the position of the intake, with `IntakePosition.value` representing the 
-     * counterclockwise angle from straight upwards.
+     * counterclockwise angle from straight upwards. In degrees.
      */
     public enum IntakePosition {
         RAISED(0), DEPLOYED(-489839);
@@ -111,7 +111,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         intake.set(readyToIntake ? intakePower : 0);
 
-        shuffleboardDeployPosition.setDouble(deploy.getSelectedSensorPosition());
+        // shuffleboardDeployPosition.setDouble(deploy.getSelectedSensorPosition());
     }
 
     /**

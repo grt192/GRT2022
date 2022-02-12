@@ -142,8 +142,8 @@ public class RobotContainer {
         if (intakeSubsystem != null) {
             // TODO: tune deadband
             Runnable intake = () -> {
-                intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
-
+                intakeSubsystem.setIntakePower((driveController.getRightTriggerAxis() * 0.5)); // - driveController.getLeftTriggerAxis()) * 0.4);
+                // System.out.println(driveController.getRightTriggerAxis() * 0.5);
                 double deployPow = 0;
                 if (driveController.getPOV() == 90) {
                     deployPow = 0.2;
@@ -154,7 +154,7 @@ public class RobotContainer {
             };
             intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
         }
-
+/*
         if (internalSubsystem != null) {
             Runnable internals = () -> {
                 double pow = 0;
@@ -175,6 +175,7 @@ public class RobotContainer {
             };
             turretSubsystem.setDefaultCommand(new RunCommand(turret, turretSubsystem));
         }
+        */
     }
 
     /**
