@@ -70,7 +70,7 @@ public class RobotContainer {
 
         // Instantiate subsystems
         tankSubsystem = new TankSubsystem();
-        turretSubsystem = new TurretSubsystem(jetson);
+        turretSubsystem = new TurretSubsystem(tankSubsystem, jetson);
         internalSubsystem = new InternalSubsystem(turretSubsystem);
         intakeSubsystem = new IntakeSubsystem(internalSubsystem);
         // climbSubsystem = new ClimbSubsystem();

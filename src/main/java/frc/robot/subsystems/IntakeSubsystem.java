@@ -123,9 +123,8 @@ public class IntakeSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Sets whether the driver is attempting to run the intake. Note that this will override `jetson.ballDetected()` but *not*
-     * the other conditions; intake will not run if the mechanism is not deployed or there are too many balls in internals.
-     * @param requesting Whether the driver is running the intake.
+     * Sets the power of the intake rollers.
+     * @param intakePower The power (in percent output) to run the motors at.
      */
     public void setIntakePower(double intakePower) {
         this.intakePower = intakePower;

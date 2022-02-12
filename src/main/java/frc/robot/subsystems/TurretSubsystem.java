@@ -12,6 +12,8 @@ import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -19,6 +21,7 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.jetson.JetsonConnection;
+import frc.robot.subsystems.tank.TankSubsystem;
 
 import static frc.robot.Constants.TurretConstants.*;
 
@@ -52,6 +55,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     public boolean spin = false;
 
+    private final TankSubsystem tankSubsystem;
     private final JetsonConnection jetson;
 
     private final WPI_TalonSRX turntable;
@@ -78,6 +82,10 @@ public class TurretSubsystem extends GRTSubsystem {
 
     // Desired state variables
     // TODO: measure these, add constants
+    private double theta;
+    private double r;
+    private Pose2d previousPosition;
+
     private double desiredFlywheelSpeed = 30.0;
     private double desiredTurntablePosition = 0.0;
     private double desiredHoodAngle = 0.0;
@@ -107,9 +115,12 @@ public class TurretSubsystem extends GRTSubsystem {
     private final NetworkTableEntry shuffleboardFlywheelIEntry;
     private final NetworkTableEntry shuffleboardFlywheelDEntry;
 
-    public TurretSubsystem(JetsonConnection connection) {
+    public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
         super(50);
+
+        this.tankSubsystem = tankSubsystem;
+        this.jetson = connection;
 
         // Initialize turntable CIM and encoder PID
         turntable = new WPI_TalonSRX(turntablePort);
@@ -161,8 +172,6 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheelPidController.setI(flywheelI);
         flywheelPidController.setD(flywheelD);
 
-        this.jetson = connection;
-
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Shooter");
         shuffleboardTurntablePEntry = shuffleboardTab.add("Turntable kP", turntableP).getEntry();
@@ -200,18 +209,51 @@ public class TurretSubsystem extends GRTSubsystem {
             desiredFlywheelSpeed = 0;
         } else {
             if (jetson != null) {
-                // Set the turntable position from the relative theta given by vision
-                // TODO: check if jetson is out of range and fall back to odometry
-                desiredTurntablePosition = turntable.getSelectedSensorPosition() + jetson.getTurretTheta() * DEGREES_TO_TURNTABLE_TICKS;
+                Pose2d currentPosition = tankSubsystem.getRobotPosition();
 
-                double distance = jetson.getHubDistance();
+                // If the hub is in vision range, use vision's `r` and `theta` as ground truth
+                if (jetson.turretVisionWorking()) {
+                    r = jetson.getHubDistance();
+                    theta = jetson.getTurretTheta();
+                } else {
+                    // Otherwise, update our `r` and `theta` state system from the previous `r` and `theta` values
+                    // and the delta X and Y since our last position. We do this instead of using raw odometry coordinates
+                    // to prevent error accumulation over time; `r` and `theta` are reset to vision values when vision is in
+                    // range, so our states only accumulate error while vision is out of range (as opposed to odometry, which
+                    // accumulates error throughout the match).
+
+                    double deltaX = currentPosition.getX() - previousPosition.getX();
+                    double deltaY = currentPosition.getY() - previousPosition.getY();
+                    double deltaThetaRadians = currentPosition.getRotation().getRadians() - previousPosition.getRotation().getRadians();
+
+                    double thetaRadians = Units.degreesToRadians(theta);
+                    double thetaComplementRadians = Units.degreesToRadians(90 - theta);
+
+                    // Localize deltas to Y-axis position
+                    double localizedDeltaX = deltaX * Math.sin(thetaRadians) + deltaY * Math.sin(thetaComplementRadians);
+                    double localizedDeltaY = deltaX * Math.cos(thetaRadians) + deltaY * Math.cos(thetaComplementRadians);
+
+                    // Pythagorean theorem to calculate R'
+                    double rPrime = Math.sqrt(Math.pow(r + localizedDeltaY, 2) + Math.pow(localizedDeltaX, 2));
+
+                    // Calculate theta' from theta, delta theta, and phi (the change in turret angle between P and P', given
+                    // by arccos(R / R'))
+                    double phi = Math.acos(r / rPrime);
+                    r = rPrime;
+                    theta += Units.radiansToDegrees(deltaThetaRadians + phi);
+                }
+
+                // Set the turntable position from the relative theta given by vision
+                desiredTurntablePosition = turntable.getSelectedSensorPosition() + theta * DEGREES_TO_TURNTABLE_TICKS;
+
                 // TODO: constants, interpolation
                 desiredFlywheelSpeed = 30;
+
+                previousPosition = currentPosition;
             }
 
             // If rejecting, scale down flywheel speed
             if (mode == TurretMode.REJECTING) desiredFlywheelSpeed *= 0.5;
-            
         }
 
         // flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
