@@ -142,8 +142,7 @@ public class RobotContainer {
         if (intakeSubsystem != null) {
             // TODO: tune deadband
             Runnable intake = () -> {
-                intakeSubsystem
-                        .setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
+                intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
 
                 double deployPow = 0;
                 if (driveController.getPOV() == 90) {
