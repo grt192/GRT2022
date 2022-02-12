@@ -174,7 +174,7 @@ public class InternalSubsystem extends GRTSubsystem {
 
     @Override
     public double getTotalCurrentDrawn() {
-        return PowerController.getCurrentDrawnFromPDH();
+        return PowerController.getCurrentDrawnFromPDH(motorPortBottom, motorPortTop);
     }
 
     @Override
