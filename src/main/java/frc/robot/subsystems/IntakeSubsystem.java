@@ -36,7 +36,7 @@ public class IntakeSubsystem extends GRTSubsystem {
         }
     }
 
-    //private final InternalSubsystem internalSubsystem;
+    private final InternalSubsystem internalSubsystem;
     //private final JetsonConnection jetson;
 
     private final CANSparkMax intake;
@@ -60,14 +60,12 @@ public class IntakeSubsystem extends GRTSubsystem {
     // TODO: measure this
     private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
 
-    public IntakeSubsystem(/*InternalSubsystem internalSubsystem, JetsonConnection jetson*/) {
+    public IntakeSubsystem(InternalSubsystem internalSubsystem /*, JetsonConnection jetson*/) {
         // TODO: measure this
         super(50);
 
-        /*
         this.internalSubsystem = internalSubsystem;
-        this.jetson = jetson;
-        */
+        //this.jetson = jetson;
 
         // Initialize the intake (roller) motor
         intake = new CANSparkMax(intakePort, MotorType.kBrushless);
@@ -104,17 +102,15 @@ public class IntakeSubsystem extends GRTSubsystem {
         deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
 
-        boolean readyToIntake = /*(jetson.ballDetected() || driverRequesting) && */ 
-            currentPosition == IntakePosition.DEPLOYED; 
-
         // If the jetson detects a ball or the driver is running the intake, the intake is deployed, 
         // and there are less than 2 balls in internals, run the intake motor
-        intake.set(readyToIntake ? intakePower : 0);
-            
-        // System.out.println("Intake power " + intake.get());
-        // System.out.println("Deploy power " + deploy.get());
+        // TODO: how should we work in the jetson ball detection code with variable intake speeds from the driver?
+        // Also, if running the intake in reverse is an option, how should internals ball count be worked into this?
+        boolean readyToIntake = /* internalSubsystem.getBallCount() < 2 && */
+            currentPosition == IntakePosition.DEPLOYED; 
 
-        // System.out.println("deploy pos: " + deploy.getSelectedSensorPosition());
+        intake.set(readyToIntake ? intakePower : 0);
+
         shuffleboardDeployPosition.setDouble(deploy.getSelectedSensorPosition());
     }
 

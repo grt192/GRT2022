@@ -36,10 +36,6 @@ import frc.robot.subsystems.tank.TankSubsystem;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-    // Path of config file, relative to the deploy folder
-    private static final String CONFIG_PATH = "config.txt";
-    // config file
-    // private Properties config;
 
     // Subsystems
     private final TankSubsystem tankSubsystem;
@@ -67,16 +63,6 @@ public class RobotContainer {
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
-
-        // Load the config file
-        // this.config = new Properties();
-        // try {
-        //     FileInputStream stream = new FileInputStream(new File(Filesystem.getDeployDirectory(), CONFIG_PATH));
-        //     config.load(stream);
-        // } catch (IOException ie) {
-        //     System.out.println("Config file not found");
-        // }
-
         // Instantiate the Jetson connection
         // jetson = new JetsonConnection();
         // jetson.run();
@@ -85,13 +71,16 @@ public class RobotContainer {
         tankSubsystem = new TankSubsystem();
         turretSubsystem = new TurretSubsystem(jetson);
         internalSubsystem = new InternalSubsystem(turretSubsystem);
-        intakeSubsystem = new IntakeSubsystem();
+        intakeSubsystem = new IntakeSubsystem(internalSubsystem);
         // climbSubsystem = new ClimbSubsystem();
 
         // Instantiate power controller
         powerController = new PowerController(
-                tankSubsystem, turretSubsystem, internalSubsystem, intakeSubsystem
-        // , climbSubsystem
+            tankSubsystem, 
+            turretSubsystem, 
+            internalSubsystem, 
+            intakeSubsystem
+            //, climbSubsystem
         );
 
         // Instantiate commands
@@ -99,20 +88,16 @@ public class RobotContainer {
         // waypoints
         if (tankSubsystem != null) {
             tankCommand = new FollowPathCommand(
-                    tankSubsystem,
-                    new Pose2d(),
-                    List.of(
-                            new Translation2d(1, 1),
-                            new Translation2d(2, -1)),
-                    new Pose2d(3, 0, new Rotation2d()));
+                tankSubsystem,
+                new Pose2d(),
+                List.of(
+                    new Translation2d(1, 1),
+                    new Translation2d(2, -1)),
+                new Pose2d(3, 0, new Rotation2d())
+            );
         } else {
             tankCommand = new InstantCommand();
         }
-        /*
-         * new FollowPathCommand(tankSubsystem, new Pose2d(), List.of(), new Pose2d(3,
-         * 0, new Rotation2d()))
-         * .andThen(new InstantCommand(() -> tankSubsystem.setTankDriveVoltages(0, 0)));
-         */
 
         // Configure the button bindings
         configureButtonBindings();
@@ -149,16 +134,14 @@ public class RobotContainer {
         // mechXButton.whenPressed(climbSubsystem.climb());
 
         if (tankSubsystem != null) {
-            Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(),
-                    driveController.getRightX());
+            Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
             tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
         }
 
         if (intakeSubsystem != null) {
             // TODO: tune deadband
             Runnable intake = () -> {
-                intakeSubsystem
-                        .setIntakePower(driveController.getLeftTriggerAxis() - driveController.getRightTriggerAxis());
+                intakeSubsystem.setIntakePower(driveController.getLeftTriggerAxis() - driveController.getRightTriggerAxis());
 
                 double deployPow = 0;
                 if (driveController.getPOV() == 0) {
@@ -174,7 +157,6 @@ public class RobotContainer {
 
     /**
      * Use this to pass the autonomous command to the main {@link Robot} class.
-     *
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
@@ -183,7 +165,6 @@ public class RobotContainer {
 
     /**
      * Gets the PowerController instance.
-     * 
      * @return The PowerController instance.
      */
     public PowerController getPowerController() {

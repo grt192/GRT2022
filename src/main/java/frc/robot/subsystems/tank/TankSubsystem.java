@@ -1,13 +1,7 @@
 package frc.robot.subsystems.tank;
 
-import static frc.robot.Constants.TankConstants.bLeftMotorPort;
-import static frc.robot.Constants.TankConstants.bRightMotorPort;
-import static frc.robot.Constants.TankConstants.fLeftMotorPort;
-import static frc.robot.Constants.TankConstants.fRightMotorPort;
-import static frc.robot.Constants.TankConstants.mLeftMotorPort;
-import static frc.robot.Constants.TankConstants.mRightMotorPort;
-
 import com.kauailabs.navx.frc.AHRS;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -20,12 +14,14 @@ import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 
+import static frc.robot.Constants.TankConstants.*;
+
 /**
- * A subsystem which controls the robot's drivetrain. This subsystem handles
- * both driving and odometry.
+ * A subsystem which controls the robot's drivetrain. This subsystem handles both driving and odometry.
  */
 public class TankSubsystem extends GRTSubsystem {
     private final CANSparkMax leftMain;
@@ -109,10 +105,8 @@ public class TankSubsystem extends GRTSubsystem {
 
     /**
      * Drive the system with the given power scales using the car system.
-     * 
-     * @param yScale       Scale in the forward/backward direction, from 1 to -1.
-     * @param angularScale Scale in the rotational direction, from 1 to -1,
-     *                     clockwise to counterclockwise.
+     * @param yScale Scale in the forward/backward direction, from 1 to -1.
+     * @param angularScale Scale in the rotational direction, from 1 to -1, clockwise to counterclockwise.
      */
     public void setCarDrivePowers(double yScale, double angularScale) {
         setCarDrivePowers(yScale, angularScale, true);
@@ -145,11 +139,8 @@ public class TankSubsystem extends GRTSubsystem {
 
     /**
      * Drive the system with the given power scales using the tank system.
-     * 
-     * @param leftScale  Scale in the forward/backward direction of the left motor,
-     *                   from -1 to 1.
-     * @param rightScale Scale in the forward/backward direction of the right motor,
-     *                   from -1 to 1.
+     * @param leftScale Scale in the forward/backward direction of the left motor, from -1 to 1.
+     * @param rightScale Scale in the forward/backward direction of the right motor, from -1 to 1.
      */
     public void setTankDrivePowers(double leftScale, double rightScale, boolean squareInput) {
         if (squareInput) {
@@ -167,10 +158,8 @@ public class TankSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Drive the system with the given voltage values for each side of the
-     * drivetrain.
-     * 
-     * @param leftVoltage  Left motor voltages.
+     * Drive the system with the given voltage values for each side of the drivetrain.
+     * @param leftVoltage Left motor voltages.
      * @param rightVoltage Right motor voltages.
      */
     public void setTankDriveVoltages(double leftVoltage, double rightVoltage) {
@@ -190,7 +179,6 @@ public class TankSubsystem extends GRTSubsystem {
 
     /**
      * Gets the estimated current position of the robot.
-     * 
      * @return The estimated position of the robot as a Pose2d.
      */
     public Pose2d getRobotPosition() {
@@ -203,7 +191,6 @@ public class TankSubsystem extends GRTSubsystem {
 
     /**
      * Reset the robot's position to a given Pose2d.
-     * 
      * @param position The position to reset the pose estimator to.
      */
     public void resetPosition(Pose2d position) {
@@ -219,8 +206,7 @@ public class TankSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Squares input value while retaining original sign.
-     * 
+     * Squares an input value while retaining the original sign.
      * @param value The value to square.
      * @return The squared value.
      */
