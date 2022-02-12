@@ -41,13 +41,13 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Represents the state of a turret module (flywheel, turntable, hood).
-     * If a module is GREEN, it is completely ready to shoot.
-     * If a module is ORANGE, it is nearly ready and will become ready after a robot stop.
-     * If a module is RED, it is not ready; it will require more than a second to get it to GREEN status. 
+     * If a module is READY, it is completely ready to shoot.
+     * If a module is ALMOST, it is nearly ready and will become ready after a robot stop.
+     * If a module is UNALIGNED, it is not ready; it will require more than a second to get it to READY status. 
      * For turntable, this includes being in the blind spot.
      */
     public enum ModuleState {
-        GREEN, ORANGE, RED
+        READY, ALMOST, UNALIGNED
     }
 
     private final JetsonConnection jetson;
@@ -237,9 +237,9 @@ public class TurretSubsystem extends GRTSubsystem {
     private ModuleState flywheelReady() {
         // TODO: test thresholding values
         double diff = Math.abs(flywheelEncoder.getVelocity() - desiredFlywheelSpeed);
-        return diff < 10 ? ModuleState.GREEN
-            : diff < 20 ? ModuleState.ORANGE
-            : ModuleState.RED;
+        return diff < 10 ? ModuleState.READY
+            : diff < 20 ? ModuleState.ALMOST
+            : ModuleState.UNALIGNED;
     }
 
     /**
@@ -249,13 +249,13 @@ public class TurretSubsystem extends GRTSubsystem {
     private ModuleState turntableAligned() {
         // If the calculated theta is in the blind spot, return the RED state
         if (desiredTurntablePosition < TURNTABLE_MIN_POS || desiredTurntablePosition > TURNTABLE_MAX_POS)
-            return ModuleState.RED;
+            return ModuleState.UNALIGNED;
 
         // TODO: test thresholding values
         double diff = Math.abs(turntable.getSelectedSensorPosition() - desiredTurntablePosition);
-        return diff < 10 ? ModuleState.GREEN
-            : diff < 20 ? ModuleState.ORANGE
-            : ModuleState.RED;
+        return diff < 10 ? ModuleState.READY
+            : diff < 20 ? ModuleState.ALMOST
+            : ModuleState.UNALIGNED;
     }
 
     /**
@@ -265,15 +265,15 @@ public class TurretSubsystem extends GRTSubsystem {
     private ModuleState hoodReady() {
         // TODO: test thresholding values
         double diff = Math.abs(hood.getSelectedSensorPosition() - desiredHoodAngle);
-        return diff < 5 ? ModuleState.GREEN
-            : diff < 10 ? ModuleState.ORANGE
-            : ModuleState.RED;
+        return diff < 5 ? ModuleState.READY
+            : diff < 10 ? ModuleState.ALMOST
+            : ModuleState.UNALIGNED;
     }
 
     /**
      * Gets the current state of the turret by taking the lowest state of all of its modules.
-     * Ex: RED, ORANGE, GREEN -> RED
-     * Ex. ORANGE, ORANGE, GREEN -> ORANGE
+     * Ex: UNALIGNED, ALMOST, READY -> UNALIGNED
+     * Ex. ALMOST, ALMOST, READY -> ALMOST
      * @return The state of the turret.
      */
     public ModuleState getState() {
@@ -282,9 +282,9 @@ public class TurretSubsystem extends GRTSubsystem {
         ModuleState hoodState = hoodReady();
 
         // TODO: is there a better way to implement this?
-        return flywheelState == ModuleState.RED || turntableState == ModuleState.RED || hoodState == ModuleState.RED ? ModuleState.RED
-            : flywheelState == ModuleState.ORANGE || turntableState == ModuleState.ORANGE || hoodState == ModuleState.ORANGE ? ModuleState.ORANGE
-            : ModuleState.GREEN;
+        return flywheelState == ModuleState.UNALIGNED || turntableState == ModuleState.UNALIGNED || hoodState == ModuleState.UNALIGNED ? ModuleState.UNALIGNED
+            : flywheelState == ModuleState.ALMOST || turntableState == ModuleState.ALMOST || hoodState == ModuleState.ALMOST ? ModuleState.ALMOST
+            : ModuleState.READY;
     }
 
     /**

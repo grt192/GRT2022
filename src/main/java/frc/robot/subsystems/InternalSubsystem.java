@@ -95,10 +95,10 @@ public class InternalSubsystem extends GRTSubsystem {
 
         if (turretSubsystem != null) {
             // If a shot was requested and the turret is ready, load a ball into the turret.
-            // If rejecting, the turret can be in an orange state; otherwise, require it to be green (fully lined up).
+            // If rejecting, the turret can be in a semi-aligned state; otherwise, require it to be fully lined up.
             turretSubsystem.setReject(reject);
-            if (shotRequested && turretSubsystem.getState() == TurretSubsystem.ModuleState.GREEN
-                || reject && turretSubsystem.getState() == TurretSubsystem.ModuleState.ORANGE) { 
+            if (shotRequested && turretSubsystem.getState() == TurretSubsystem.ModuleState.READY
+                || reject && turretSubsystem.getState() == TurretSubsystem.ModuleState.ALMOST) { 
                 // If the ball hasn't left staging, spin the top motor
                 if (ballDetected(staging)) {
                     motorTop.set(0.5);
