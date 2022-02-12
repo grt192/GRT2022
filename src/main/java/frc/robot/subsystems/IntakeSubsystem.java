@@ -22,6 +22,20 @@ import frc.robot.jetson.JetsonConnection;
 import static frc.robot.Constants.IntakeConstants.*;
 
 public class IntakeSubsystem extends GRTSubsystem {
+    /**
+     * An enum representing the position of the intake, with `IntakePosition.value` representing the 
+     * counterclockwise angle from straight upwards.
+     */
+    public enum IntakePosition {
+        RAISED(0), DEPLOYED(-489839);
+
+        public final double value;
+
+        private IntakePosition(double value) {
+            this.value = value;
+        }
+    }
+
     //private final InternalSubsystem internalSubsystem;
     //private final JetsonConnection jetson;
 
@@ -30,7 +44,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     private IntakePosition currentPosition = IntakePosition.DEPLOYED;
 
-    private boolean driverRequesting = false;
+    private double intakePower = 0;
 
     // Deploy position PID constants
     private static final double kP = 0.125;
@@ -41,6 +55,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     private final NetworkTableEntry shuffleboardPEntry;
     private final NetworkTableEntry shuffleboardIEntry;
     private final NetworkTableEntry shuffleboardDEntry;
+    private final NetworkTableEntry shuffleboardDeployPosition;
 
     // TODO: measure this
     private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
@@ -75,6 +90,9 @@ public class IntakeSubsystem extends GRTSubsystem {
         shuffleboardPEntry = shuffleboardTab.add("kP", kP).getEntry();
         shuffleboardIEntry = shuffleboardTab.add("kI", kI).getEntry();
         shuffleboardDEntry = shuffleboardTab.add("kD", kD).getEntry();
+
+        shuffleboardDeployPosition = shuffleboardTab.add("Deploy Position", 0).getEntry();
+
         shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
         shuffleboardTab.add("Deploy", new DeployIntakeCommand(this));
     }
@@ -86,15 +104,18 @@ public class IntakeSubsystem extends GRTSubsystem {
         deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
 
+        boolean readyToIntake = /*(jetson.ballDetected() || driverRequesting) && */ 
+            currentPosition == IntakePosition.DEPLOYED; 
+
         // If the jetson detects a ball or the driver is running the intake, the intake is deployed, 
         // and there are less than 2 balls in internals, run the intake motor
-        intake.set(/*(jetson.ballDetected() || driverRequesting)*/ driverRequesting
-            && currentPosition == IntakePosition.DEPLOYED 
-            //&& internalSubsystem.getBallCount() < 2
-            ? 0.5 : 0);
+        intake.set(readyToIntake ? intakePower : 0);
+            
+        // System.out.println("Intake power " + intake.get());
+        // System.out.println("Deploy power " + deploy.get());
 
-        System.out.println("Intake power " + intake.get());
-        System.out.println("Deploy power " + deploy.get());
+        // System.out.println("deploy pos: " + deploy.getSelectedSensorPosition());
+        shuffleboardDeployPosition.setDouble(deploy.getSelectedSensorPosition());
     }
 
     /**
@@ -110,8 +131,8 @@ public class IntakeSubsystem extends GRTSubsystem {
      * the other conditions; intake will not run if the mechanism is not deployed or there are too many balls in internals.
      * @param requesting Whether the driver is running the intake.
      */
-    public void setDriverInput(boolean requesting) {
-        driverRequesting = requesting;
+    public void setIntakePower(double intakePower) {
+        this.intakePower = intakePower;
     }
 
     /**
@@ -121,20 +142,6 @@ public class IntakeSubsystem extends GRTSubsystem {
     public void setPosition(IntakePosition position) {
         currentPosition = position;
         deploy.set(ControlMode.Position, position.value * DEGREES_TO_ENCODER_TICKS);
-    }
-
-    /**
-     * An enum representing the position of the intake, with `IntakePosition.value` representing the 
-     * counterclockwise angle from straight upwards.
-     */
-    public enum IntakePosition {
-        RAISED(0), DEPLOYED(115);
-
-        public final double value;
-
-        private IntakePosition(double value) {
-            this.value = value;
-        }
     }
 
     @Override

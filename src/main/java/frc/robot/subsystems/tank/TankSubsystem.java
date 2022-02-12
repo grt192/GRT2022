@@ -1,31 +1,31 @@
-package frc.robot.subsystems;
+package frc.robot.subsystems.tank;
+
+import static frc.robot.Constants.TankConstants.bLeftMotorPort;
+import static frc.robot.Constants.TankConstants.bRightMotorPort;
+import static frc.robot.Constants.TankConstants.fLeftMotorPort;
+import static frc.robot.Constants.TankConstants.fRightMotorPort;
+import static frc.robot.Constants.TankConstants.mLeftMotorPort;
+import static frc.robot.Constants.TankConstants.mRightMotorPort;
 
 import com.kauailabs.navx.frc.AHRS;
-
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.RelativeEncoder;
 
-import edu.wpi.first.math.MatBuilder;
-import edu.wpi.first.math.Nat;
-import edu.wpi.first.wpilibj.SPI;
-import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 
-import static frc.robot.Constants.TankConstants.*;
-
 /**
- * A subsystem which controls the robot's drivetrain. This subsystem handles both driving and odometry.
+ * A subsystem which controls the robot's drivetrain. This subsystem handles
+ * both driving and odometry.
  */
 public class TankSubsystem extends GRTSubsystem {
     private final CANSparkMax leftMain;
@@ -36,11 +36,7 @@ public class TankSubsystem extends GRTSubsystem {
     private final CANSparkMax rightMiddle;
     private final CANSparkMax rightBack;
 
-    private final RelativeEncoder leftEncoder;
-    private final RelativeEncoder rightEncoder;
-
-    private final AHRS ahrs;
-    private final DifferentialDrivePoseEstimator poseEstimator;
+    private final PoseEstimatorThread poseEstimatorThread;
 
     private final ShuffleboardTab shuffleboardTab;
     private final NetworkTableEntry shuffleboardXEntry;
@@ -61,7 +57,7 @@ public class TankSubsystem extends GRTSubsystem {
 
         // Position conversion: Rotations -> m
         // Velocity conversion: RPM -> m/s
-        leftEncoder = leftMain.getEncoder();
+        RelativeEncoder leftEncoder = leftMain.getEncoder();
         leftEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
         leftEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
 
@@ -81,7 +77,7 @@ public class TankSubsystem extends GRTSubsystem {
         rightMain.setInverted(true);
         rightMain.setIdleMode(IdleMode.kBrake);
 
-        rightEncoder = rightMain.getEncoder();
+        RelativeEncoder rightEncoder = rightMain.getEncoder();
         rightEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
         rightEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
 
@@ -97,14 +93,10 @@ public class TankSubsystem extends GRTSubsystem {
 
         // Initialize navX AHRS
         // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
-        ahrs = new AHRS(SPI.Port.kMXP); 
+        AHRS ahrs = new AHRS(SPI.Port.kMXP);
 
-        // Initialize odometry class
-        // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose_state-estimators.html
-        poseEstimator = new DifferentialDrivePoseEstimator(new Rotation2d(), new Pose2d(),
-            new MatBuilder<>(Nat.N5(), Nat.N1()).fill(0.02, 0.02, 0.01, 0.02, 0.02), // State measurement standard deviations. X, Y, theta.
-            new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01), // Local measurement standard deviations. Left encoder, right encoder, gyro.
-            new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01)); // Global measurement standard deviations. X, Y, and theta.
+        // Start pose estimator thread
+        poseEstimatorThread = new PoseEstimatorThread(ahrs, leftEncoder, rightEncoder);
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Drivetrain");
@@ -119,7 +111,8 @@ public class TankSubsystem extends GRTSubsystem {
      * Drive the system with the given power scales using the car system.
      * 
      * @param yScale       Scale in the forward/backward direction, from 1 to -1.
-     * @param angularScale Scale in the rotational direction, from 1 to -1, clockwise to counterclockwise.
+     * @param angularScale Scale in the rotational direction, from 1 to -1,
+     *                     clockwise to counterclockwise.
      */
     public void setCarDrivePowers(double yScale, double angularScale) {
         setCarDrivePowers(yScale, angularScale, true);
@@ -153,8 +146,10 @@ public class TankSubsystem extends GRTSubsystem {
     /**
      * Drive the system with the given power scales using the tank system.
      * 
-     * @param leftScale  Scale in the forward/backward direction of the left motor, from -1 to 1.
-     * @param rightScale Scale in the forward/backward direction of the right motor, from -1 to 1.
+     * @param leftScale  Scale in the forward/backward direction of the left motor,
+     *                   from -1 to 1.
+     * @param rightScale Scale in the forward/backward direction of the right motor,
+     *                   from -1 to 1.
      */
     public void setTankDrivePowers(double leftScale, double rightScale, boolean squareInput) {
         if (squareInput) {
@@ -185,16 +180,9 @@ public class TankSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
-        // Update odometry readings
-        Rotation2d gyroAngle = getRobotHeading();
-        DifferentialDriveWheelSpeeds wheelVelocities = getWheelSpeeds();
-        double leftDistance = leftEncoder.getPosition();
-        double rightDistance = rightEncoder.getPosition();
-
-        poseEstimator.update(gyroAngle, wheelVelocities, leftDistance, rightDistance);
-
         // Update Shuffleboard entries
-        Pose2d pose = poseEstimator.getEstimatedPosition();
+        Pose2d pose = getRobotPosition();
+
         shuffleboardXEntry.setDouble(pose.getX());
         shuffleboardYEntry.setDouble(pose.getY());
         shuffleboardField.setRobotPose(pose);
@@ -202,40 +190,24 @@ public class TankSubsystem extends GRTSubsystem {
 
     /**
      * Gets the estimated current position of the robot.
+     * 
      * @return The estimated position of the robot as a Pose2d.
      */
     public Pose2d getRobotPosition() {
-        return poseEstimator.getEstimatedPosition();
+        return poseEstimatorThread.getPosition();
     }
 
-    /**
-     * Gets the gyro angle given by the NavX AHRS, inverted to be counterclockwise positive.
-     * @return The robot heading as a Rotation2d.
-     */
-    public Rotation2d getRobotHeading() {
-        return Rotation2d.fromDegrees(-ahrs.getAngle());
-    }
-
-    /**
-     * Gets the wheel speeds of the drivetrain.
-     * @return The drivetrain wheel speeds as a DifferentialDriveWheelSpeeds object.
-     */
     public DifferentialDriveWheelSpeeds getWheelSpeeds() {
-        return new DifferentialDriveWheelSpeeds(
-            leftEncoder.getVelocity(), 
-            rightEncoder.getVelocity());
+        return poseEstimatorThread.getWheelSpeeds();
     }
 
     /**
      * Reset the robot's position to a given Pose2d.
+     * 
      * @param position The position to reset the pose estimator to.
      */
     public void resetPosition(Pose2d position) {
-        leftEncoder.setPosition(0);
-        rightEncoder.setPosition(0);
-
-        // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
-        poseEstimator.resetPosition(position, getRobotHeading());
+        poseEstimatorThread.setPosition(position);
     }
 
     /**

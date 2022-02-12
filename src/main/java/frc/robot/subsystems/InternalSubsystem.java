@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
@@ -52,6 +53,7 @@ public class InternalSubsystem extends GRTSubsystem {
         // Initialize top motor
         motorTop = new WPI_TalonSRX(motorPortTop);
         motorTop.configFactoryDefault();
+        motorTop.setInverted(true);
         motorTop.setNeutralMode(NeutralMode.Brake);
 
         // Initialize sensors
@@ -91,19 +93,24 @@ public class InternalSubsystem extends GRTSubsystem {
             motorTop.set(0);
         }
 
-        // If a shot was requested and the turret is ready, load a ball into the turret.
-        // If rejecting, the turret can be in an orange state; otherwise, require it to be green (fully lined up).
-        turretSubsystem.setReject(reject);
-        if (shotRequested && turretSubsystem.getState() == TurretSubsystem.ModuleState.GREEN
-            || reject && turretSubsystem.getState() == TurretSubsystem.ModuleState.ORANGE) { 
-            // If the ball hasn't left staging, spin the top motor
-            if (ballDetected(staging)) {
-                motorTop.set(0.5);
-            } else {
-                shotRequested = false;
-                ballCount--;
+        if (turretSubsystem != null) {
+            // If a shot was requested and the turret is ready, load a ball into the turret.
+            // If rejecting, the turret can be in an orange state; otherwise, require it to be green (fully lined up).
+            turretSubsystem.setReject(reject);
+            if (shotRequested && turretSubsystem.getState() == TurretSubsystem.ModuleState.GREEN
+                || reject && turretSubsystem.getState() == TurretSubsystem.ModuleState.ORANGE) { 
+                // If the ball hasn't left staging, spin the top motor
+                if (ballDetected(staging)) {
+                    motorTop.set(0.5);
+                } else {
+                    shotRequested = false;
+                    ballCount--;
+                }
             }
         }
+
+        motorBottom.set(0.4);
+        motorTop.set(0.4);
     }
 
     /**

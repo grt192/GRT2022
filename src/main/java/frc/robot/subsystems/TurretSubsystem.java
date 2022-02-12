@@ -27,6 +27,29 @@ import static frc.robot.Constants.TurretConstants.*;
  * Note that the act of shooting is handled by internals; this subsystem only handles aiming (calculations and shot readiness).
  */
 public class TurretSubsystem extends GRTSubsystem {
+
+    /**
+     * An enum representing the mode the shooter is currently in.
+     * In SHOOTING, the turret will aim to score balls in the upper hub.
+     * In REJECTING, the turret will scale down its flywheel speed to reject wrong-colored balls.
+     * In RETRACTED, the turret will retract itself for climb.
+     * TODO: split SHOOTING into UPPER and LOWER modes?
+     */
+    public enum TurretMode {
+        SHOOTING, REJECTING, RETRACTED
+    }
+
+    /**
+     * Represents the state of a turret module (flywheel, turntable, hood).
+     * If a module is GREEN, it is completely ready to shoot.
+     * If a module is ORANGE, it is nearly ready and will become ready after a robot stop.
+     * If a module is RED, it is not ready; it will require more than a second to get it to GREEN status. 
+     * For turntable, this includes being in the blind spot.
+     */
+    public enum ModuleState {
+        GREEN, ORANGE, RED
+    }
+
     private final JetsonConnection jetson;
 
     private final WPI_TalonSRX turntable;
@@ -156,17 +179,17 @@ public class TurretSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // Get PID constants from Shuffleboard for testing
-        turntable.config_kP(0, shuffleboardTurntablePEntry.getDouble(turntableP));
-        turntable.config_kI(0, shuffleboardTurntableIEntry.getDouble(turntableI));
-        turntable.config_kD(0, shuffleboardTurntableDEntry.getDouble(turntableD));
+        // turntable.config_kP(0, shuffleboardTurntablePEntry.getDouble(turntableP));
+        // turntable.config_kI(0, shuffleboardTurntableIEntry.getDouble(turntableI));
+        // turntable.config_kD(0, shuffleboardTurntableDEntry.getDouble(turntableD));
 
-        hood.config_kP(0, shuffleboardHoodPEntry.getDouble(hoodP));
-        hood.config_kI(0, shuffleboardHoodIEntry.getDouble(hoodI));
-        hood.config_kD(0, shuffleboardHoodDEntry.getDouble(hoodD));
+        // hood.config_kP(0, shuffleboardHoodPEntry.getDouble(hoodP));
+        // hood.config_kI(0, shuffleboardHoodIEntry.getDouble(hoodI));
+        // hood.config_kD(0, shuffleboardHoodDEntry.getDouble(hoodD));
 
-        flywheelPidController.setP(shuffleboardFlywheelPEntry.getDouble(flywheelP));
-        flywheelPidController.setI(shuffleboardFlywheelIEntry.getDouble(flywheelI));
-        flywheelPidController.setD(shuffleboardFlywheelDEntry.getDouble(flywheelD));
+        // flywheelPidController.setP(shuffleboardFlywheelPEntry.getDouble(flywheelP));
+        // flywheelPidController.setI(shuffleboardFlywheelIEntry.getDouble(flywheelI));
+        // flywheelPidController.setD(shuffleboardFlywheelDEntry.getDouble(flywheelD));
 
         // If retracted, skip jetson logic and calculations
         if (mode == TurretMode.RETRACTED) {
@@ -174,21 +197,26 @@ public class TurretSubsystem extends GRTSubsystem {
             desiredHoodAngle = 0;
             desiredFlywheelSpeed = 0;
         } else {
-            // Set the turntable position from the relative theta given by vision
-            // TODO: check if jetson is out of range and fall back to odometry
-            desiredTurntablePosition = turntable.getSelectedSensorPosition() + jetson.getTurretTheta() * DEGREES_TO_TURNTABLE_TICKS;
+            if (jetson != null) {
+                // Set the turntable position from the relative theta given by vision
+                // TODO: check if jetson is out of range and fall back to odometry
+                desiredTurntablePosition = turntable.getSelectedSensorPosition() + jetson.getTurretTheta() * DEGREES_TO_TURNTABLE_TICKS;
 
-            double distance = jetson.getHubDistance();
-            // TODO: constants, interpolation
-            desiredFlywheelSpeed = 30;
+                double distance = jetson.getHubDistance();
+                // TODO: constants, interpolation
+                desiredFlywheelSpeed = 30;
+            }
 
             // If rejecting, scale down flywheel speed
             if (mode == TurretMode.REJECTING) desiredFlywheelSpeed *= 0.5;
+            
         }
 
         flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
         hood.set(ControlMode.Position, desiredHoodAngle);
         turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
+
+        flywheel.set(0.2);
     }
 
     /**
@@ -266,28 +294,6 @@ public class TurretSubsystem extends GRTSubsystem {
     @Override
     public void climbInit() {
         mode = TurretMode.RETRACTED;
-    }
-
-    /**
-     * An enum representing the mode the shooter is currently in.
-     * In SHOOTING, the turret will aim to score balls in the upper hub.
-     * In REJECTING, the turret will scale down its flywheel speed to reject wrong-colored balls.
-     * In RETRACTED, the turret will retract itself for climb.
-     * TODO: split SHOOTING into UPPER and LOWER modes?
-     */
-    public enum TurretMode {
-        SHOOTING, REJECTING, RETRACTED
-    }
-
-    /**
-     * Represents the state of a turret module (flywheel, turntable, hood).
-     * If a module is GREEN, it is completely ready to shoot.
-     * If a module is ORANGE, it is nearly ready and will become ready after a robot stop.
-     * If a module is RED, it is not ready; it will require more than a second to get it to GREEN status. 
-     * For turntable, this includes being in the blind spot.
-     */
-    public enum ModuleState {
-        GREEN, ORANGE, RED
     }
 
     @Override

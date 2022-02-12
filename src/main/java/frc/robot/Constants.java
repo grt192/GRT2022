@@ -38,7 +38,7 @@ public final class Constants {
         public static final int motorPortTop = 14;
 
         public static final int entranceIRPort = 0;
-        public static final int exitIRPort = 1;
+        public static final int exitIRPort = 3;
 
         public static final Color RED = new Color(0.561, 0.232, 0.114);
         public static final Color BLUE = new Color(0.143, 0.427, 0.429); 
