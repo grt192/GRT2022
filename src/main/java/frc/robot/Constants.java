@@ -34,6 +34,8 @@ public final class Constants {
     }
 
     public static final class InternalConstants {
+        public static final double RAISE_POW = 0.8;
+        
         public static final int motorPortBottom = 13;
         public static final int motorPortTop = 14;
 
@@ -41,7 +43,8 @@ public final class Constants {
         public static final int exitIRPort = 3;
 
         public static final Color RED = new Color(0.561, 0.232, 0.114);
-        public static final Color BLUE = new Color(0.143, 0.427, 0.429); 
+        public static final Color BLUE = new Color(0.143, 0.427, 0.429);
+        public static final Color EMPTY = new Color(0.143, 0.427, 0.429);
         public static Color allianceColor = RED;
     }
 

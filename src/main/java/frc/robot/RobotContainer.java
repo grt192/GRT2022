@@ -142,17 +142,39 @@ public class RobotContainer {
         if (intakeSubsystem != null) {
             // TODO: tune deadband
             Runnable intake = () -> {
-                intakeSubsystem.setIntakePower(driveController.getLeftTriggerAxis() - driveController.getRightTriggerAxis());
+                intakeSubsystem
+                        .setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
 
                 double deployPow = 0;
-                if (driveController.getPOV() == 0) {
+                if (driveController.getPOV() == 90) {
                     deployPow = 0.2;
-                } else if (driveController.getPOV() == 180) {
+                } else if (driveController.getPOV() == 270) {
                     deployPow = -0.2;
                 }
                 intakeSubsystem.setDeployPower(deployPow);
             };
             intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
+        }
+
+        if (internalSubsystem != null) {
+            Runnable internals = () -> {
+                double pow = 0;
+                if (driveController.getPOV() == 0) {
+                    pow = 0.8;
+                } else if (driveController.getPOV() == 180) {
+                    pow = -0.8;
+                }
+                internalSubsystem.setPower(pow);
+            };
+            internalSubsystem.setDefaultCommand(new RunCommand(internals, internalSubsystem));
+        }
+
+        if (turretSubsystem != null) {
+            Runnable turret = () -> {
+                turretSubsystem.spin = driveController.getAButton();
+                System.out.println(driveController.getAButton());
+            };
+            turretSubsystem.setDefaultCommand(new RunCommand(turret, turretSubsystem));
         }
     }
 

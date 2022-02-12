@@ -50,6 +50,8 @@ public class TurretSubsystem extends GRTSubsystem {
         READY, ALMOST, UNALIGNED
     }
 
+    public boolean spin = false;
+
     private final JetsonConnection jetson;
 
     private final WPI_TalonSRX turntable;
@@ -149,7 +151,7 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
         flywheel.restoreFactoryDefaults();
         //flywheel.setIdleMode(IdleMode.kBrake);
-        flywheel.setInverted(true);
+        flywheel.setInverted(false);
 
         flywheelEncoder = flywheel.getEncoder();
         flywheelEncoder.setPosition(0);
@@ -212,11 +214,15 @@ public class TurretSubsystem extends GRTSubsystem {
             
         }
 
-        flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
-        hood.set(ControlMode.Position, desiredHoodAngle);
-        turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
+        // flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
+        // hood.set(ControlMode.Position, desiredHoodAngle);
+        // turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
 
-        flywheel.set(0.2);
+        if (spin) {
+            flywheel.set(0.8);
+        } else {
+            flywheel.set(0);
+        }
     }
 
     /**
