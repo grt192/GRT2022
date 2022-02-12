@@ -1,16 +1,16 @@
 package frc.robot.jetson;
 
-import edu.wpi.first.cameraserver.CameraServer;
-import edu.wpi.first.cscore.HttpCamera;
-
-import static frc.robot.Constants.JetsonConstants.*;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.HttpCamera;
+
+import static frc.robot.Constants.JetsonConstants.*;
 
 public class JetsonConnection implements Runnable {
 
@@ -20,28 +20,17 @@ public class JetsonConnection implements Runnable {
     private BufferedReader stdIn;
 
     // Bool for connection status
-    public boolean isConnected;
+    public boolean isConnected = false;
 
     // Camera data
-    private boolean turretVisionStatus; // Can the camera provide turret vision data?
-    private double turretTheta; // Delta theta of turret to target
-    private double hubDistance; // Distance to hub
-    private boolean ballDetected; // If intake camera has detected ball
+    private boolean turretVisionStatus = false; // Can the camera provide turret vision data?
+    private double turretTheta = 0; // Delta theta of turret to target
+    private double hubDistance = 0; // Distance to hub
+    private boolean ballDetected = false; // If intake camera has detected a ball
 
     public JetsonConnection() {
         this.thread = new Thread(this);
         this.thread.start();
-
-        // Init vars
-        socket = null;
-        stdIn = null;
-        isConnected = false;
-
-        // Init data
-        turretVisionStatus = false;
-        turretTheta = 0;
-        hubDistance = 0;
-        ballDetected = false;
 
         // Start camera streams
         HttpCamera turretCamera = createCamera("Turret", turretCameraPort);
@@ -56,23 +45,19 @@ public class JetsonConnection implements Runnable {
         while (true) {
             try {
                 // If thread interrupted
-                if (Thread.interrupted()) {
-                    return;
-                }
+                if (Thread.interrupted()) return;
 
                 // Check if we need to connect
-                if (stdIn == null || socket == null || socket.isClosed() || !socket.isConnected()
-                        || !socket.isBound()) {
+                if (stdIn == null || socket == null || socket.isClosed() || !socket.isConnected() || !socket.isBound()) {
+                    isConnected = connect();
 
-                    if (!connect()) {
+                    if (!isConnected) {
                         System.out.println("Unable to connect to Jetson");
-                        isConnected = false;
                         // Wait before trying to connect again
                         Thread.sleep(500);
-                    }   
+                    }
                 } else {
-                    isConnected = true;
-                     readCameraData();
+                    readCameraData();
                 }
             } catch (InterruptedException e) {
                 // If interrupted, exit
@@ -84,8 +69,8 @@ public class JetsonConnection implements Runnable {
     }
 
     /**
-     * Attempt to connect to socket.
-     * @return connected  if connection was successful
+     * Attempt to connect to the jetson socket.
+     * @return If the connection was successful.
      */
     public boolean connect() {
         try {
@@ -124,7 +109,6 @@ public class JetsonConnection implements Runnable {
                 turretTheta = Double.parseDouble(data[1]);
                 hubDistance = Double.parseDouble(data[2]);
                 ballDetected = strToBool(data[3]);
-            
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -137,38 +121,45 @@ public class JetsonConnection implements Runnable {
 
     /**
      * Converts string to a boolean. Either "False" or "True".
-     * @param x string to convert
-     * @return the bool value
+     * @param str The string to convert.
+     * @return The boolean value.
      */
-    private boolean strToBool(String x)
-    {
-        return x.equalsIgnoreCase("true") ? true : false;
+    private boolean strToBool(String str) {
+        return str.equalsIgnoreCase("true");
     }
 
     /**
-     * Returns true if the turret camera can see vision targets.
-     * This is in case there are momentary lapses in vision.
-     * @return Whether turret vision is working
+     * Returns whether the turret camera can see vision targets, in case there are momentary lapses in vision or the
+     * hub is currently in the turntable blind spot.
+     * @return Whether turret vision is working.
      */
-    public boolean getTurretVisionStatus() { return turretVisionStatus; }
+    public boolean turretVisionWorking() { 
+        return turretVisionStatus; 
+    }
 
     /**
      * Gets the calculated turret angle.
      * @return The desired turntable angle.
      */
-    public double getTurretTheta() { return turretTheta; }
+    public double getTurretTheta() { 
+        return turretTheta; 
+    }
 
     /**
      * Gets the calculated hub distance.
      * @return The distance from the camera to the hub.
      */
-    public double getHubDistance() { return hubDistance; }
+    public double getHubDistance() { 
+        return hubDistance; 
+    }
 
     /**
      * Gets whether a ball is in range of the intake camera.
      * @return Whether a ball is in intake range.
      */
-    public boolean ballDetected() { return ballDetected; }
+    public boolean ballDetected() { 
+        return ballDetected; 
+    }
 
     /**
      * Creates an MJPEG camera over the Jetson connection.
