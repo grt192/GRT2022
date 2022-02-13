@@ -1,29 +1,29 @@
 package frc.robot.subsystems;
 
+import static frc.robot.Constants.IntakeConstants.deploymentPort;
+import static frc.robot.Constants.IntakeConstants.intakePort;
+
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
-
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.commands.intake.DeployIntakeCommand;
 import frc.robot.commands.intake.RaiseIntakeCommand;
-import frc.robot.jetson.JetsonConnection;
-
-import static frc.robot.Constants.IntakeConstants.*;
+import frc.robot.subsystems.internals.InternalSubsystem;
 
 public class IntakeSubsystem extends GRTSubsystem {
     /**
-     * An enum representing the position of the intake, with `IntakePosition.value` representing the 
+     * An enum representing the position of the intake, with `IntakePosition.value`
+     * representing the
      * counterclockwise angle from straight upwards. In degrees.
      */
     public enum IntakePosition {
@@ -37,7 +37,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     }
 
     private final InternalSubsystem internalSubsystem;
-    //private final JetsonConnection jetson;
+    // private final JetsonConnection jetson;
 
     private final CANSparkMax intake;
     private final WPI_TalonSRX deploy;
@@ -60,12 +60,12 @@ public class IntakeSubsystem extends GRTSubsystem {
     // TODO: measure this
     private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
 
-    public IntakeSubsystem(InternalSubsystem internalSubsystem /*, JetsonConnection jetson*/) {
+    public IntakeSubsystem(InternalSubsystem internalSubsystem /* , JetsonConnection jetson */) {
         // TODO: measure this
         super(50);
 
         this.internalSubsystem = internalSubsystem;
-        //this.jetson = jetson;
+        // this.jetson = jetson;
 
         // Initialize the intake (roller) motor
         intake = new CANSparkMax(intakePort, MotorType.kBrushless);
@@ -102,12 +102,15 @@ public class IntakeSubsystem extends GRTSubsystem {
         deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
 
-        // If the jetson detects a ball or the driver is running the intake, the intake is deployed, 
+        // If the jetson detects a ball or the driver is running the intake, the intake
+        // is deployed,
         // and there are less than 2 balls in internals, run the intake motor
-        // TODO: how should we work in the jetson ball detection code with variable intake speeds from the driver?
-        // Also, if running the intake in reverse is an option, how should internals ball count be worked into this?
+        // TODO: how should we work in the jetson ball detection code with variable
+        // intake speeds from the driver?
+        // Also, if running the intake in reverse is an option, how should internals
+        // ball count be worked into this?
         boolean readyToIntake = /* internalSubsystem.getBallCount() < 2 && */
-            currentPosition == IntakePosition.DEPLOYED; 
+                currentPosition == IntakePosition.DEPLOYED;
 
         intake.set(readyToIntake ? intakePower : 0);
 
@@ -116,6 +119,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Temp testing function to supply raw power to the deploy motor.
+     * 
      * @param power The percent power to supply.
      */
     public void setDeployPower(double power) {
@@ -124,6 +128,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Sets the power of the intake rollers.
+     * 
      * @param intakePower The power (in percent output) to run the motors at.
      */
     public void setIntakePower(double intakePower) {
@@ -132,6 +137,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Sets the position of the intake mechanism.
+     * 
      * @param position The position to set the intake to.
      */
     public void setPosition(IntakePosition position) {
