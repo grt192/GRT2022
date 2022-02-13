@@ -23,6 +23,7 @@ import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
+import frc.robot.shuffleboard.ShuffleboardManager;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.internals.InternalSubsystem;
@@ -69,6 +70,8 @@ public class RobotContainer {
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
+        ShuffleboardManager shuffleboardManager = new ShuffleboardManager();
+
         // Instantiate the Jetson connection
         // jetson = new JetsonConnection();
         // jetson.run();
