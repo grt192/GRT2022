@@ -15,10 +15,18 @@ public class ColorSensorThread {
         thread.start();
     }
 
+    /**
+     * Gets the last storage sensor color.
+     * @return The last storage sensor color.
+     */
     public Color getLastStorage() {
         return runnable.lastStorage;
     }
 
+    /**
+     * Gets the last staging sensor color.
+     * @return The last staging sensor color.
+     */
     public Color getLastStaging() {
         return runnable.lastStaging;
     }
@@ -37,7 +45,6 @@ public class ColorSensorThread {
 
         @Override
         public void run() {
-            // TODO Auto-generated method stub
             while (true) {
                 this.lastStorage = storage.getColor();
                 this.lastStaging = staging.getColor();
