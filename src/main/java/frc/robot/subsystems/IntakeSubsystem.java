@@ -98,9 +98,11 @@ public class IntakeSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // Get PID constants from Shuffleboard for testing
+        /*
         deploy.config_kP(0, shuffleboardPEntry.getDouble(kP));
         deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
+        */
 
         // If the jetson detects a ball or the driver is running the intake, the intake
         // is deployed,

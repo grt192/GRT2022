@@ -182,10 +182,8 @@ public class InternalSubsystem extends GRTSubsystem {
      * Checks whether a ball has been detected by an IR sensor.
      * @param s The IR sensor to check.
      * @return Whether a ball has been detected by the sensor.
-     * TODO: test this and make sure it works
      */
     public boolean ballDetected(AnalogPotentiometer s) {
-        // TODO: measure the resting value of the IR sensor on the wall
         return s.get() > 0.40;
     }
 

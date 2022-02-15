@@ -19,7 +19,7 @@ public class PoseEstimatorThread {
 
         Thread thread = new Thread(runnable);
         thread.setDaemon(true);
-        thread.start();
+        //thread.start();
     }
 
     public Pose2d getPosition() {
@@ -102,9 +102,12 @@ public class PoseEstimatorThread {
                 rightEncoder.getVelocity());
         }
 
+        /**
+         * Gets the last constructed wheel speeds of the drivetrain.
+         * @return 
+         */
         public DifferentialDriveWheelSpeeds getLastWheelSpeeds() {
             return this.lastWheelSpeeds;
         }
     }
-
 }

@@ -14,7 +14,9 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+
 import frc.robot.brownout.PowerController;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
@@ -71,24 +73,25 @@ public class RobotContainer {
 
         // Instantiate power controller
         powerController = new PowerController(
-                tankSubsystem,
-                turretSubsystem,
-                internalSubsystem,
-                intakeSubsystem
-        // , climbSubsystem
+            tankSubsystem,
+            turretSubsystem,
+            internalSubsystem,
+            intakeSubsystem
+            //, climbSubsystem
         );
 
         // Instantiate commands
-        // Drive an S-shaped curve from the origin to 3 meters in front through 2
-        // waypoints
+        // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
         if (tankSubsystem != null) {
             tankCommand = new FollowPathCommand(
-                    tankSubsystem,
-                    new Pose2d(),
-                    List.of(
-                            new Translation2d(1, 1),
-                            new Translation2d(2, -1)),
-                    new Pose2d(3, 0, new Rotation2d()));
+                tankSubsystem,
+                new Pose2d(),
+                List.of(
+                    new Translation2d(1, 1),
+                    new Translation2d(2, -1)
+                ),
+                new Pose2d(3, 0, new Rotation2d())
+            );
         } else {
             tankCommand = new InstantCommand();
         }
@@ -128,19 +131,15 @@ public class RobotContainer {
         // mechXButton.whenPressed(climbSubsystem.climb());
 
         if (tankSubsystem != null) {
-            Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(),
-                    driveController.getRightX());
+            Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
             tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
         }
 
         if (intakeSubsystem != null) {
             // TODO: tune deadband
             Runnable intake = () -> {
-                intakeSubsystem
-                        .setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis()); // -
-                // driveController.getLeftTriggerAxis())
-                // * 0.4);
-                // System.out.println(driveController.getRightTriggerAxis() * 0.5);
+                intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
+
                 double deployPow = 0;
                 if (driveController.getPOV() == 90) {
                     deployPow = 0.2;
@@ -166,11 +165,10 @@ public class RobotContainer {
         }
 
         if (turretSubsystem != null) {
-            Runnable turret = () -> {
-                turretSubsystem.spin = driveController.getAButton();
-                System.out.println(driveController.getAButton());
-            };
-            turretSubsystem.setDefaultCommand(new RunCommand(turret, turretSubsystem));
+            driveAButton.whileHeld(new StartEndCommand(
+                () -> turretSubsystem.spin = true, 
+                () -> turretSubsystem.spin = false, 
+                turretSubsystem));
         }
     }
 

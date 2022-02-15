@@ -40,7 +40,7 @@ public class TankSubsystem extends GRTSubsystem {
     private final Field2d shuffleboardField;
 
     // TODO: measure this for new robot
-    public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 92.08;
+    public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 5.0;
 
     public TankSubsystem() {
         // TODO: measure this
@@ -53,7 +53,7 @@ public class TankSubsystem extends GRTSubsystem {
 
         // Position conversion: Rotations -> m
         // Velocity conversion: RPM -> m/s
-        RelativeEncoder leftEncoder = leftMain.getEncoder();
+        RelativeEncoder leftEncoder = leftMain.getAlternateEncoder(4096);
         leftEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
         leftEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
 
@@ -73,7 +73,7 @@ public class TankSubsystem extends GRTSubsystem {
         rightMain.setInverted(true);
         rightMain.setIdleMode(IdleMode.kBrake);
 
-        RelativeEncoder rightEncoder = rightMain.getEncoder();
+        RelativeEncoder rightEncoder = rightMain.getAlternateEncoder(4096);
         rightEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
         rightEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
 
@@ -98,9 +98,9 @@ public class TankSubsystem extends GRTSubsystem {
         shuffleboardTab = Shuffleboard.getTab("Drivetrain");
         shuffleboardXEntry = shuffleboardTab.add("Robot x", 0).getEntry();
         shuffleboardYEntry = shuffleboardTab.add("Robot y", 0).getEntry();
-        shuffleboardTab.add("Gyro", ahrs);
+        //shuffleboardTab.add("Gyro", ahrs);
         shuffleboardField = new Field2d();
-        shuffleboardTab.add("Field", shuffleboardField);
+        //shuffleboardTab.add("Field", shuffleboardField);
     }
 
     /**
@@ -170,11 +170,13 @@ public class TankSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // Update Shuffleboard entries
-        Pose2d pose = getRobotPosition();
+        //Pose2d pose = getRobotPosition();
 
+        /*
         shuffleboardXEntry.setDouble(pose.getX());
         shuffleboardYEntry.setDouble(pose.getY());
         shuffleboardField.setRobotPose(pose);
+        */
     }
 
     /**
