@@ -28,8 +28,8 @@ public class InternalSubsystem extends GRTSubsystem {
     private final WPI_TalonSRX motorTop;
 
     private final AnalogPotentiometer entrance;
-   /* private final ColorSensorV3 staging;
-    private final ColorSensorV3 storage; */
+    // private final ColorSensorV3 staging;
+    // private final ColorSensorV3 storage;
     // private final AnalogPotentiometer exit;
 
     private final Color RED = new Color(0.437255859375, 0.394775390625, 0.16845703125);
@@ -64,8 +64,8 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // Initialize sensors
         entrance = new AnalogPotentiometer(entranceIRPort);
-        /* staging = new ColorSensorV3(I2C.Port.kOnboard);
-        storage = new ColorSensorV3(I2C.Port.kMXP); */
+        // staging = new ColorSensorV3(I2C.Port.kOnboard);
+        // storage = new ColorSensorV3(I2C.Port.kMXP);
         // exit = new AnalogPotentiometer(exitIRPort);
 
         // colorSensorThread = new ColorSensorThread(storage, staging);
@@ -90,7 +90,8 @@ public class InternalSubsystem extends GRTSubsystem {
         boolean entranceDetected = ballDetected(entrance);
         if (!prevEntranceDetected && entranceDetected) ballCount++;
         prevEntranceDetected = entranceDetected;
-/*
+
+        /*
         // Get last detected storage and staging colors from the sensor thread
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
         Color stagingColor = matchColor(colorSensorThread.getLastStaging());

@@ -46,17 +46,23 @@ public class RobotContainer {
     private final JetsonConnection jetson = null;
     private final PowerController powerController;
 
-    // Controllers
+    // Controllers and buttons
     private final XboxController driveController = new XboxController(0);
-    private final JoystickButton driveAButton = new JoystickButton(driveController, XboxController.Button.kA.value);
-    private final JoystickButton driveBButton = new JoystickButton(driveController, XboxController.Button.kB.value);
+    private final JoystickButton 
+        driveAButton = new JoystickButton(driveController, XboxController.Button.kA.value),
+        driveBButton = new JoystickButton(driveController, XboxController.Button.kB.value),
+        driveXButton = new JoystickButton(driveController, XboxController.Button.kX.value),
+        driveYButton = new JoystickButton(driveController, XboxController.Button.kY.value);
 
     private final XboxController mechController = new XboxController(1);
-    private final JoystickButton mechAButton = new JoystickButton(mechController, XboxController.Button.kA.value);
-    private final JoystickButton mechXButton = new JoystickButton(mechController, XboxController.Button.kX.value);
+    private final JoystickButton 
+        mechAButton = new JoystickButton(mechController, XboxController.Button.kA.value),
+        mechBButton = new JoystickButton(mechController, XboxController.Button.kB.value),
+        mechXButton = new JoystickButton(mechController, XboxController.Button.kX.value),
+        mechYButton = new JoystickButton(mechController, XboxController.Button.kY.value);
 
     // Commands
-    private final Command tankCommand;
+    private final Command autonCommand;
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -85,7 +91,7 @@ public class RobotContainer {
         // Instantiate commands
         // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
         if (tankSubsystem != null) {
-            tankCommand = new FollowPathCommand(
+            autonCommand = new FollowPathCommand(
                 tankSubsystem,
                 new Pose2d(),
                 List.of(
@@ -95,7 +101,7 @@ public class RobotContainer {
                 new Pose2d(3, 0, new Rotation2d())
             );
         } else {
-            tankCommand = new InstantCommand();
+            autonCommand = new InstantCommand();
         }
 
         // Configure the button bindings
@@ -167,7 +173,7 @@ public class RobotContainer {
         }
 
         if (turretSubsystem != null) {
-            driveAButton.whileHeld(new StartEndCommand(
+            driveXButton.whileHeld(new StartEndCommand(
                 () -> turretSubsystem.spin = true, 
                 () -> turretSubsystem.spin = false, 
                 turretSubsystem));
@@ -180,7 +186,7 @@ public class RobotContainer {
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return tankCommand;
+        return autonCommand;
     }
 
     /**

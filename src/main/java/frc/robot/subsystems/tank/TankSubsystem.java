@@ -53,7 +53,7 @@ public class TankSubsystem extends GRTSubsystem {
 
         // Position conversion: Rotations -> m
         // Velocity conversion: RPM -> m/s
-        RelativeEncoder leftEncoder = leftMain.getAlternateEncoder(4096);
+        RelativeEncoder leftEncoder = leftMain.getEncoder();
         leftEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
         leftEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
 
@@ -73,7 +73,7 @@ public class TankSubsystem extends GRTSubsystem {
         rightMain.setInverted(true);
         rightMain.setIdleMode(IdleMode.kBrake);
 
-        RelativeEncoder rightEncoder = rightMain.getAlternateEncoder(4096);
+        RelativeEncoder rightEncoder = rightMain.getEncoder();
         rightEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_METERS);
         rightEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_METERS / 60.0);
 
