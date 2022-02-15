@@ -18,6 +18,8 @@ import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.brownout.PowerController;
+import frc.robot.commands.intake.DeployIntakeCommand;
+import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.subsystems.IntakeSubsystem;
@@ -124,8 +126,8 @@ public class RobotContainer {
      * X button -> start climb sequence (climb)
      */
     private void controllerBindings() {
-        // driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
-        // driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+        driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
+        driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
 
         // mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         // mechXButton.whenPressed(climbSubsystem.climb());

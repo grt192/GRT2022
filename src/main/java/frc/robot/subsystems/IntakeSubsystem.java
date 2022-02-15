@@ -27,7 +27,7 @@ public class IntakeSubsystem extends GRTSubsystem {
      * counterclockwise angle from straight upwards. In degrees.
      */
     public enum IntakePosition {
-        RAISED(0), DEPLOYED(-489839);
+        RAISED(0), DEPLOYED(465469);
 
         public final double value;
 
@@ -58,7 +58,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     private final NetworkTableEntry shuffleboardDeployPosition;
 
     // TODO: measure this
-    private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
+    // private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
 
     public IntakeSubsystem(InternalSubsystem internalSubsystem /* , JetsonConnection jetson */) {
         // TODO: measure this
@@ -98,11 +98,11 @@ public class IntakeSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // Get PID constants from Shuffleboard for testing
-        /*
+        
         deploy.config_kP(0, shuffleboardPEntry.getDouble(kP));
         deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
-        */
+        
 
         // If the jetson detects a ball or the driver is running the intake, the intake
         // is deployed,
@@ -116,7 +116,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         intake.set(readyToIntake ? intakePower : 0);
 
-        // shuffleboardDeployPosition.setDouble(deploy.getSelectedSensorPosition());
+        shuffleboardDeployPosition.setDouble(deploy.getSelectedSensorPosition());
     }
 
     /**
@@ -144,7 +144,7 @@ public class IntakeSubsystem extends GRTSubsystem {
      */
     public void setPosition(IntakePosition position) {
         currentPosition = position;
-        deploy.set(ControlMode.Position, position.value * DEGREES_TO_ENCODER_TICKS);
+        deploy.set(ControlMode.Position, position.value /* * DEGREES_TO_ENCODER_TICKS */);
     }
 
     @Override
