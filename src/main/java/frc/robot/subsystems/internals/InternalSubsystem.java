@@ -40,6 +40,8 @@ public class InternalSubsystem extends GRTSubsystem {
     private final ColorMatch colorMatcher;
 
     private boolean shotRequested = false;
+    private boolean rejecting = false;
+    private boolean rejectingChecked = false;
     private int ballCount = 0;
 
     private boolean prevEntranceDetected = false;
@@ -95,17 +97,16 @@ public class InternalSubsystem extends GRTSubsystem {
         if (!prevEntranceDetected && entranceDetected) ballCount++;
         prevEntranceDetected = entranceDetected;
 
-        boolean reject = false;
-
         // If a ball has entered internals, start the bottom motor
         if (entranceDetected) motorBottom.set(0.5);
 
         // If there is a ball in storage, stop the bottom motor and start the top motor
         if (isBall(storageColor)) {
-            // Reject the ball if it doesn't match alliance color
-            // TODO: make sure a second ball doesn't override reject for a ball in staging
-            // Perhaps this can be implemented using boolean states?
-            reject = storageColor != ALLIANCE_COLOR;
+            // If we haven't already checked rejection logic, reject the ball if it doesn't match alliance color
+            if (!rejectingChecked) {
+                rejecting = storageColor != ALLIANCE_COLOR;
+                rejectingChecked = true;
+            }
             motorBottom.set(0);
             motorTop.set(0.5);
         }
@@ -118,9 +119,9 @@ public class InternalSubsystem extends GRTSubsystem {
         if (turretSubsystem != null) {
             // If a shot was requested and the turret is ready, load a ball into the turret.
             // If rejecting, the turret can be in a semi-aligned state; otherwise, require it to be fully lined up.
-            turretSubsystem.setReject(reject);
+            turretSubsystem.setReject(rejecting);
             if (shotRequested && turretSubsystem.getState() == TurretSubsystem.ModuleState.READY
-                    || reject && turretSubsystem.getState() == TurretSubsystem.ModuleState.ALMOST) {
+                 || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.ALMOST) {
                 // If the ball hasn't left staging, spin the top motor
                 if (stagingDetected) {
                     motorTop.set(0.5);
@@ -128,6 +129,7 @@ public class InternalSubsystem extends GRTSubsystem {
                     // Otherwise, the ball has left internals;
                     // Mark the shot as finished and decrement the ball count.
                     shotRequested = false;
+                    rejectingChecked = false;
                     ballCount--;
                 }
             }
