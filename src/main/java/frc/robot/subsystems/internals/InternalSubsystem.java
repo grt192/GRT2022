@@ -11,6 +11,7 @@ import com.revrobotics.ColorSensorV3;
 import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
 
 import frc.robot.GRTSubsystem;
@@ -38,6 +39,7 @@ public class InternalSubsystem extends GRTSubsystem {
     private final Color ALLIANCE_COLOR;
 
     private final ColorMatch colorMatcher;
+    private final Timer exitTimer;
 
     private boolean shotRequested = false;
     private boolean rejecting = false;
@@ -77,6 +79,8 @@ public class InternalSubsystem extends GRTSubsystem {
         colorMatcher.addColorMatch(EMPTY);
         colorMatcher.setConfidenceThreshold(0.8);
 
+        exitTimer = new Timer();
+
         // Set alliance color from FMS
         switch (DriverStation.getAlliance()) {
             case Red: ALLIANCE_COLOR = RED; break;
@@ -87,26 +91,25 @@ public class InternalSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
-        // Get last detected storage color from the sensor thread,
-        // and check IR sensors for balls.
+        // Get last detected storage color from the sensor thread and check IR sensors for balls.
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
+        boolean entranceDetected = entrance.get() > 0.4;
+        boolean stagingDetected = entrance.get() > 0.3;
 
-        double e = entrance.get();
-        System.out.println("Entrance analog: " + e);
-        boolean entranceDetected = e > 0.4;
-
-        double s = staging.get();
-        System.out.println("Staging analog: " + s);
-        boolean stagingDetected = s > 0.3;
+        System.out.println("STORAGE matched " + (
+            storageColor == RED ? "RED" :
+            storageColor == BLUE ? "BLUE" :
+            storageColor == EMPTY ? "EMPTY" :
+            "null"));
 
         // Check the entrance sensor for incoming balls and update the ball count accordingly
         if (!prevEntranceDetected && entranceDetected) ballCount++;
         prevEntranceDetected = entranceDetected;
 
         // If a ball has entered internals, start the bottom motor
-        if (entranceDetected) motorBottom.set(0.5);
+        if (entranceDetected) motorBottom.set(0.3);
 
-        // If there is a ball in storage, stop the bottom motor and start the top motor
+        // If there is a ball in storage, start the top motor
         if (isBall(storageColor)) {
             // If we haven't already checked rejection logic, reject the ball if it doesn't match alliance color
             if (!rejectingChecked) {
@@ -114,12 +117,14 @@ public class InternalSubsystem extends GRTSubsystem {
                 rejectingChecked = true;
             }
             motorTop.set(0.5);
+            System.out.println("STORAGE detected, running top motor");
         }
 
-        // If there is a ball in staging, stop the top motor
+        // If there is a ball in staging, stop the bottom and top motors
         if (stagingDetected) {
             motorBottom.set(0);
             motorTop.set(0);
+            System.out.println("STAGING detected, stopping both motors");
         }
 
         if (turretSubsystem != null) {
@@ -128,16 +133,25 @@ public class InternalSubsystem extends GRTSubsystem {
             turretSubsystem.setReject(rejecting);
             if (shotRequested /* && turretSubsystem.getState() == TurretSubsystem.ModuleState.READY
                  || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.ALMOST */) {
-                // If the ball hasn't left staging, spin the top motor
-                if (stagingDetected) {
-                    motorTop.set(0.5);
-                } else {
-                    // Otherwise, the ball has left internals;
-                    // Mark the shot as finished and decrement the ball count.
+                // Spin the top motor on a timer
+                exitTimer.start();
+                motorTop.set(0.5);
+                turretSubsystem.setFlywheelPower(0.2);
+                System.out.println("Shot requested, processing");
+
+                // If 1.5 seconds have elapsed, mark the shot as finished and decrement the ball count.
+                if (exitTimer.hasElapsed(1.5)) {
+                    exitTimer.stop();
+                    exitTimer.reset();
+
                     motorTop.set(0);
+                    turretSubsystem.setFlywheelPower(0);
+
                     shotRequested = false;
                     rejectingChecked = false;
                     ballCount--;
+
+                    System.out.println("Shot finished, terminating loop");
                 }
             }
         }
@@ -174,7 +188,7 @@ public class InternalSubsystem extends GRTSubsystem {
      * @param color The color to match.
      * @return The normalized color (RED, BLUE, EMPTY, or null if no match).
      */
-    public Color matchColor(Color color) {
+    private Color matchColor(Color color) {
         ColorMatchResult match = colorMatcher.matchColor(color);
         if (match == null) return null;
         return match.color;
@@ -185,17 +199,8 @@ public class InternalSubsystem extends GRTSubsystem {
      * @param detected The color to check.
      * @return Whether a ball (of any color) has been detected.
      */
-    public boolean isBall(Color detected) {
+    private boolean isBall(Color detected) {
         return detected == RED || detected == BLUE;
-    }
-
-    /**
-     * Checks whether a ball has been detected by an IR sensor.
-     * @param s The IR sensor to check.
-     * @return Whether a ball has been detected by the sensor.
-     */
-    public boolean ballDetected(AnalogPotentiometer s) {
-        return s.get() > 0.40;
     }
 
     /**
@@ -203,7 +208,7 @@ public class InternalSubsystem extends GRTSubsystem {
      * @param c The color to pretty-print.
      * @return The color represented as an RGB string.
      */
-    public String colorToString(Color c) {
+    private String colorToString(Color c) {
         return "(R: " + c.red + ", G: " + c.green + ", B: " + c.blue + ")";
     }
 

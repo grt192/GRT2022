@@ -261,8 +261,6 @@ public class TurretSubsystem extends GRTSubsystem {
         // flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
         // hood.set(ControlMode.Position, desiredHoodAngle);
         // turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
-
-        flywheel.set(spin ? 0.8 : 0);
     }
 
     /**
@@ -370,5 +368,13 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     public void setHoodPower(double pow) {
         hood.set(pow);
+    }
+
+    /**
+     * Test function to run the flywheel at a set power.
+     * @param pow The power to run the flywheel at.
+     */
+    public void setFlywheelPower(double pow) {
+        flywheel.set(pow);
     }
 }
