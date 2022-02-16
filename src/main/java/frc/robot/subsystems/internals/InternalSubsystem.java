@@ -90,8 +90,14 @@ public class InternalSubsystem extends GRTSubsystem {
         // Get last detected storage color from the sensor thread,
         // and check IR sensors for balls.
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
-        boolean entranceDetected = ballDetected(entrance);
-        boolean stagingDetected = ballDetected(staging);
+
+        double e = entrance.get();
+        System.out.println("Entrance analog: " + e);
+        boolean entranceDetected = e > 0.4;
+
+        double s = staging.get();
+        System.out.println("Staging analog: " + s);
+        boolean stagingDetected = s > 0.3;
 
         // Check the entrance sensor for incoming balls and update the ball count accordingly
         if (!prevEntranceDetected && entranceDetected) ballCount++;
@@ -107,12 +113,12 @@ public class InternalSubsystem extends GRTSubsystem {
                 rejecting = storageColor != ALLIANCE_COLOR;
                 rejectingChecked = true;
             }
-            motorBottom.set(0);
             motorTop.set(0.5);
         }
 
         // If there is a ball in staging, stop the top motor
         if (stagingDetected) {
+            motorBottom.set(0);
             motorTop.set(0);
         }
 
@@ -120,14 +126,15 @@ public class InternalSubsystem extends GRTSubsystem {
             // If a shot was requested and the turret is ready, load a ball into the turret.
             // If rejecting, the turret can be in a semi-aligned state; otherwise, require it to be fully lined up.
             turretSubsystem.setReject(rejecting);
-            if (shotRequested && turretSubsystem.getState() == TurretSubsystem.ModuleState.READY
-                 || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.ALMOST) {
+            if (shotRequested /* && turretSubsystem.getState() == TurretSubsystem.ModuleState.READY
+                 || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.ALMOST */) {
                 // If the ball hasn't left staging, spin the top motor
                 if (stagingDetected) {
                     motorTop.set(0.5);
                 } else {
                     // Otherwise, the ball has left internals;
                     // Mark the shot as finished and decrement the ball count.
+                    motorTop.set(0);
                     shotRequested = false;
                     rejectingChecked = false;
                     ballCount--;

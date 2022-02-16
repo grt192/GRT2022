@@ -153,10 +153,12 @@ public class TurretSubsystem extends GRTSubsystem {
         hood.config_kI(0, hoodI);
         hood.config_kD(0, hoodD);
 
+        /*
         hood.configForwardSoftLimitEnable(true);
         hood.configReverseSoftLimitEnable(true);
         hood.configForwardSoftLimitThreshold(HOOD_MAX_POS);
         hood.configReverseSoftLimitThreshold(HOOD_MIN_POS);
+        */
 
         // Initialize flywheel NEO and encoder PID
         flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);

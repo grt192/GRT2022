@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.brownout.PowerController;
 import frc.robot.commands.intake.DeployIntakeCommand;
 import frc.robot.commands.intake.RaiseIntakeCommand;
+import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.subsystems.IntakeSubsystem;
@@ -134,11 +135,11 @@ public class RobotContainer {
      * X button -> start climb sequence (climb)
      */
     private void controllerBindings() {
-        driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
-        driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+        //driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
+        //driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
 
-        // mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
-        // mechXButton.whenPressed(climbSubsystem.climb());
+        mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
+        mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));
 
         if (tankSubsystem != null) {
             Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
@@ -148,8 +149,7 @@ public class RobotContainer {
         if (intakeSubsystem != null) {
             // TODO: tune deadband
             Runnable intake = () -> {
-                intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis());
-                internalSubsystem.setPower(driveController.getLeftTriggerAxis());
+                intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
 
                 double deployPow = 0;
                 if (driveController.getPOV() == 90) {
@@ -172,8 +172,8 @@ public class RobotContainer {
                 double turntablePower = -mechController.getLeftY();
                 double hoodPower = -mechController.getRightY();
 
-                System.out.println("Turntable power: " + turntablePower);
-                System.out.println("Hood power: " + hoodPower);
+                //System.out.println("Turntable power: " + turntablePower);
+                //System.out.println("Hood power: " + hoodPower);
 
                 turretSubsystem.setTurntablePower(turntablePower);
                 turretSubsystem.setHoodPower(hoodPower);
