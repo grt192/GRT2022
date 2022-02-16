@@ -22,14 +22,14 @@ import static frc.robot.Constants.InternalConstants.*;
 public class InternalSubsystem extends GRTSubsystem {
 
     private final TurretSubsystem turretSubsystem;
-    // private final ColorSensorThread colorSensorThread;
+    private final ColorSensorThread colorSensorThread;
 
     private final WPI_TalonSRX motorBottom;
     private final WPI_TalonSRX motorTop;
 
     private final AnalogPotentiometer entrance;
-    // private final ColorSensorV3 staging;
-    // private final ColorSensorV3 storage;
+    private final ColorSensorV3 storage;
+    private final AnalogPotentiometer staging;
     // private final AnalogPotentiometer exit;
 
     private final Color RED = new Color(0.437255859375, 0.394775390625, 0.16845703125);
@@ -42,8 +42,7 @@ public class InternalSubsystem extends GRTSubsystem {
     private boolean shotRequested = false;
     private int ballCount = 0;
 
-    // Previous entrance / exit detection states
-    private boolean prevEntranceDetected;
+    private boolean prevEntranceDetected = false;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         // TODO: measure this
@@ -64,11 +63,11 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // Initialize sensors
         entrance = new AnalogPotentiometer(entranceIRPort);
-        // staging = new ColorSensorV3(I2C.Port.kOnboard);
-        // storage = new ColorSensorV3(I2C.Port.kMXP);
+        storage = new ColorSensorV3(I2C.Port.kMXP);
+        staging = new AnalogPotentiometer(stagingIRPort);
         // exit = new AnalogPotentiometer(exitIRPort);
 
-        // colorSensorThread = new ColorSensorThread(storage, staging);
+        colorSensorThread = new ColorSensorThread(storage);
 
         colorMatcher = new ColorMatch();
         colorMatcher.addColorMatch(RED);
@@ -86,15 +85,15 @@ public class InternalSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
-        // Check the entrance sensor for incoming balls and update the ball count accordingly
+        // Get last detected storage color from the sensor thread,
+        // and check IR sensors for balls.
+        Color storageColor = matchColor(colorSensorThread.getLastStorage());
         boolean entranceDetected = ballDetected(entrance);
+        boolean stagingDetected = ballDetected(staging);
+
+        // Check the entrance sensor for incoming balls and update the ball count accordingly
         if (!prevEntranceDetected && entranceDetected) ballCount++;
         prevEntranceDetected = entranceDetected;
-
-        /*
-        // Get last detected storage and staging colors from the sensor thread
-        Color storageColor = matchColor(colorSensorThread.getLastStorage());
-        Color stagingColor = matchColor(colorSensorThread.getLastStaging());
 
         boolean reject = false;
 
@@ -104,17 +103,15 @@ public class InternalSubsystem extends GRTSubsystem {
         // If there is a ball in storage, stop the bottom motor and start the top motor
         if (isBall(storageColor)) {
             // Reject the ball if it doesn't match alliance color
-            // Call this in storage *and* staging to give the turret more time to aim in a one-ball scenario;
-            // a second ball in staging will override this call and not have any effect.
+            // TODO: make sure a second ball doesn't override reject for a ball in staging
+            // Perhaps this can be implemented using boolean states?
             reject = storageColor != ALLIANCE_COLOR;
             motorBottom.set(0);
             motorTop.set(0.5);
         }
 
         // If there is a ball in staging, stop the top motor
-        if (isBall(stagingColor)) {
-            // Reject the ball if it doesn't match alliance color
-            reject = stagingColor != ALLIANCE_COLOR;
+        if (stagingDetected) {
             motorTop.set(0);
         }
 
@@ -125,7 +122,7 @@ public class InternalSubsystem extends GRTSubsystem {
             if (shotRequested && turretSubsystem.getState() == TurretSubsystem.ModuleState.READY
                     || reject && turretSubsystem.getState() == TurretSubsystem.ModuleState.ALMOST) {
                 // If the ball hasn't left staging, spin the top motor
-                if (isBall(stagingColor)) {
+                if (stagingDetected) {
                     motorTop.set(0.5);
                 } else {
                     // Otherwise, the ball has left internals;
@@ -135,12 +132,15 @@ public class InternalSubsystem extends GRTSubsystem {
                 }
             }
         }
-        */
     }
 
+    /**
+     * Temporary testing function to run the internals motors at a set power.
+     * @param pow The power to run the bottom roller at.
+     */
     public void setPower(double pow) {
-        motorTop.set(pow);
         motorBottom.set(pow);
+        motorTop.set(pow);
     }
 
     /**

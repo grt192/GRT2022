@@ -44,7 +44,7 @@ public class RobotContainer {
     // private final ClimbSubsystem climbSubsystem;
 
     private final JetsonConnection jetson = null;
-    private final PowerController powerController;
+    private final PowerController powerController = null;
 
     // Controllers and buttons
     private final XboxController driveController = new XboxController(0);
@@ -80,6 +80,7 @@ public class RobotContainer {
         // climbSubsystem = new ClimbSubsystem();
 
         // Instantiate power controller
+        /*
         powerController = new PowerController(
             tankSubsystem,
             turretSubsystem,
@@ -87,6 +88,7 @@ public class RobotContainer {
             intakeSubsystem
             //, climbSubsystem
         );
+        */
 
         // Instantiate commands
         // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
@@ -146,7 +148,8 @@ public class RobotContainer {
         if (intakeSubsystem != null) {
             // TODO: tune deadband
             Runnable intake = () -> {
-                intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
+                intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis());
+                internalSubsystem.setPower(driveController.getLeftTriggerAxis());
 
                 double deployPow = 0;
                 if (driveController.getPOV() == 90) {
@@ -159,24 +162,22 @@ public class RobotContainer {
             intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
         }
 
-        if (internalSubsystem != null) {
-            Runnable internals = () -> {
-                double pow = 0;
-                if (driveController.getPOV() == 0) {
-                    pow = 0.8;
-                } else if (driveController.getPOV() == 180) {
-                    pow = -0.8;
-                }
-                internalSubsystem.setPower(pow);
-            };
-            internalSubsystem.setDefaultCommand(new RunCommand(internals, internalSubsystem));
-        }
-
         if (turretSubsystem != null) {
             driveXButton.whileHeld(new StartEndCommand(
                 () -> turretSubsystem.spin = true, 
                 () -> turretSubsystem.spin = false, 
                 turretSubsystem));
+
+            turretSubsystem.setDefaultCommand(new RunCommand(() -> {
+                double turntablePower = -mechController.getLeftY();
+                double hoodPower = -mechController.getRightY();
+
+                System.out.println("Turntable power: " + turntablePower);
+                System.out.println("Hood power: " + hoodPower);
+
+                turretSubsystem.setTurntablePower(turntablePower);
+                turretSubsystem.setHoodPower(hoodPower);
+            }, turretSubsystem));
         }
     }
 

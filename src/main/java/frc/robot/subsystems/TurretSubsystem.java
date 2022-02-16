@@ -353,4 +353,20 @@ public class TurretSubsystem extends GRTSubsystem {
         hood.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         flywheel.setSmartCurrentLimit(motorLimit);
     }
+
+    /**
+     * Test function to run the turntable at a set power.
+     * @param pow The power to run the turntable at.
+     */
+    public void setTurntablePower(double pow) {
+        turntable.set(pow);
+    }
+
+    /**
+     * Test function to run the hood at a set power.
+     * @param pow The power to run the hood at.
+     */
+    public void setHoodPower(double pow) {
+        hood.set(pow);
+    }
 }
