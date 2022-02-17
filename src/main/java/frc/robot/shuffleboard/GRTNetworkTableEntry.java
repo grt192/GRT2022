@@ -18,13 +18,13 @@ public class GRTNetworkTableEntry {
         GET, SET
     }
 
-    private final GRTEntryType type;
+    private GRTEntryType type;
 
     private final NetworkTableEntry tableEntry;
-    private NetworkTableValue buffer;
+    private Object buffer;
 
-    public GRTNetworkTableEntry(GRTEntryType type, NetworkTableEntry tableEntry) {
-        this.type = type;
+    public GRTNetworkTableEntry(NetworkTableEntry tableEntry) {
+        this.type = GRTEntryType.GET;
         this.tableEntry = tableEntry;
 
         ShuffleboardManager.registerEntry(this);
@@ -42,11 +42,13 @@ public class GRTNetworkTableEntry {
         ;
     }
 
-    public NetworkTableValue getValue() {
+    public Object getValue() {
+        this.type = GRTEntryType.GET;
         return buffer;
     }
 
-    public void setValue(NetworkTableValue value) {
+    public void setValue(Object value) {
+        this.type = GRTEntryType.SET;
         this.buffer = value;
     }
 }
