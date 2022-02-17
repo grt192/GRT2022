@@ -47,6 +47,7 @@ public class InternalSubsystem extends GRTSubsystem {
     private int ballCount = 0;
 
     private boolean prevEntranceDetected = false;
+    private boolean driverOverride = false;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         // TODO: measure this
@@ -93,14 +94,26 @@ public class InternalSubsystem extends GRTSubsystem {
     public void periodic() {
         // Get last detected storage color from the sensor thread and check IR sensors for balls.
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
-        boolean entranceDetected = entrance.get() > 0.4;
-        boolean stagingDetected = entrance.get() > 0.3;
+        //boolean entranceDetected = entrance.get() >= 0.4;
+        //boolean stagingDetected = staging.get() >= 0.2;
+
+        double e = entrance.get();
+        double s = staging.get();
+        boolean entranceDetected = e >= 0.4;
+        boolean stagingDetected = s >= 0.2;
+
+        /*
+        System.out.println("Entrance: " + e);
+        System.out.println("Staging: " + s);
 
         System.out.println("STORAGE matched " + (
             storageColor == RED ? "RED" :
             storageColor == BLUE ? "BLUE" :
             storageColor == EMPTY ? "EMPTY" :
             "null"));
+        */
+
+        if (driverOverride) return;
 
         // Check the entrance sensor for incoming balls and update the ball count accordingly
         if (!prevEntranceDetected && entranceDetected) ballCount++;
@@ -117,14 +130,14 @@ public class InternalSubsystem extends GRTSubsystem {
                 rejectingChecked = true;
             }
             motorTop.set(0.5);
-            System.out.println("STORAGE detected, running top motor");
+            //System.out.println("STORAGE detected, running top motor");
         }
 
         // If there is a ball in staging, stop the bottom and top motors
         if (stagingDetected) {
             motorBottom.set(0);
             motorTop.set(0);
-            System.out.println("STAGING detected, stopping both motors");
+            //System.out.println("STAGING detected, stopping both motors");
         }
 
         if (turretSubsystem != null) {
@@ -136,8 +149,8 @@ public class InternalSubsystem extends GRTSubsystem {
                 // Spin the top motor on a timer
                 exitTimer.start();
                 motorTop.set(0.5);
-                turretSubsystem.setFlywheelPower(0.2);
-                System.out.println("Shot requested, processing");
+                //turretSubsystem.setFlywheelPower(0.2);
+                //System.out.println("Shot requested, processing");
 
                 // If 1.5 seconds have elapsed, mark the shot as finished and decrement the ball count.
                 if (exitTimer.hasElapsed(1.5)) {
@@ -145,13 +158,13 @@ public class InternalSubsystem extends GRTSubsystem {
                     exitTimer.reset();
 
                     motorTop.set(0);
-                    turretSubsystem.setFlywheelPower(0);
+                    //turretSubsystem.setFlywheelPower(0);
 
                     shotRequested = false;
                     rejectingChecked = false;
                     ballCount--;
 
-                    System.out.println("Shot finished, terminating loop");
+                    //System.out.println("Shot finished, terminating loop");
                 }
             }
         }
@@ -223,5 +236,9 @@ public class InternalSubsystem extends GRTSubsystem {
 
         motorBottom.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         motorTop.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
+    }
+
+    public void setDriverOverride(boolean override) {
+        this.driverOverride = override;
     }
 }

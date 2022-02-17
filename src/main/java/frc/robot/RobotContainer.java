@@ -141,6 +141,9 @@ public class RobotContainer {
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));
 
+        mechYButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0.8)));
+        mechBButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0)));
+
         if (tankSubsystem != null) {
             Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
             tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
@@ -160,6 +163,20 @@ public class RobotContainer {
                 intakeSubsystem.setDeployPower(deployPow);
             };
             intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
+        }
+
+        if (internalSubsystem != null) {
+            internalSubsystem.setDefaultCommand(new RunCommand(() -> {
+                double leftTrigger = mechController.getLeftTriggerAxis();
+                double rightTrigger = mechController.getRightTriggerAxis();
+
+                if (leftTrigger != 0 || rightTrigger != 0) {
+                    internalSubsystem.setDriverOverride(true);
+                    internalSubsystem.setPower(leftTrigger - rightTrigger);
+                } else {
+                    internalSubsystem.setDriverOverride(false);
+                }
+            }, internalSubsystem));
         }
 
         if (turretSubsystem != null) {
