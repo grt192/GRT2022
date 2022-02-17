@@ -7,19 +7,32 @@ import java.util.ArrayList;
 import edu.wpi.first.wpilibj.Timer;
 
 public class ShuffleboardManager {
-    private static final ArrayList<ShuffleboardProvider> providers = new ArrayList<>();
+    // singleton so that we can start the thread automatically whenever we
+    // register a network table entry
+    private static ShuffleboardManager theManager;
 
-    public static void registerProvider(ShuffleboardProvider provider) {
-        synchronized (providers) {
-            providers.add(provider);
-            provider.setUpShuffleboardCommands();
+    private final ArrayList<GRTNetworkTableEntry> entries = new ArrayList<>();
+
+    public static void registerEntry(GRTNetworkTableEntry entry) {
+        ShuffleboardManager instance = getInstance();
+        synchronized (instance.entries) {
+            instance.entries.add(entry);
         }
     }
 
-    public static void removeProvider(ShuffleboardProvider provider) {
-        synchronized (providers) {
-            providers.remove(provider);
+    public static void removeEntry(GRTNetworkTableEntry entry) {
+        ShuffleboardManager instance = getInstance();
+        synchronized (instance.entries) {
+            instance.entries.remove(entry);
         }
+    }
+
+    private static ShuffleboardManager getInstance() {
+        if (theManager == null) {
+            theManager = new ShuffleboardManager();
+        }
+
+        return theManager;
     }
 
     public ShuffleboardManager() {
@@ -36,11 +49,9 @@ public class ShuffleboardManager {
             while (true) {
                 double nextLoop = Timer.getFPGATimestamp() + UPDATE_TIME;
 
-                synchronized (providers) {
-                    for (ShuffleboardProvider provider : providers) {
-                        for (GRTNetworkTableEntry entry : provider.shuffleboardEntries()) {
-                            entry.updateValue();
-                        }
+                synchronized (entries) {
+                    for (GRTNetworkTableEntry entry : entries) {
+                        entry.update();
                     }
                 }
 
@@ -55,6 +66,5 @@ public class ShuffleboardManager {
                 }
             }
         }
-
     }
 }

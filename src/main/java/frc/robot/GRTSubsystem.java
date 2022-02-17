@@ -1,13 +1,11 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.shuffleboard.ShuffleboardManager;
-import frc.robot.shuffleboard.ShuffleboardProvider;
 
 /**
  * A convenience class wrapping SubsystemBase for brownout and other shared subsystem logic.
  */
-public abstract class GRTSubsystem extends SubsystemBase implements ShuffleboardProvider {
+public abstract class GRTSubsystem extends SubsystemBase {
     protected final double minCurrent;
 
     /**
@@ -16,8 +14,6 @@ public abstract class GRTSubsystem extends SubsystemBase implements Shuffleboard
      */
     public GRTSubsystem(double minCurrent) {
         this.minCurrent = minCurrent;
-
-        ShuffleboardManager.registerProvider(this);
     }
 
     /**

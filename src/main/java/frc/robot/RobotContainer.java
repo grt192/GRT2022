@@ -70,7 +70,6 @@ public class RobotContainer {
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
-        ShuffleboardManager shuffleboardManager = new ShuffleboardManager();
 
         // Instantiate the Jetson connection
         // jetson = new JetsonConnection();

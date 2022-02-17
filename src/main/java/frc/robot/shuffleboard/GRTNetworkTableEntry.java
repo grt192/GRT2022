@@ -5,16 +5,16 @@ import edu.wpi.first.networktables.NetworkTableValue;
 
 /**
  * A wrapper for NetworkTableEntry to allow different classes to do the
- * accessing and the updating. This is so that subsystems can get the last
- * retrieved value from Shuffleboard (inexpensie), but a thread such as one
- * created by the ShuffleboardManager can update the retrieved value at
- * intervals.
+ * accessing and the updating. This is so that subsystems can get/set
+ * values from Shuffleboard inexpensively thanks to a separate thread (such as
+ * one created by the ShuffleboardManager) which pushes or pulls the actual
+ * value from Shuffleboard.
  * 
  * An alternative to using this class is to use listeners:
  * https://docs.wpilib.org/en/stable/docs/software/networktables/listening-for-change.html
  */
 public class GRTNetworkTableEntry {
-    enum GRTEntryType {
+    public enum GRTEntryType {
         GET, SET
     }
 
@@ -26,9 +26,11 @@ public class GRTNetworkTableEntry {
     public GRTNetworkTableEntry(GRTEntryType type, NetworkTableEntry tableEntry) {
         this.type = type;
         this.tableEntry = tableEntry;
+
+        ShuffleboardManager.registerEntry(this);
     }
 
-    public void updateValue() {
+    public void update() {
         switch (this.type) {
             case GET:
                 buffer = tableEntry.getValue();
@@ -36,7 +38,8 @@ public class GRTNetworkTableEntry {
             case SET:
                 tableEntry.setValue(buffer);
                 break;
-        };
+        }
+        ;
     }
 
     public NetworkTableValue getValue() {
