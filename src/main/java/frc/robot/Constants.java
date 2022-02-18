@@ -50,17 +50,17 @@ public final class Constants {
     }
 
     public static final class ClimbConstants {
-        public static final int sixMotorPort = 0;
-        public static final int sixBrakePort = 1;
+        public static final int sixMotorPort = 12; //sparkmax
+        public static final int sixBrakePort = 1; // talon
+        
+        public static final int tenMotorPort = 13; //sparkmax
+        public static final int tenBrakePort = 2; //talon
 
-        public static final int tenMotorPort = 3;
-        public static final int tenBrakePort = 2;
+        public static final int tenLeftSolenoidPort = 18; //talon
+        public static final int tenRightSolenoidPort = 18; 
 
-        public static final int tenLeftSolenoidPort = 18;
-        public static final int tenRightSolenoidPort = 18;
-
-        public static final int fifteenLeftPort = 10;
-        public static final int fifteenRightPort = 19;
+        public static final int fifteenLeftPort = 10; //tbh no idea lol
+        public static final int fifteenRightPort = 19; //tbh no idea lol
     }
 
     public static final class JetsonConstants {
