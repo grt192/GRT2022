@@ -100,7 +100,16 @@ public class RobotContainer {
                     new Translation2d(2, -1)
                 ),
                 new Pose2d(3, 0, new Rotation2d())
-            );
+            ).andThen(new FollowPathCommand(
+                tankSubsystem,
+                new Pose2d(3, 0, new Rotation2d()),
+                List.of(
+                    new Translation2d(1, 1),
+                    new Translation2d(2, -1)
+                ),
+                new Pose2d(),
+                true
+            )).andThen(new InstantCommand(() -> tankSubsystem.setTankDriveVoltages(0, 0)));
         } else {
             autonCommand = new InstantCommand();
         }
