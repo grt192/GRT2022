@@ -15,6 +15,7 @@ import com.revrobotics.SparkMaxPIDController;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import frc.robot.GRTSubsystem;
@@ -24,15 +25,17 @@ import frc.robot.shuffleboard.GRTNetworkTableEntry;
 import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
- * A subsystem which controls the turret mechanism on the robot. 
- * Note that the act of shooting is handled by internals; this subsystem only handles aiming (calculations and shot readiness).
+ * A subsystem which controls the turret mechanism on the robot.
+ * Note that the act of shooting is handled by internals; this subsystem only
+ * handles aiming (calculations and shot readiness).
  */
 public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * An enum representing the mode the shooter is currently in.
      * In SHOOTING, the turret will aim to score balls in the upper hub.
-     * In REJECTING, the turret will scale down its flywheel speed to reject wrong-colored balls.
+     * In REJECTING, the turret will scale down its flywheel speed to reject
+     * wrong-colored balls.
      * In RETRACTED, the turret will retract itself for climb.
      * TODO: split SHOOTING into UPPER and LOWER modes?
      */
@@ -45,7 +48,7 @@ public class TurretSubsystem extends GRTSubsystem {
      * If a module is in HIGH_TOLERANCE, it is completely ready to shoot.
      * If a module is in LOW_TOLERANCE, it is nearly ready and will become ready after a robot stop.
      * This state is for rejecting, which doesn't need a perfectly lined up shot but needs better than completely
-     * unaligned. It is also for drivers to know when the turret is almost ready
+     * unaligned. It is also for drivers to know when the turret is almost ready, so they can stop the robot and shoot.
      * If a module is UNALIGNED, it is not ready; it will require more than a second to get it to READY status. 
      * For turntable, this includes being in the blind spot.
      */
@@ -92,7 +95,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     private static final double HOOD_MAX_POS = 50.0 * DEGREES_TO_HOOD_TICKS;
     private static final double HOOD_MIN_POS = 0.0 * DEGREES_TO_HOOD_TICKS;
-    
+
     private static final double FLYWHEEL_RATIO = .36/.16;
 
     // Desired state variables
@@ -120,6 +123,12 @@ public class TurretSubsystem extends GRTSubsystem {
     // private final NetworkTableEntry shuffleboardFlywheelIEntry = null;
     // private final NetworkTableEntry shuffleboardFlywheelDEntry = null;
 
+    // states
+    // TODO: measure these, add constants
+    private double theta;
+    private double r;
+    private Pose2d previousPosition;
+
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
         super(50);
@@ -139,7 +148,8 @@ public class TurretSubsystem extends GRTSubsystem {
         turntable.config_kI(0, turntableI);
         turntable.config_kD(0, turntableD);
 
-        // Enable talon soft limiting, stopping the motor if it's going forwards past MAX_ANGLE and backwards past MIN_ANGLE
+        // Enable talon soft limiting, stopping the motor if it's going forwards past
+        // MAX_ANGLE and backwards past MIN_ANGLE
         // https://www.chiefdelphi.com/t/soft-limit-switches-with-talonsrx-and-victorspx-and-vendor-libraries/345054
         turntable.configForwardSoftLimitEnable(true);
         turntable.configReverseSoftLimitEnable(true);
@@ -159,16 +169,16 @@ public class TurretSubsystem extends GRTSubsystem {
         hood.config_kD(0, hoodD);
 
         /*
-        hood.configForwardSoftLimitEnable(true);
-        hood.configReverseSoftLimitEnable(true);
-        hood.configForwardSoftLimitThreshold(HOOD_MAX_POS);
-        hood.configReverseSoftLimitThreshold(HOOD_MIN_POS);
-        */
+         * hood.configForwardSoftLimitEnable(true);
+         * hood.configReverseSoftLimitEnable(true);
+         * hood.configForwardSoftLimitThreshold(HOOD_MAX_POS);
+         * hood.configReverseSoftLimitThreshold(HOOD_MIN_POS);
+         */
 
         // Initialize flywheel NEO and encoder PID
         flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
         flywheel.restoreFactoryDefaults();
-        //flywheel.setIdleMode(IdleMode.kBrake);
+        // flywheel.setIdleMode(IdleMode.kBrake);
         flywheel.setInverted(false);
 
         flywheelEncoder = flywheel.getEncoder();
@@ -183,7 +193,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Turret");
         shuffleboardFlywheel = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel RPM", 0).getEntry());
-        
+
         // shuffleboardTurntablePEntry = shuffleboardTab.add("Turntable kP", turntableP).getEntry();
         // shuffleboardTurntableIEntry = shuffleboardTab.add("Turntable kI", turntableI).getEntry();
         // shuffleboardTurntableDEntry = shuffleboardTab.add("Turntable kD", turntableD).getEntry();
@@ -220,37 +230,24 @@ public class TurretSubsystem extends GRTSubsystem {
         } else {
             if (jetson != null) {
                 Pose2d currentPosition = tankSubsystem.getRobotPosition();
+                Pose2d deltas = tankSubsystem.poseEstimatorThread.consumeDeltas();
 
                 // If the hub is in vision range, use vision's `r` and `theta` as ground truth
                 if (jetson.turretVisionWorking()) {
                     r = jetson.getHubDistance();
                     theta = jetson.getTurretTheta();
                 } else {
-                    // Otherwise, update our `r` and `theta` state system from the previous `r` and `theta` values
-                    // and the delta X and Y since our last position. We do this instead of using raw odometry coordinates
-                    // to prevent error accumulation over time; `r` and `theta` are reset to vision values when vision is in
-                    // range, so our states only accumulate error while vision is out of range (as opposed to odometry, which
-                    // accumulates error throughout the match).
+                    // Otherwise, update our `r` and `theta` state system from the previous `r`
+                    // and`theta` values and the delta X and Y since our last position. We do this
+                    // instead of using raw odometry coordinates to prevent error accumulation over
+                    // time; `r` and `theta` are reset to vision values when vision is in range, so
+                    // our states only accumulate error while vision is out of range (as opposed to
+                    // odometry, which accumulates error throughout the match).
 
-                    double deltaX = currentPosition.getX() - previousPosition.getX();
-                    double deltaY = currentPosition.getY() - previousPosition.getY();
-                    double deltaThetaRadians = currentPosition.getRotation().getRadians() - previousPosition.getRotation().getRadians();
+                    // TODO: this assumes that the last r, theta we got is always 'clean' data.
+                    // we need to do filtering of some sort, probably on the jetson, to ensure this is true.
 
-                    double thetaRadians = Units.degreesToRadians(theta);
-                    double thetaComplementRadians = Units.degreesToRadians(90 - theta);
-
-                    // Localize deltas to Y-axis position
-                    double localizedDeltaX = deltaX * Math.sin(thetaRadians) + deltaY * Math.sin(thetaComplementRadians);
-                    double localizedDeltaY = deltaX * Math.cos(thetaRadians) + deltaY * Math.cos(thetaComplementRadians);
-
-                    // Pythagorean theorem to calculate R'
-                    double rPrime = Math.sqrt(Math.pow(r + localizedDeltaY, 2) + Math.pow(localizedDeltaX, 2));
-
-                    // Calculate theta' from theta, delta theta, and phi (the change in turret angle between P and P', given
-                    // by arccos(R / R'))
-                    double phi = Math.acos(r / rPrime);
-                    r = rPrime;
-                    theta += Units.radiansToDegrees(deltaThetaRadians + phi);
+                    this.manualUpdateRTheta(deltas);
                 }
 
                 // Set the turntable position from the relative theta given by vision
@@ -263,29 +260,37 @@ public class TurretSubsystem extends GRTSubsystem {
             }
 
             // If rejecting, scale down flywheel speed
-            if (mode == TurretMode.REJECTING) desiredFlywheelSpeed *= 0.5;
+            if (mode == TurretMode.REJECTING)
+                desiredFlywheelSpeed *= 0.5;
         }
 
-        // flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
+        // flywheelPidController.setReference(desiredFlywheelSpeed,
+        // ControlType.kVelocity);
         // hood.set(ControlMode.Position, desiredHoodAngle);
-        // turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
+        // turntable.set(ControlMode.Position,
+        // Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS),
+        // TURNTABLE_MIN_POS));
 
         shuffleboardFlywheel.setValue(flywheelEncoder.getVelocity());
     }
 
     /**
      * Set whether the turret should reject the current ball.
+     *
      * @param reject Whether to reject the ball.
      */
     public void setReject(boolean reject) {
         // Don't do anything if the turret is retracted
-        // TODO: is this necessary? will internals still be executing periodic logic during climb?
-        if (mode == TurretMode.RETRACTED) return;
+        // TODO: is this necessary? will internals still be executing periodic logic
+        // during climb?
+        if (mode == TurretMode.RETRACTED)
+            return;
         mode = reject ? TurretMode.REJECTING : TurretMode.SHOOTING;
     }
 
     /**
      * Gets the state of the flywheel (whether it is up to speed).
+     *
      * @return The state of the flywheel.
      */
     private ModuleState flywheelReady() {
@@ -298,6 +303,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Gets the state of the turntable (whether it is aligned to the hub).
+     *
      * @return The state of the turntable.
      */
     private ModuleState turntableAligned() {
@@ -314,6 +320,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Gets the state of the hood (whether it is at its desired angle).
+     *
      * @return The state of the hood.
      */
     private ModuleState hoodReady() {
@@ -343,7 +350,8 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Cleans up the subsystem for climb (sets the Turret's mode to RETRACTED).
-     * In RETRACTED, the turntable faces the same direction as the robot, the hood is retracted, and the flywheel is off.
+     * In RETRACTED, the turntable faces the same direction as the robot, the hood
+     * is retracted, and the flywheel is off.
      */
     @Override
     public void climbInit() {
@@ -366,6 +374,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Test function to run the turntable at a set power.
+     *
      * @param pow The power to run the turntable at.
      */
     public void setTurntablePower(double pow) {
@@ -374,6 +383,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Test function to run the hood at a set power.
+     *
      * @param pow The power to run the hood at.
      */
     public void setHoodPower(double pow) {
@@ -382,9 +392,26 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Test function to run the flywheel at a set power.
+     *
      * @param pow The power to run the flywheel at.
      */
     public void setFlywheelPower(double pow) {
         flywheel.set(pow);
+    }
+
+    private void manualUpdateRTheta(Pose2d deltas) {
+        double dx = deltas.getX();
+        double dy = deltas.getY();
+        double dTheta = deltas.getRotation().getRadians();
+
+        double hypot = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+        double beta = Math.atan2(dy, dx);
+        double alpha = beta + this.theta;
+
+        double x = hypot * Math.sin(alpha);
+        double y = r + hypot * Math.cos(alpha);
+
+        this.r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+        this.theta = theta + dTheta + Math.atan2(-x, y);
     }
 }
