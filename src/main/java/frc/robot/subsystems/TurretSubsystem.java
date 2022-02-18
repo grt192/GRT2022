@@ -264,7 +264,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // hood.set(ControlMode.Position, desiredHoodAngle);
         // turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
 
-        System.out.println("Turret RPM: " + flywheelEncoder.getVelocity());
+        //System.out.println("Turret RPM: " + flywheelEncoder.getVelocity());
     }
 
     /**

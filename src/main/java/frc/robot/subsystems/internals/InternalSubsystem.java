@@ -122,6 +122,8 @@ public class InternalSubsystem extends GRTSubsystem {
         }
         prevStagingDetected = stagingDetected;
 
+        System.out.println("Ent: " + entranceStorageBallCount + " Sto: " + storageStagingBallCount + " Sta: " + stagingExitBallCount);
+
         if (driverOverride) return;
 
         // If there is a ball in the entrance or between storage and staging *and* staging is empty, run the bottom motor.
