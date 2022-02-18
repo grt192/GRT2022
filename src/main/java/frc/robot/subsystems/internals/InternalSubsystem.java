@@ -41,12 +41,19 @@ public class InternalSubsystem extends GRTSubsystem {
     private final ColorMatch colorMatcher;
     private final Timer exitTimer;
 
+    // Subsystem ball states
+    private int entranceStorageBallCount = 0;
+    private int storageStagingBallCount = 0;
+    private int stagingExitBallCount = 0;
+
+    private boolean prevEntranceDetected = false;
+    private boolean prevStorageDetected = false;
+    private boolean prevStagingDetected = false;
+
     private boolean shotRequested = false;
     private boolean rejecting = false;
     private boolean rejectingChecked = false;
-    private int ballCount = 0;
 
-    private boolean prevEntranceDetected = false;
     private boolean driverOverride = false;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
@@ -92,79 +99,60 @@ public class InternalSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
-        // Get last detected storage color from the sensor thread and check IR sensors for balls.
-        Color storageColor = matchColor(colorSensorThread.getLastStorage());
-        //boolean entranceDetected = entrance.get() >= 0.4;
-        //boolean stagingDetected = staging.get() >= 0.2;
-
-        double e = entrance.get();
-        double s = staging.get();
-        boolean entranceDetected = e >= 0.4;
-        boolean stagingDetected = s >= 0.2;
-
-        /*
-        System.out.println("Entrance: " + e);
-        System.out.println("Staging: " + s);
-
-        System.out.println("STORAGE matched " + (
-            storageColor == RED ? "RED" :
-            storageColor == BLUE ? "BLUE" :
-            storageColor == EMPTY ? "EMPTY" :
-            "null"));
-        */
-
-        if (driverOverride) return;
-
-        // Check the entrance sensor for incoming balls and update the ball count accordingly
-        if (!prevEntranceDetected && entranceDetected) ballCount++;
+        // Check sensors for incoming and exiting balls and update ball counts accordingly
+        boolean entranceDetected = entrance.get() >= 0.4;
+        if (!prevEntranceDetected && entranceDetected) entranceStorageBallCount++;
         prevEntranceDetected = entranceDetected;
 
-        // If a ball has entered internals, start the bottom motor
-        if (entranceDetected) motorBottom.set(0.3);
-
-        // If there is a ball in storage, start the top motor
-        if (isBall(storageColor)) {
+        Color storageColor = matchColor(colorSensorThread.getLastStorage());
+        if (!prevStorageDetected && isBall(storageColor)) {
             // If we haven't already checked rejection logic, reject the ball if it doesn't match alliance color
             if (!rejectingChecked) {
                 rejecting = storageColor != ALLIANCE_COLOR;
                 rejectingChecked = true;
             }
-            motorTop.set(0.5);
-            //System.out.println("STORAGE detected, running top motor");
+            entranceStorageBallCount--;
+            storageStagingBallCount++;
         }
 
-        // If there is a ball in staging, stop the bottom and top motors
-        if (stagingDetected) {
-            motorBottom.set(0);
-            motorTop.set(0);
-            //System.out.println("STAGING detected, stopping both motors");
+        boolean stagingDetected = staging.get() >= 0.2;
+        if (!prevStagingDetected && stagingDetected) {
+            storageStagingBallCount--;
+            stagingExitBallCount++;
         }
+        prevStagingDetected = stagingDetected;
+
+        if (driverOverride) return;
+
+        // If there is a ball in the entrance or between storage and staging *and* staging is empty, run the bottom motor.
+        // This serves to bring the first ball properly from storage to staging. For the second ball, the right hand side
+        // of the condition will evaluate to false so it will be stopped when the ball reaches storage.
+        motorBottom.set(entranceStorageBallCount > 0 || (stagingExitBallCount == 0 && storageStagingBallCount > 0)
+            ? 0.3 : 0);
+
+        // If there is a ball between storage and staging, run the top motor
+        motorTop.set(storageStagingBallCount > 0 ? 0.5 : 0);
 
         if (turretSubsystem != null) {
             // If a shot was requested and the turret is ready, load a ball into the turret.
             // If rejecting, the turret can be in a semi-aligned state; otherwise, require it to be fully lined up.
             turretSubsystem.setReject(rejecting);
-            if (shotRequested /* && turretSubsystem.getState() == TurretSubsystem.ModuleState.READY
-                 || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.ALMOST */) {
+            if (shotRequested /* && turretSubsystem.getState() == TurretSubsystem.ModuleState.HIGH_TOLERANCE
+                 || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.LOW_TOLERANCE */) {
                 // Spin the top motor on a timer
                 exitTimer.start();
                 motorTop.set(0.5);
-                //turretSubsystem.setFlywheelPower(0.2);
-                //System.out.println("Shot requested, processing");
 
-                // If 1.5 seconds have elapsed, mark the shot as finished and decrement the ball count.
+                // If 1.5 seconds have elapsed, mark the shot as finished
                 if (exitTimer.hasElapsed(1.5)) {
                     exitTimer.stop();
                     exitTimer.reset();
-
                     motorTop.set(0);
-                    //turretSubsystem.setFlywheelPower(0);
 
+                    // Reset states
                     shotRequested = false;
                     rejectingChecked = false;
-                    ballCount--;
-
-                    //System.out.println("Shot finished, terminating loop");
+                    stagingExitBallCount--;
                 }
             }
         }
@@ -188,11 +176,11 @@ public class InternalSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Gets how many balls are inside internals.
+     * Gets how many total balls are inside internals.
      * @return The current ball count.
      */
     public int getBallCount() {
-        return ballCount;
+        return entranceStorageBallCount + storageStagingBallCount + stagingExitBallCount;
     }
 
     /**
