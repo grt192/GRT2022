@@ -127,11 +127,12 @@ public class InternalSubsystem extends GRTSubsystem {
         // If there is a ball in the entrance or between storage and staging *and* staging is empty, run the bottom motor.
         // This serves to bring the first ball properly from storage to staging. For the second ball, the right hand side
         // of the condition will evaluate to false so it will be stopped when the ball reaches storage.
-        motorBottom.set(entranceStorageBallCount > 0 || (stagingExitBallCount == 0 && storageStagingBallCount > 0)
+        motorBottom.set((entranceStorageBallCount > 0 && storageStagingBallCount == 0)
+            || (storageStagingBallCount > 0 && stagingExitBallCount == 0)
             ? 0.3 : 0);
 
-        // If there is a ball between storage and staging, run the top motor
-        motorTop.set(storageStagingBallCount > 0 ? 0.5 : 0);
+        // If there is a ball between storage and staging and staging is empty, run the top motor
+        motorTop.set((storageStagingBallCount > 0 && stagingExitBallCount == 0) ? 0.5 : 0);
 
         if (turretSubsystem != null) {
             // If a shot was requested and the turret is ready, load a ball into the turret.
