@@ -11,10 +11,11 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
-import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
+import frc.robot.shuffleboard.GRTNetworkTableEntry;
 import frc.robot.subsystems.internals.InternalSubsystem;
 
 public class IntakeSubsystem extends GRTSubsystem {
@@ -48,11 +49,11 @@ public class IntakeSubsystem extends GRTSubsystem {
     private static final double kI = 0;
     private static final double kD = 0;
 
-    private final ShuffleboardTab shuffleboardTab = null;
-    private final NetworkTableEntry shuffleboardPEntry = null;
-    private final NetworkTableEntry shuffleboardIEntry = null;
-    private final NetworkTableEntry shuffleboardDEntry = null;
-    private final NetworkTableEntry shuffleboardDeployPosition = null;
+    private final ShuffleboardTab shuffleboardTab;
+    private final GRTNetworkTableEntry shuffleboardDeployPosition;
+    // private final NetworkTableEntry shuffleboardPEntry = null;
+    // private final NetworkTableEntry shuffleboardIEntry = null;
+    // private final NetworkTableEntry shuffleboardDEntry = null;
 
     // TODO: measure this
     // private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
@@ -89,12 +90,12 @@ public class IntakeSubsystem extends GRTSubsystem {
         */
 
         // Initialize Shuffleboard entries
-        // shuffleboardTab = Shuffleboard.getTab("Intake");
+        shuffleboardTab = Shuffleboard.getTab("Intake");
         // shuffleboardPEntry = shuffleboardTab.add("kP", kP).getEntry();
         // shuffleboardIEntry = shuffleboardTab.add("kI", kI).getEntry();
         // shuffleboardDEntry = shuffleboardTab.add("kD", kD).getEntry();
 
-        // shuffleboardDeployPosition = shuffleboardTab.add("Deploy Position", 0).getEntry();
+        shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy Position", 0).getEntry());
 
         // shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
         // shuffleboardTab.add("Deploy", new DeployIntakeCommand(this));
@@ -120,7 +121,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         intake.set(readyToIntake ? intakePower : 0);
 
-        // shuffleboardDeployPosition.setDouble(deploy.getSelectedSensorPosition());
+        shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
     }
 
     /**

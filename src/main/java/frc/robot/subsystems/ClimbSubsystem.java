@@ -58,17 +58,17 @@ public class ClimbSubsystem extends GRTSubsystem {
     private static final double fifteenD = 0;
 
     private final ShuffleboardTab shuffleboardTab;
-    private final NetworkTableEntry shuffleboardSixPEntry;
-    private final NetworkTableEntry shuffleboardSixIEntry;
-    private final NetworkTableEntry shuffleboardSixDEntry;
+    // private final NetworkTableEntry shuffleboardSixPEntry;
+    // private final NetworkTableEntry shuffleboardSixIEntry;
+    // private final NetworkTableEntry shuffleboardSixDEntry;
 
-    private final NetworkTableEntry shuffleboardTenPEntry;
-    private final NetworkTableEntry shuffleboardTenIEntry;
-    private final NetworkTableEntry shuffleboardTenDEntry;
+    // private final NetworkTableEntry shuffleboardTenPEntry;
+    // private final NetworkTableEntry shuffleboardTenIEntry;
+    // private final NetworkTableEntry shuffleboardTenDEntry;
 
-    private final NetworkTableEntry shuffleboardFifteenPEntry;
-    private final NetworkTableEntry shuffleboardFifteenIEntry;
-    private final NetworkTableEntry shuffleboardFifteenDEntry;
+    // private final NetworkTableEntry shuffleboardFifteenPEntry;
+    // private final NetworkTableEntry shuffleboardFifteenIEntry;
+    // private final NetworkTableEntry shuffleboardFifteenDEntry;
 
     public ClimbSubsystem() {
         // TODO: measure this
@@ -133,33 +133,33 @@ public class ClimbSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Climb");
-        shuffleboardSixPEntry = shuffleboardTab.add("Six point arm kP", sixP).getEntry();
-        shuffleboardSixIEntry = shuffleboardTab.add("Six point arm kI", sixI).getEntry();
-        shuffleboardSixDEntry = shuffleboardTab.add("Six point arm kD", sixD).getEntry();
+        // shuffleboardSixPEntry = shuffleboardTab.add("Six point arm kP", sixP).getEntry();
+        // shuffleboardSixIEntry = shuffleboardTab.add("Six point arm kI", sixI).getEntry();
+        // shuffleboardSixDEntry = shuffleboardTab.add("Six point arm kD", sixD).getEntry();
 
-        shuffleboardTenPEntry = shuffleboardTab.add("Ten point arm kP", tenP).getEntry();
-        shuffleboardTenIEntry = shuffleboardTab.add("Ten point arm kI", tenI).getEntry();
-        shuffleboardTenDEntry = shuffleboardTab.add("Ten point arm kD", tenD).getEntry();
+        // shuffleboardTenPEntry = shuffleboardTab.add("Ten point arm kP", tenP).getEntry();
+        // shuffleboardTenIEntry = shuffleboardTab.add("Ten point arm kI", tenI).getEntry();
+        // shuffleboardTenDEntry = shuffleboardTab.add("Ten point arm kD", tenD).getEntry();
 
-        shuffleboardFifteenPEntry = shuffleboardTab.add("Fifteen point arm kP", fifteenP).getEntry();
-        shuffleboardFifteenIEntry = shuffleboardTab.add("Fifteen point arm kI", fifteenI).getEntry();
-        shuffleboardFifteenDEntry = shuffleboardTab.add("Fifteen point arm kD", fifteenD).getEntry();
+        // shuffleboardFifteenPEntry = shuffleboardTab.add("Fifteen point arm kP", fifteenP).getEntry();
+        // shuffleboardFifteenIEntry = shuffleboardTab.add("Fifteen point arm kI", fifteenI).getEntry();
+        // shuffleboardFifteenDEntry = shuffleboardTab.add("Fifteen point arm kD", fifteenD).getEntry();
     }
 
     @Override
     public void periodic() {
         // Get PID constants from Shuffleboard for testing
-        sixPidController.setP(shuffleboardSixPEntry.getDouble(sixP));
-        sixPidController.setP(shuffleboardSixIEntry.getDouble(sixI));
-        sixPidController.setP(shuffleboardSixDEntry.getDouble(sixD));
+        // sixPidController.setP(shuffleboardSixPEntry.getDouble(sixP));
+        // sixPidController.setP(shuffleboardSixIEntry.getDouble(sixI));
+        // sixPidController.setP(shuffleboardSixDEntry.getDouble(sixD));
 
-        tenPidController.setP(shuffleboardTenPEntry.getDouble(tenP));
-        tenPidController.setP(shuffleboardTenIEntry.getDouble(tenI));
-        tenPidController.setP(shuffleboardTenDEntry.getDouble(tenD));
+        // tenPidController.setP(shuffleboardTenPEntry.getDouble(tenP));
+        // tenPidController.setP(shuffleboardTenIEntry.getDouble(tenI));
+        // tenPidController.setP(shuffleboardTenDEntry.getDouble(tenD));
 
-        fifteenMain.config_kP(0, shuffleboardFifteenPEntry.getDouble(fifteenP));
-        fifteenMain.config_kI(0, shuffleboardFifteenIEntry.getDouble(fifteenI));
-        fifteenMain.config_kD(0, shuffleboardFifteenDEntry.getDouble(fifteenD));
+        // fifteenMain.config_kP(0, shuffleboardFifteenPEntry.getDouble(fifteenP));
+        // fifteenMain.config_kI(0, shuffleboardFifteenIEntry.getDouble(fifteenI));
+        // fifteenMain.config_kD(0, shuffleboardFifteenDEntry.getDouble(fifteenD));
     }
 
     /**

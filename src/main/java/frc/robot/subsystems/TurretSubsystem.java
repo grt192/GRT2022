@@ -91,7 +91,9 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double TURNTABLE_MAX_POS = 270.0 * DEGREES_TO_TURNTABLE_TICKS;
 
     private static final double HOOD_MAX_POS = 50.0 * DEGREES_TO_HOOD_TICKS;
-    private static final double HOOD_MIN_POS = 0.0 * DEGREES_TO_HOOD_TICKS;    
+    private static final double HOOD_MIN_POS = 0.0 * DEGREES_TO_HOOD_TICKS;
+    
+    private static final double FLYWHEEL_RATIO = .36/.16;
 
     // Desired state variables
     // TODO: measure these, add constants
@@ -170,7 +172,7 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheel.setInverted(false);
 
         flywheelEncoder = flywheel.getEncoder();
-        flywheelEncoder.setVelocityConversionFactor(36./16.);
+        flywheelEncoder.setVelocityConversionFactor(FLYWHEEL_RATIO);
         flywheelEncoder.setPosition(0);
 
         flywheelPidController = flywheel.getPIDController();
