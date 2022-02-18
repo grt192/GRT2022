@@ -32,7 +32,7 @@ public class TankSubsystem extends GRTSubsystem {
     private final CANSparkMax rightMiddle;
     private final CANSparkMax rightBack;
 
-    private final PoseEstimatorThread poseEstimatorThread;
+    public final PoseEstimatorThread poseEstimatorThread;
 
     private final ShuffleboardTab shuffleboardTab;
     private final NetworkTableEntry shuffleboardXEntry;
