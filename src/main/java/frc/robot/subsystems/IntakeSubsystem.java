@@ -86,7 +86,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     public IntakeSubsystem(InternalSubsystem internalSubsystem, JetsonConnection jetson) {
         // TODO: measure this
-        super(50);
+        super(20);
 
         this.internalSubsystem = internalSubsystem;
         this.jetson = jetson;

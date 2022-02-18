@@ -48,7 +48,7 @@ public class TankSubsystem extends GRTSubsystem {
 
     public TankSubsystem() {
         // TODO: measure this
-        super(50);
+        super(40);
 
         // Init left main and follower motors and encoders
         leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);

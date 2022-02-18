@@ -51,8 +51,8 @@ public class RobotContainer {
     private final InternalSubsystem internalSubsystem;
     private final ClimbSubsystem climbSubsystem;
 
-    private final JetsonConnection jetson;
-    private final PowerController powerController = null;
+    private final JetsonConnection jetson = null;
+    private final PowerController powerController;
 
     // Controllers and buttons
     private final XboxController driveController = new XboxController(0);
@@ -89,15 +89,12 @@ public class RobotContainer {
         climbSubsystem = new ClimbSubsystem();
 
         // Instantiate power controller
-        /*
         powerController = new PowerController(
             tankSubsystem,
             turretSubsystem,
             internalSubsystem,
             intakeSubsystem
-            //, climbSubsystem
         );
-        */
 
         // Configure the button bindings
         configureButtonBindings();

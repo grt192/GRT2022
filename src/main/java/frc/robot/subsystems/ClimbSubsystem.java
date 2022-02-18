@@ -3,7 +3,6 @@ package frc.robot.subsystems;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import com.revrobotics.CANSparkMax;
@@ -23,16 +22,16 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 
 import frc.robot.GRTSubsystem;
-import frc.robot.brownout.PowerController;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
 import frc.robot.shuffleboard.GRTShuffleboardTab;
 
 import static frc.robot.Constants.ClimbConstants.*;
 
-public class ClimbSubsystem extends GRTSubsystem {
+public class ClimbSubsystem extends SubsystemBase {
     private final CANSparkMax six;
     private final RelativeEncoder sixEncoder;
     private final SparkMaxPIDController sixPidController;
@@ -88,9 +87,6 @@ public class ClimbSubsystem extends GRTSubsystem {
     private static boolean DEBUG_PID = true;
 
     public ClimbSubsystem() {
-        // TODO: measure this
-        super(20);
-
         // Initialize six point arm NEO, encoder PID, and solenoid brake
         six = new CANSparkMax(sixMotorPort, MotorType.kBrushless);
         six.restoreFactoryDefaults();
@@ -262,23 +258,6 @@ public class ClimbSubsystem extends GRTSubsystem {
     public Command climb(GRTSubsystem... subsystems) {
         for (GRTSubsystem subsystem : subsystems) subsystem.climbInit();
         return new ClimbPhase1Command();
-    }
-
-    @Override
-    public double getTotalCurrentDrawn() {
-        return PowerController.getCurrentDrawnFromPDH(
-            sixMotorPort, sixBrakePort, tenMotorPort, tenBrakePort, 
-            fifteenLeftPort, fifteenRightPort, tenLeftSolenoidPort, tenRightSolenoidPort
-        );
-    }
-
-    @Override
-    public void setCurrentLimit(double limit) {
-        int motorLimit = (int) Math.floor(limit);
-
-        six.setSmartCurrentLimit(motorLimit);
-        // ten.setSmartCurrentLimit(motorLimit);
-        // fifteenMain.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
     }
 
     /**

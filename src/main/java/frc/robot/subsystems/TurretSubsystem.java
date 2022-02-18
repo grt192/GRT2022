@@ -205,7 +205,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
-        super(50);
+        super(40);
 
         this.tankSubsystem = tankSubsystem;
         this.jetson = connection;
