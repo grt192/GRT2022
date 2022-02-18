@@ -105,7 +105,8 @@ public class InternalSubsystem extends GRTSubsystem {
         prevEntranceDetected = entranceDetected;
 
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
-        if (!prevStorageDetected && isBall(storageColor)) {
+        boolean storageDetected = isBall(storageColor);
+        if (!prevStorageDetected && storageDetected) {
             // If we haven't already checked rejection logic, reject the ball if it doesn't match alliance color
             if (!rejectingChecked) {
                 rejecting = storageColor != ALLIANCE_COLOR;
@@ -114,6 +115,7 @@ public class InternalSubsystem extends GRTSubsystem {
             entranceStorageBallCount--;
             storageStagingBallCount++;
         }
+        prevStorageDetected = storageDetected;
 
         boolean stagingDetected = staging.get() >= 0.2;
         if (!prevStagingDetected && stagingDetected) {
