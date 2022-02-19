@@ -40,13 +40,23 @@ public class InternalSubsystem extends GRTSubsystem {
 
     private final ColorMatch colorMatcher;
     private final Timer exitTimer;
+    private final Timer entranceTimer;
+    private final Timer storageTimer;
+
+    // Subsystem ball states
+    private int entranceStorageBallCount = 0;
+    private int storageStagingBallCount = 0;
+    private int stagingExitBallCount = 0;
+    private int totalBallCount = 0;
+
+    private boolean prevEntranceDetected = false;
+   // private boolean prevStorageDetected = false;
+   // private boolean prevStagingDetected = false;
 
     private boolean shotRequested = false;
     private boolean rejecting = false;
     private boolean rejectingChecked = false;
-    private int ballCount = 0;
 
-    private boolean prevEntranceDetected = false;
     private boolean driverOverride = false;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
@@ -81,6 +91,8 @@ public class InternalSubsystem extends GRTSubsystem {
         colorMatcher.setConfidenceThreshold(0.8);
 
         exitTimer = new Timer();
+        entranceTimer = new Timer();
+        storageTimer = new Timer();
 
         // Set alliance color from FMS
         switch (DriverStation.getAlliance()) {
@@ -88,86 +100,122 @@ public class InternalSubsystem extends GRTSubsystem {
             case Blue: ALLIANCE_COLOR = BLUE; break;
             default: ALLIANCE_COLOR = RED; break;
         }
+
+        // if we are in auton we start with 1 ball
+        if (DriverStation.isAutonomous()) {
+            totalBallCount = 1;
+        }
     }
 
     @Override
     public void periodic() {
-        // Get last detected storage color from the sensor thread and check IR sensors for balls.
+
+        boolean entranceDetected = entrance.get() >= 0.4;
+        if (!prevEntranceDetected && entranceDetected) totalBallCount++;
+        prevEntranceDetected = entranceDetected;
+
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
-        //boolean entranceDetected = entrance.get() >= 0.4;
-        //boolean stagingDetected = staging.get() >= 0.2;
+        boolean storageDetected = isBall(storageColor);
 
-        double e = entrance.get();
-        double s = staging.get();
-        boolean entranceDetected = e >= 0.4;
-        boolean stagingDetected = s >= 0.2;
+        boolean stagingDetected = staging.get() >= 0.13;
 
-        /*
-        System.out.println("Entrance: " + e);
-        System.out.println("Staging: " + s);
+        // Testing prints, Y = ball detected, X = no ball
+        System.out.println("Entrance: " + (prevEntranceDetected ? "Y" : "X") + 
+                            ", Storage: " + (storageDetected ? "Y" : "X") + 
+                            ", Staging: " + (stagingDetected ? "Y" : "X"));
 
-        System.out.println("STORAGE matched " + (
-            storageColor == RED ? "RED" :
-            storageColor == BLUE ? "BLUE" :
-            storageColor == EMPTY ? "EMPTY" :
-            "null"));
-        */
 
         if (driverOverride) return;
 
-        // Check the entrance sensor for incoming balls and update the ball count accordingly
-        if (!prevEntranceDetected && entranceDetected) ballCount++;
-        prevEntranceDetected = entranceDetected;
+        // If there is a ball in the entrance, run the bottom motor.
+        //old condition: (entranceStorageBallCount > 0 && storageStagingBallCount == 0)
+        if (prevEntranceDetected && !storageDetected) {
+            // Spin the bottom motor on a timer
+            entranceTimer.start();
+            motorBottom.set(0.3);
+        }
+        // If 1.5 second has elapsed, stop motor
+        // TODO this may need more logic to make sure we actually get the ball in, 
+        // could use storage color sensor to detect if it got caught
+        if (entranceTimer.hasElapsed(1.5)) {
+            entranceTimer.stop();
+            entranceTimer.reset();
+            motorBottom.set(0);
 
-        // If a ball has entered internals, start the bottom motor
-        if (entranceDetected) motorBottom.set(0.3);
+            prevEntranceDetected = false;
+            //entranceStorageBallCount--;
+            //storageStagingBallCount++;
+            System.out.println("ball moved from entrance to storage");
+        }
+        
+        // If there is a ball between storage and staging and staging is empty, run the top and bottom motors
+        //old condition: (storageStagingBallCount > 0 && stagingExitBallCount == 0)
+         if (storageDetected && !stagingDetected && !shotRequested) {
+            // Spin the bottom and top motors on a timer
+            storageTimer.start();
+            motorTop.set(0.5);
+            motorBottom.set(0.3);
 
-        // If there is a ball in storage, start the top motor
-        if (isBall(storageColor)) {
-            // If we haven't already checked rejection logic, reject the ball if it doesn't match alliance color
             if (!rejectingChecked) {
                 rejecting = storageColor != ALLIANCE_COLOR;
                 rejectingChecked = true;
             }
-            motorTop.set(0.5);
-            //System.out.println("STORAGE detected, running top motor");
+        }
+         // If 0.5 seconds have elapsed, stop the motors
+         if (storageTimer.hasElapsed(0.5)) {
+            storageTimer.stop();
+            storageTimer.reset();
+            motorTop.set(0);
+            motorBottom.set(0);
+
+            //storageStagingBallCount--;
+            //stagingExitBallCount++;
+            System.out.println("ball moved from storage to staging");
         }
 
-        // If there is a ball in staging, stop the bottom and top motors
+        // If there is a ball in staging, we don't want to push it into turret, especially if there is a shot going
         if (stagingDetected) {
-            motorBottom.set(0);
             motorTop.set(0);
-            //System.out.println("STAGING detected, stopping both motors");
         }
 
         if (turretSubsystem != null) {
             // If a shot was requested and the turret is ready, load a ball into the turret.
             // If rejecting, the turret can be in a semi-aligned state; otherwise, require it to be fully lined up.
             turretSubsystem.setReject(rejecting);
-            if (shotRequested /* && turretSubsystem.getState() == TurretSubsystem.ModuleState.READY
-                 || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.ALMOST */) {
+            if (shotRequested /* && turretSubsystem.getState() == TurretSubsystem.ModuleState.HIGH_TOLERANCE
+                 || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.LOW_TOLERANCE */) {
                 // Spin the top motor on a timer
-                exitTimer.start();
-                motorTop.set(0.5);
-                //turretSubsystem.setFlywheelPower(0.2);
-                //System.out.println("Shot requested, processing");
-
-                // If 1.5 seconds have elapsed, mark the shot as finished and decrement the ball count.
-                if (exitTimer.hasElapsed(1.5)) {
-                    exitTimer.stop();
-                    exitTimer.reset();
-
-                    motorTop.set(0);
-                    //turretSubsystem.setFlywheelPower(0);
-
-                    shotRequested = false;
-                    rejectingChecked = false;
-                    ballCount--;
-
-                    //System.out.println("Shot finished, terminating loop");
-                }
+               
+                    exitTimer.start();
+                    motorTop.set(0.5);
+    
+                    // If 1.5 seconds have elapsed, mark the shot as finished
+                    if (exitTimer.hasElapsed(1)) {
+                        exitTimer.stop();
+                        exitTimer.reset();
+                        motorTop.set(0);
+    
+                        // Reset states
+                        shotRequested = false;
+                        rejectingChecked = false;
+                        //stagingExitBallCount--;
+                        totalBallCount--;
+                        System.out.println("ball exited turret");
+                    }  
             }
         }
+
+        entranceStorageBallCount = prevEntranceDetected ? 1 : 0;
+        storageStagingBallCount = storageDetected ? 1 : 0;
+        stagingExitBallCount = stagingDetected ? 1 : 0;
+
+        // This is really just a different version of our other ball/no ball print so 
+        //it's not *really* needed unless we want to implement ball-counting, though in that 
+        //case we just change that to this.
+        System.out.println("Entrance: " + entranceStorageBallCount + 
+                            " Storage: " + storageStagingBallCount +
+                            " Staging: " + stagingExitBallCount);
+
     }
 
     /**
@@ -188,11 +236,11 @@ public class InternalSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Gets how many balls are inside internals.
+     * Gets how many total balls are inside internals.
      * @return The current ball count.
      */
     public int getBallCount() {
-        return ballCount;
+        return entranceStorageBallCount + storageStagingBallCount + stagingExitBallCount;
     }
 
     /**

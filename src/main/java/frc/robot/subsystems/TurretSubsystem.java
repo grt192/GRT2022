@@ -44,13 +44,15 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Represents the state of a turret module (flywheel, turntable, hood).
-     * If a module is READY, it is completely ready to shoot.
-     * If a module is ALMOST, it is nearly ready and will become ready after a robot stop.
+     * If a module is in HIGH_TOLERANCE, it is completely ready to shoot.
+     * If a module is in LOW_TOLERANCE, it is nearly ready and will become ready after a robot stop.
+     * This state is for rejecting, which doesn't need a perfectly lined up shot but needs better than completely
+     * unaligned. It is also for drivers to know when the turret is almost ready
      * If a module is UNALIGNED, it is not ready; it will require more than a second to get it to READY status. 
      * For turntable, this includes being in the blind spot.
      */
     public enum ModuleState {
-        READY, ALMOST, UNALIGNED
+        HIGH_TOLERANCE, LOW_TOLERANCE, UNALIGNED
     }
 
     public boolean spin = false;
@@ -262,7 +264,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // hood.set(ControlMode.Position, desiredHoodAngle);
         // turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
 
-        System.out.println("Turret RPM: " + flywheelEncoder.getVelocity());
+        //System.out.println("Turret RPM: " + flywheelEncoder.getVelocity());
     }
 
     /**
@@ -283,8 +285,8 @@ public class TurretSubsystem extends GRTSubsystem {
     private ModuleState flywheelReady() {
         // TODO: test thresholding values
         double diff = Math.abs(flywheelEncoder.getVelocity() - desiredFlywheelSpeed);
-        return diff < 10 ? ModuleState.READY
-            : diff < 20 ? ModuleState.ALMOST
+        return diff < 10 ? ModuleState.HIGH_TOLERANCE
+            : diff < 20 ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
 
@@ -293,14 +295,14 @@ public class TurretSubsystem extends GRTSubsystem {
      * @return The state of the turntable.
      */
     private ModuleState turntableAligned() {
-        // If the calculated theta is in the blind spot, return the RED state
+        // If the calculated theta is in the blind spot, return UNALIGNED
         if (desiredTurntablePosition < TURNTABLE_MIN_POS || desiredTurntablePosition > TURNTABLE_MAX_POS)
             return ModuleState.UNALIGNED;
 
         // TODO: test thresholding values
         double diff = Math.abs(turntable.getSelectedSensorPosition() - desiredTurntablePosition);
-        return diff < 10 ? ModuleState.READY
-            : diff < 20 ? ModuleState.ALMOST
+        return diff < 10 ? ModuleState.HIGH_TOLERANCE
+            : diff < 20 ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
 
@@ -311,15 +313,15 @@ public class TurretSubsystem extends GRTSubsystem {
     private ModuleState hoodReady() {
         // TODO: test thresholding values
         double diff = Math.abs(hood.getSelectedSensorPosition() - desiredHoodAngle);
-        return diff < 5 ? ModuleState.READY
-            : diff < 10 ? ModuleState.ALMOST
+        return diff < 5 ? ModuleState.HIGH_TOLERANCE
+            : diff < 10 ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
 
     /**
      * Gets the current state of the turret by taking the lowest state of all of its modules.
-     * Ex: UNALIGNED, ALMOST, READY -> UNALIGNED
-     * Ex. ALMOST, ALMOST, READY -> ALMOST
+     * Ex: UNALIGNED, LOW_TOLERANCE, HIGH_TOLERANCE -> UNALIGNED
+     * Ex. LOW_TOLERANCE, LOW_TOLERANCE, HIGH_TOLERANCE -> LOW_TOLERANCE
      * @return The state of the turret.
      */
     public ModuleState getState() {
@@ -329,8 +331,8 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // TODO: is there a better way to implement this?
         return flywheelState == ModuleState.UNALIGNED || turntableState == ModuleState.UNALIGNED || hoodState == ModuleState.UNALIGNED ? ModuleState.UNALIGNED
-            : flywheelState == ModuleState.ALMOST || turntableState == ModuleState.ALMOST || hoodState == ModuleState.ALMOST ? ModuleState.ALMOST
-            : ModuleState.READY;
+            : flywheelState == ModuleState.LOW_TOLERANCE || turntableState == ModuleState.LOW_TOLERANCE || hoodState == ModuleState.LOW_TOLERANCE ? ModuleState.LOW_TOLERANCE
+            : ModuleState.HIGH_TOLERANCE;
     }
 
     /**

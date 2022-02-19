@@ -27,7 +27,7 @@ public class IntakeSubsystem extends GRTSubsystem {
      * counterclockwise angle from straight upwards. In degrees.
      */
     public enum IntakePosition {
-        RAISED(0), DEPLOYED(465469);
+        RAISED(0), DEPLOYED(200000);
 
         public final double value;
 
@@ -83,6 +83,14 @@ public class IntakeSubsystem extends GRTSubsystem {
         deploy.config_kI(0, kI);
         deploy.config_kD(0, kD);
 
+        // Soft limit deploy between RAISED and DEPLOYED
+        /*
+        deploy.configForwardSoftLimitEnable(true);
+        deploy.configReverseSoftLimitEnable(true);
+        deploy.configForwardSoftLimitThreshold(IntakePosition.RAISED.value);
+        deploy.configReverseSoftLimitThreshold(IntakePosition.DEPLOYED.value);
+        */
+
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Intake");
         shuffleboardPEntry = shuffleboardTab.add("kP", kP).getEntry();
@@ -98,11 +106,9 @@ public class IntakeSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // Get PID constants from Shuffleboard for testing
-        
         deploy.config_kP(0, shuffleboardPEntry.getDouble(kP));
         deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
-        
 
         // If the jetson detects a ball or the driver is running the intake, the intake
         // is deployed,

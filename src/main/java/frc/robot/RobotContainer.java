@@ -141,7 +141,7 @@ public class RobotContainer {
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));
 
-        mechYButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0.8)));
+        mechYButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0.2)));
         mechBButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0)));
 
         if (tankSubsystem != null) {
