@@ -101,11 +101,17 @@ public class InternalSubsystem extends GRTSubsystem {
     public void periodic() {
         // Check sensors for incoming and exiting balls and update ball counts accordingly
         boolean entranceDetected = entrance.get() >= 0.4;
-        if (!prevEntranceDetected && entranceDetected) entranceStorageBallCount++;
+        if (!prevEntranceDetected && entranceDetected) {
+            entranceStorageBallCount++;
+            System.out.println("entrance ball detected");
+            //TODO shouldn't this set rejectingChecked to false?
+        }
         prevEntranceDetected = entranceDetected;
 
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
+        //System.out.println("storage color:: " + colorToString(storageColor));
         boolean storageDetected = isBall(storageColor);
+        if (storageDetected) System.out.println("storage ball detected");
         if (!prevStorageDetected && storageDetected) {
             // If we haven't already checked rejection logic, reject the ball if it doesn't match alliance color
             if (!rejectingChecked) {
@@ -114,13 +120,17 @@ public class InternalSubsystem extends GRTSubsystem {
             }
             entranceStorageBallCount--;
             storageStagingBallCount++;
+            System.out.println();
+            System.out.println("new storage detected, - entrance + storage from prev storage detected");
         }
         prevStorageDetected = storageDetected;
 
-        boolean stagingDetected = staging.get() >= 0.2;
+        boolean stagingDetected = staging.get() >= 0.13;
+        if (stagingDetected) System.out.println("staging ball detected");
         if (!prevStagingDetected && stagingDetected) {
             storageStagingBallCount--;
             stagingExitBallCount++;
+            System.out.println("ball moved from storage to staging");
         }
         prevStagingDetected = stagingDetected;
 
@@ -145,20 +155,28 @@ public class InternalSubsystem extends GRTSubsystem {
             if (shotRequested /* && turretSubsystem.getState() == TurretSubsystem.ModuleState.HIGH_TOLERANCE
                  || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.LOW_TOLERANCE */) {
                 // Spin the top motor on a timer
-                exitTimer.start();
-                motorTop.set(0.5);
-
-                // If 1.5 seconds have elapsed, mark the shot as finished
-                if (exitTimer.hasElapsed(1.5)) {
-                    exitTimer.stop();
-                    exitTimer.reset();
-                    motorTop.set(0);
-
-                    // Reset states
+                if (!stagingDetected) {
                     shotRequested = false;
                     rejectingChecked = false;
-                    stagingExitBallCount--;
+                    System.out.println("false alarm");
+                } else {
+                    exitTimer.start();
+                    motorTop.set(0.5);
+    
+                    // If 1.5 seconds have elapsed, mark the shot as finished
+                    if (exitTimer.hasElapsed(1.5)) {
+                        exitTimer.stop();
+                        exitTimer.reset();
+                        motorTop.set(0);
+    
+                        // Reset states
+                        shotRequested = false;
+                        rejectingChecked = false;
+                        stagingExitBallCount--;
+                        System.out.println("ball exited");
+                    }
                 }
+               
             }
         }
     }
