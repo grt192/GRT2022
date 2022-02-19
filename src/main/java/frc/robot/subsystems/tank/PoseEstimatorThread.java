@@ -25,19 +25,9 @@ public class PoseEstimatorThread {
     public Pose2d getPosition() {
         return runnable.getPosition();
     }
-    
+
     public void setPosition(Pose2d pose) {
         runnable.setPosition(pose);
-    }
-
-    /**
-     * For turret's rtheta calculation, get the robot's relative change in position
-     * since the last call.
-     * 
-     * @return
-     */
-    public Pose2d consumeDeltas() {
-        return runnable.consumeDeltas();
     }
 
     public DifferentialDriveWheelSpeeds getWheelSpeeds() {
@@ -54,9 +44,6 @@ public class PoseEstimatorThread {
 
         private DifferentialDriveWheelSpeeds lastWheelSpeeds;
 
-        // for rtheta shenanigans
-        private Pose2d lastDeltaCalculationPose;
-
         public PoseEstimatorRunnable(AHRS ahrs, RelativeEncoder leftEncoder, RelativeEncoder rightEncoder) {
             this.ahrs = ahrs;
             this.leftEncoder = leftEncoder;
@@ -70,8 +57,6 @@ public class PoseEstimatorThread {
                 new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01),
                 // Global measurement standard deviations. X, Y, and theta.
                 new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01));
-
-                lastDeltaCalculationPose = poseEstimator.getEstimatedPosition();
         }
 
         @Override
@@ -97,30 +82,6 @@ public class PoseEstimatorThread {
 
             // https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj/estimator/DifferentialDrivePoseEstimator.html#resetPosition(edu.wpi.first.wpilibj.geometry.Pose2d,edu.wpi.first.wpilibj.geometry.Rotation2d)
             poseEstimator.resetPosition(pose, getGyroHeading());
-        }
-
-        public Pose2d consumeDeltas() {
-            // i'm pretty sure this method can be done as a one-liner using methods in Pose2d
-            // but I'm not certain what what all the documentation means
-
-            Pose2d currentPose = getPosition();
-
-            double dx = currentPose.getX() - lastDeltaCalculationPose.getX();
-            double dy = currentPose.getY() - lastDeltaCalculationPose.getY();
-            double dHeading = currentPose.getRotation().getRadians() - lastDeltaCalculationPose.getRotation().getRadians();
-
-            double hypot = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-
-            double globalheading = Math.atan2(dy, dx);
-            double relativeHeading = globalheading - currentPose.getRotation().getRadians();
-
-            double x = hypot * Math.cos(relativeHeading);
-            double y = hypot * Math.sin(relativeHeading);
-
-            // messy messy :(
-            lastDeltaCalculationPose = currentPose;
-            
-            return new Pose2d(x, y, new Rotation2d(dHeading));
         }
 
         /**

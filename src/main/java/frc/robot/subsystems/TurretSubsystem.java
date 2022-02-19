@@ -127,7 +127,7 @@ public class TurretSubsystem extends GRTSubsystem {
     // TODO: measure these, add constants
     private double theta;
     private double r;
-    private Pose2d previousPosition;
+    private Pose2d lastPosition;
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
@@ -230,7 +230,6 @@ public class TurretSubsystem extends GRTSubsystem {
         } else {
             if (jetson != null) {
                 Pose2d currentPosition = tankSubsystem.getRobotPosition();
-                Pose2d deltas = tankSubsystem.poseEstimatorThread.consumeDeltas();
 
                 // If the hub is in vision range, use vision's `r` and `theta` as ground truth
                 if (jetson.turretVisionWorking()) {
@@ -247,7 +246,7 @@ public class TurretSubsystem extends GRTSubsystem {
                     // TODO: this assumes that the last r, theta we got is always 'clean' data.
                     // we need to do filtering of some sort, probably on the jetson, to ensure this is true.
 
-                    this.manualUpdateRTheta(deltas);
+                    this.manualUpdateRTheta(lastPosition, currentPosition);
                 }
 
                 // Set the turntable position from the relative theta given by vision
@@ -256,7 +255,7 @@ public class TurretSubsystem extends GRTSubsystem {
                 // TODO: constants, interpolation
                 desiredFlywheelSpeed = 30;
 
-                previousPosition = currentPosition;
+                lastPosition = currentPosition;
             }
 
             // If rejecting, scale down flywheel speed
@@ -399,7 +398,9 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheel.set(pow);
     }
 
-    private void manualUpdateRTheta(Pose2d deltas) {
+    private void manualUpdateRTheta(Pose2d lastPosition, Pose2d currentPosition) {
+        Pose2d deltas = lastPosition.relativeTo(currentPosition);
+
         double dx = deltas.getX();
         double dy = deltas.getY();
         double dTheta = deltas.getRotation().getRadians();
