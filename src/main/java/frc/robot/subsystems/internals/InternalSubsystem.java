@@ -47,6 +47,7 @@ public class InternalSubsystem extends GRTSubsystem {
     private int entranceStorageBallCount = 0;
     private int storageStagingBallCount = 0;
     private int stagingExitBallCount = 0;
+    private int totalBallCount = 0;
 
     private boolean prevEntranceDetected = false;
    // private boolean prevStorageDetected = false;
@@ -99,24 +100,30 @@ public class InternalSubsystem extends GRTSubsystem {
             case Blue: ALLIANCE_COLOR = BLUE; break;
             default: ALLIANCE_COLOR = RED; break;
         }
+
+        // if we are in auton we start with 1 ball
+        if (DriverStation.isAutonomous()) {
+            totalBallCount = 1;
+        }
     }
 
     @Override
     public void periodic() {
 
         boolean entranceDetected = entrance.get() >= 0.4;
+        if (!prevEntranceDetected && entranceDetected) totalBallCount++;
         prevEntranceDetected = entranceDetected;
+
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
         boolean storageDetected = isBall(storageColor);
-        boolean stagingDetected = staging.get() >= 0.13;
 
+        boolean stagingDetected = staging.get() >= 0.13;
 
         // Testing prints, Y = ball detected, X = no ball
         System.out.println("Entrance: " + (prevEntranceDetected ? "Y" : "X") + 
                             ", Storage: " + (storageDetected ? "Y" : "X") + 
                             ", Staging: " + (stagingDetected ? "Y" : "X"));
 
-        
 
         if (driverOverride) return;
 
@@ -140,7 +147,7 @@ public class InternalSubsystem extends GRTSubsystem {
             //storageStagingBallCount++;
             System.out.println("ball moved from entrance to storage");
         }
-
+        
         // If there is a ball between storage and staging and staging is empty, run the top and bottom motors
         //old condition: (storageStagingBallCount > 0 && stagingExitBallCount == 0)
          if (storageDetected && !stagingDetected && !shotRequested) {
@@ -148,6 +155,7 @@ public class InternalSubsystem extends GRTSubsystem {
             storageTimer.start();
             motorTop.set(0.5);
             motorBottom.set(0.3);
+
             if (!rejectingChecked) {
                 rejecting = storageColor != ALLIANCE_COLOR;
                 rejectingChecked = true;
@@ -191,9 +199,9 @@ public class InternalSubsystem extends GRTSubsystem {
                         shotRequested = false;
                         rejectingChecked = false;
                         //stagingExitBallCount--;
+                        totalBallCount--;
                         System.out.println("ball exited turret");
-                    }
-               
+                    }  
             }
         }
 
