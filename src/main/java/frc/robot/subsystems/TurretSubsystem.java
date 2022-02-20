@@ -191,19 +191,18 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheelPidController.setD(flywheelD);
 
         // Initialize Shuffleboard entries
-        shuffleboardTab = Shuffleboard.getTab("Shooter");
-        shuffleboardTurntablePEntry = shuffleboardTab.add("Turntable kP", turntableP).getEntry();
-        shuffleboardTurntableIEntry = shuffleboardTab.add("Turntable kI", turntableI).getEntry();
-        shuffleboardTurntableDEntry = shuffleboardTab.add("Turntable kD", turntableD).getEntry();
-        shuffleboardTurntableFFEntry = shuffleboardTab.add("Turntable FF", turntableD).getEntry();
+        shuffleboardTab = Shuffleboard.getTab("Turret");
+        shuffleboardTurntablePEntry = shuffleboardTab.add("Turntable kP", 0).getEntry();
+        shuffleboardTurntableIEntry = shuffleboardTab.add("Turntable kI", 0).getEntry();
+        shuffleboardTurntableDEntry = shuffleboardTab.add("Turntable kD", 0).getEntry();
+        shuffleboardTurntableFFEntry = shuffleboardTab.add("Turntable FF", .002).getEntry();
         shuffleboardTarget = shuffleboardTab.add("target pos", 90).getEntry();
         shuffleboardTurret = shuffleboardTab.add("turret pos", 0).getEntry();
         shuffleboardTurretVelo = shuffleboardTab.add("turret velo", 0).getEntry();
-
         
         shuffleboardTurntableMinVelEntry = shuffleboardTab.add("minvel", 0).getEntry();
-        shuffleboardTurntableMaxVelEntry = shuffleboardTab.add("maxvel", 0).getEntry();
-        shuffleboardTurntableMaxAccelEntry = shuffleboardTab.add("maxaccel", 0).getEntry();
+        shuffleboardTurntableMaxVelEntry = shuffleboardTab.add("maxvel", 10000).getEntry();
+        shuffleboardTurntableMaxAccelEntry = shuffleboardTab.add("maxaccel", 400).getEntry();
 
         // shuffleboardHoodPEntry = shuffleboardTab.add("Hood kP", hoodP).getEntry();
         // shuffleboardHoodIEntry = shuffleboardTab.add("Hood kI", hoodI).getEntry();
@@ -220,7 +219,7 @@ public class TurretSubsystem extends GRTSubsystem {
         turntablePidController.setP(shuffleboardTurntablePEntry.getDouble(turntableP));
         turntablePidController.setI(shuffleboardTurntableIEntry.getDouble(turntableI));
         turntablePidController.setD(shuffleboardTurntableDEntry.getDouble(turntableD));
-        turntablePidController.setFF(shuffleboardTurntableDEntry.getDouble(0));
+        turntablePidController.setFF(shuffleboardTurntableFFEntry.getDouble(0));
         turntablePidController.setSmartMotionMinOutputVelocity(shuffleboardTurntableMinVelEntry.getDouble(0), 0);
         turntablePidController.setSmartMotionMaxVelocity(shuffleboardTurntableMaxVelEntry.getDouble(0), 0);
         turntablePidController.setSmartMotionMaxAccel(shuffleboardTurntableMaxAccelEntry.getDouble(0), 0);
@@ -295,8 +294,6 @@ public class TurretSubsystem extends GRTSubsystem {
         shuffleboardTurret.setDouble(Math.toDegrees(turntableEncoder.getPosition()));
         shuffleboardTurretVelo.setDouble(Math.toDegrees(turntableEncoder.getVelocity()));
         turntablePidController.setReference(Math.toRadians(shuffleboardTarget.getDouble(0)), ControlType.kSmartMotion);
-        System.out.println("Turret Pos: " + turntableEncoder.getPosition());
-        System.out.println("Turret Deg: " + Math.toDegrees(turntableEncoder.getPosition()));
     }
 
     /**
