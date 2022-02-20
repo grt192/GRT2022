@@ -50,8 +50,8 @@ public final class Constants {
     }
 
     public static final class ClimbConstants {
-        public static final int sixMotorPort = 12; //sparkmax
-        public static final int sixBrakePort = 1; // talon
+        public static final int sixMotorPort = 1; //sparkmax
+        public static final int sixBrakePort = 0; // talon
         
         public static final int tenMotorPort = 13; //sparkmax
         public static final int tenBrakePort = 2; //talon
