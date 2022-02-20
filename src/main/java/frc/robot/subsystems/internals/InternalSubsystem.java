@@ -31,7 +31,6 @@ public class InternalSubsystem extends GRTSubsystem {
     private final AnalogPotentiometer entrance;
     private final ColorSensorV3 storage;
     private final AnalogPotentiometer staging;
-    // private final AnalogPotentiometer exit;
 
     private final Color RED = new Color(0.437255859375, 0.394775390625, 0.16845703125);
     private final Color BLUE = new Color(0.170654296875, 0.4189453125, 0.41064453125);
@@ -39,6 +38,7 @@ public class InternalSubsystem extends GRTSubsystem {
     private final Color ALLIANCE_COLOR;
 
     private final ColorMatch colorMatcher;
+
     private final Timer exitTimer;
     private final Timer entranceTimer;
     private final Timer storageTimer;
@@ -76,7 +76,6 @@ public class InternalSubsystem extends GRTSubsystem {
         entrance = new AnalogPotentiometer(entranceIRPort);
         storage = new ColorSensorV3(I2C.Port.kMXP);
         staging = new AnalogPotentiometer(stagingIRPort);
-        // exit = new AnalogPotentiometer(exitIRPort);
 
         colorSensorThread = new ColorSensorThread(storage);
 

@@ -41,7 +41,6 @@ public final class Constants {
 
         public static final int entranceIRPort = 0;
         public static final int stagingIRPort = 1;
-        public static final int exitIRPort = 3;
     }
 
     public static final class IntakeConstants {
