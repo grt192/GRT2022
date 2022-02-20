@@ -43,15 +43,11 @@ public class InternalSubsystem extends GRTSubsystem {
     private final Timer entranceTimer;
     private final Timer storageTimer;
 
-    // Subsystem ball states
-    private int entranceStorageBallCount = 0;
-    private int storageStagingBallCount = 0;
-    private int stagingExitBallCount = 0;
-    private int totalBallCount = 0;
+    private int ballCount = 0;
 
     private boolean prevEntranceDetected = false;
-   // private boolean prevStorageDetected = false;
-   // private boolean prevStagingDetected = false;
+    // private boolean prevStorageDetected = false;
+    // private boolean prevStagingDetected = false;
 
     private boolean shotRequested = false;
     private boolean rejecting = false;
@@ -103,15 +99,14 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // if we are in auton we start with 1 ball
         if (DriverStation.isAutonomous()) {
-            totalBallCount = 1;
+            ballCount = 1;
         }
     }
 
     @Override
     public void periodic() {
-
         boolean entranceDetected = entrance.get() >= 0.4;
-        if (!prevEntranceDetected && entranceDetected) totalBallCount++;
+        if (!prevEntranceDetected && entranceDetected) ballCount++;
         prevEntranceDetected = entranceDetected;
 
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
@@ -124,7 +119,6 @@ public class InternalSubsystem extends GRTSubsystem {
                             ", Storage: " + (storageDetected ? "Y" : "X") + 
                             ", Staging: " + (stagingDetected ? "Y" : "X"));
 
-
         if (driverOverride) return;
 
         // If there is a ball in the entrance, run the bottom motor.
@@ -134,6 +128,7 @@ public class InternalSubsystem extends GRTSubsystem {
             entranceTimer.start();
             motorBottom.set(0.3);
         }
+
         // If 1.5 second has elapsed, stop motor
         // TODO this may need more logic to make sure we actually get the ball in, 
         // could use storage color sensor to detect if it got caught
@@ -143,14 +138,12 @@ public class InternalSubsystem extends GRTSubsystem {
             motorBottom.set(0);
 
             prevEntranceDetected = false;
-            //entranceStorageBallCount--;
-            //storageStagingBallCount++;
             System.out.println("ball moved from entrance to storage");
         }
-        
+
         // If there is a ball between storage and staging and staging is empty, run the top and bottom motors
-        //old condition: (storageStagingBallCount > 0 && stagingExitBallCount == 0)
-         if (storageDetected && !stagingDetected && !shotRequested) {
+        // (storageStagingBallCount > 0 && stagingExitBallCount == 0)
+        if (storageDetected && !stagingDetected && !shotRequested) {
             // Spin the bottom and top motors on a timer
             storageTimer.start();
             motorTop.set(0.5);
@@ -161,15 +154,14 @@ public class InternalSubsystem extends GRTSubsystem {
                 rejectingChecked = true;
             }
         }
-         // If 0.5 seconds have elapsed, stop the motors
-         if (storageTimer.hasElapsed(0.5)) {
+
+        // If 0.5 seconds have elapsed, stop the motors
+        if (storageTimer.hasElapsed(0.5)) {
             storageTimer.stop();
             storageTimer.reset();
             motorTop.set(0);
             motorBottom.set(0);
 
-            //storageStagingBallCount--;
-            //stagingExitBallCount++;
             System.out.println("ball moved from storage to staging");
         }
 
@@ -185,37 +177,23 @@ public class InternalSubsystem extends GRTSubsystem {
             if (shotRequested /* && turretSubsystem.getState() == TurretSubsystem.ModuleState.HIGH_TOLERANCE
                  || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.LOW_TOLERANCE */) {
                 // Spin the top motor on a timer
-               
-                    exitTimer.start();
-                    motorTop.set(0.5);
-    
-                    // If 1.5 seconds have elapsed, mark the shot as finished
-                    if (exitTimer.hasElapsed(1)) {
-                        exitTimer.stop();
-                        exitTimer.reset();
-                        motorTop.set(0);
-    
-                        // Reset states
-                        shotRequested = false;
-                        rejectingChecked = false;
-                        //stagingExitBallCount--;
-                        totalBallCount--;
-                        System.out.println("ball exited turret");
-                    }  
+                exitTimer.start();
+                motorTop.set(0.5);
+
+                // If 1.5 seconds have elapsed, mark the shot as finished
+                if (exitTimer.hasElapsed(1)) {
+                    exitTimer.stop();
+                    exitTimer.reset();
+                    motorTop.set(0);
+
+                    // Reset states
+                    shotRequested = false;
+                    rejectingChecked = false;
+                    ballCount--;
+                    System.out.println("ball exited turret");
+                }  
             }
         }
-
-        entranceStorageBallCount = prevEntranceDetected ? 1 : 0;
-        storageStagingBallCount = storageDetected ? 1 : 0;
-        stagingExitBallCount = stagingDetected ? 1 : 0;
-
-        // This is really just a different version of our other ball/no ball print so 
-        //it's not *really* needed unless we want to implement ball-counting, though in that 
-        //case we just change that to this.
-        System.out.println("Entrance: " + entranceStorageBallCount + 
-                            " Storage: " + storageStagingBallCount +
-                            " Staging: " + stagingExitBallCount);
-
     }
 
     /**
@@ -240,7 +218,7 @@ public class InternalSubsystem extends GRTSubsystem {
      * @return The current ball count.
      */
     public int getBallCount() {
-        return entranceStorageBallCount + storageStagingBallCount + stagingExitBallCount;
+        return ballCount;
     }
 
     /**
