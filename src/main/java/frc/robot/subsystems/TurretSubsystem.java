@@ -86,20 +86,6 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double flywheelI = 0;
     private static final double flywheelD = 0;
 
-    private static final double DEGREES_TO_TURNTABLE_TICKS = 1.0 / 1.0;
-    private static final double DEGREES_TO_HOOD_TICKS = 1.0 / 1.0;
-
-    private TurretMode mode = TurretMode.SHOOTING;
-
-    // Soft limit constants
-    private static final double TURNTABLE_MIN_POS = -270.0 * DEGREES_TO_TURNTABLE_TICKS;
-    private static final double TURNTABLE_MAX_POS = 270.0 * DEGREES_TO_TURNTABLE_TICKS;
-
-    private static final double HOOD_MAX_POS = 50.0 * DEGREES_TO_HOOD_TICKS;
-    private static final double HOOD_MIN_POS = 0.0 * DEGREES_TO_HOOD_TICKS;
-    
-    private static final double FLYWHEEL_RATIO = .36/.16;
-
     // Desired state variables
     // TODO: measure these, add constants
     private double theta;
@@ -110,20 +96,35 @@ public class TurretSubsystem extends GRTSubsystem {
     private double desiredTurntablePosition = 0.0;
     private double desiredHoodAngle = 0.0;
 
+    private TurretMode mode = TurretMode.SHOOTING;
+
+    // Soft limit constants
+    private static final double TURNTABLE_MIN_POS = Math.toRadians(-120);
+    private static final double TURNTABLE_MAX_POS = Math.toRadians(120);
+
+    private static final double HOOD_MAX_POS = 50.0;
+    private static final double HOOD_MIN_POS = 0.0;
+
     // shuffleboard
     private final ShuffleboardTab shuffleboardTab;
-    private final GRTNetworkTableEntry shuffleboardFlywheel;
-    // private final NetworkTableEntry shuffleboardTurntablePEntry = null;
-    // private final NetworkTableEntry shuffleboardTurntableIEntry = null;
-    // private final NetworkTableEntry shuffleboardTurntableDEntry = null;
+    private final NetworkTableEntry shuffleboardTurntablePEntry;
+    private final NetworkTableEntry shuffleboardTurntableIEntry;
+    private final NetworkTableEntry shuffleboardTurntableDEntry;
+    private final NetworkTableEntry shuffleboardTurntableFFEntry;
+    private final NetworkTableEntry shuffleboardTurntableMinVelEntry;
+    private final NetworkTableEntry shuffleboardTurntableMaxVelEntry;
+    private final NetworkTableEntry shuffleboardTurntableMaxAccelEntry;
+    private final NetworkTableEntry shuffleboardTarget;
+    private final NetworkTableEntry shuffleboardTurret;
+    private final NetworkTableEntry shuffleboardTurretVelo;
 
-    // private final NetworkTableEntry shuffleboardHoodPEntry = null;
-    // private final NetworkTableEntry shuffleboardHoodIEntry = null;
-    // private final NetworkTableEntry shuffleboardHoodDEntry = null;
+    // private final NetworkTableEntry shuffleboardHoodPEntry;
+    // private final NetworkTableEntry shuffleboardHoodIEntry;
+    // private final NetworkTableEntry shuffleboardHoodDEntry;
 
-    // private final NetworkTableEntry shuffleboardFlywheelPEntry = null;
-    // private final NetworkTableEntry shuffleboardFlywheelIEntry = null;
-    // private final NetworkTableEntry shuffleboardFlywheelDEntry = null;
+    // private final NetworkTableEntry shuffleboardFlywheelPEntry;
+    // private final NetworkTableEntry shuffleboardFlywheelIEntry;
+    // private final NetworkTableEntry shuffleboardFlywheelDEntry;
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
@@ -139,12 +140,17 @@ public class TurretSubsystem extends GRTSubsystem {
         turntable.setInverted(false);
  
         turntableEncoder = turntable.getEncoder();
+        turntableEncoder.setPositionConversionFactor((Math.PI/2.) / 3.8095201253890992);
+        turntableEncoder.setVelocityConversionFactor((Math.PI/2.) / 3.8095201253890992);
         turntableEncoder.setPosition(0);
  
         turntablePidController = turntable.getPIDController();
         turntablePidController.setP(turntableP);
         turntablePidController.setI(turntableI);
         turntablePidController.setD(turntableD);
+        turntablePidController.setIZone(0);
+        turntablePidController.setFF(0);
+        turntablePidController.setOutputRange(-1, 1);
  
         turntable.setSoftLimit(com.revrobotics.CANSparkMax.SoftLimitDirection.kForward, (float) TURNTABLE_MAX_POS);
         turntable.setSoftLimit(com.revrobotics.CANSparkMax.SoftLimitDirection.kReverse, (float) TURNTABLE_MIN_POS);
@@ -185,12 +191,19 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheelPidController.setD(flywheelD);
 
         // Initialize Shuffleboard entries
-        shuffleboardTab = Shuffleboard.getTab("Turret");
-        shuffleboardFlywheel = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel RPM", 0).getEntry());
+        shuffleboardTab = Shuffleboard.getTab("Shooter");
+        shuffleboardTurntablePEntry = shuffleboardTab.add("Turntable kP", turntableP).getEntry();
+        shuffleboardTurntableIEntry = shuffleboardTab.add("Turntable kI", turntableI).getEntry();
+        shuffleboardTurntableDEntry = shuffleboardTab.add("Turntable kD", turntableD).getEntry();
+        shuffleboardTurntableFFEntry = shuffleboardTab.add("Turntable FF", turntableD).getEntry();
+        shuffleboardTarget = shuffleboardTab.add("target pos", 90).getEntry();
+        shuffleboardTurret = shuffleboardTab.add("turret pos", 0).getEntry();
+        shuffleboardTurretVelo = shuffleboardTab.add("turret velo", 0).getEntry();
+
         
-        // shuffleboardTurntablePEntry = shuffleboardTab.add("Turntable kP", turntableP).getEntry();
-        // shuffleboardTurntableIEntry = shuffleboardTab.add("Turntable kI", turntableI).getEntry();
-        // shuffleboardTurntableDEntry = shuffleboardTab.add("Turntable kD", turntableD).getEntry();
+        shuffleboardTurntableMinVelEntry = shuffleboardTab.add("minvel", 0).getEntry();
+        shuffleboardTurntableMaxVelEntry = shuffleboardTab.add("maxvel", 0).getEntry();
+        shuffleboardTurntableMaxAccelEntry = shuffleboardTab.add("maxaccel", 0).getEntry();
 
         // shuffleboardHoodPEntry = shuffleboardTab.add("Hood kP", hoodP).getEntry();
         // shuffleboardHoodIEntry = shuffleboardTab.add("Hood kI", hoodI).getEntry();
@@ -204,9 +217,13 @@ public class TurretSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // Get PID constants from Shuffleboard for testing
-        // turntable.config_kP(0, shuffleboardTurntablePEntry.getDouble(turntableP));
-        // turntable.config_kI(0, shuffleboardTurntableIEntry.getDouble(turntableI));
-        // turntable.config_kD(0, shuffleboardTurntableDEntry.getDouble(turntableD));
+        turntablePidController.setP(shuffleboardTurntablePEntry.getDouble(turntableP));
+        turntablePidController.setI(shuffleboardTurntableIEntry.getDouble(turntableI));
+        turntablePidController.setD(shuffleboardTurntableDEntry.getDouble(turntableD));
+        turntablePidController.setFF(shuffleboardTurntableDEntry.getDouble(0));
+        turntablePidController.setSmartMotionMinOutputVelocity(shuffleboardTurntableMinVelEntry.getDouble(0), 0);
+        turntablePidController.setSmartMotionMaxVelocity(shuffleboardTurntableMaxVelEntry.getDouble(0), 0);
+        turntablePidController.setSmartMotionMaxAccel(shuffleboardTurntableMaxAccelEntry.getDouble(0), 0);
 
         // hood.config_kP(0, shuffleboardHoodPEntry.getDouble(hoodP));
         // hood.config_kI(0, shuffleboardHoodIEntry.getDouble(hoodI));
@@ -258,7 +275,7 @@ public class TurretSubsystem extends GRTSubsystem {
                 }
 
                 // Set the turntable position from the relative theta given by vision
-                desiredTurntablePosition = turntableEncoder.getPosition() + theta * DEGREES_TO_TURNTABLE_TICKS;
+                desiredTurntablePosition = turntableEncoder.getPosition() + theta;
 
                 // TODO: constants, interpolation
                 desiredFlywheelSpeed = 30;
@@ -274,7 +291,12 @@ public class TurretSubsystem extends GRTSubsystem {
         // hood.set(ControlMode.Position, desiredHoodAngle);
         // turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
 
-        shuffleboardFlywheel.setValue(flywheelEncoder.getVelocity());
+        // System.out.println("Turret RPM: " + flywheelEncoder.getVelocity());
+        shuffleboardTurret.setDouble(Math.toDegrees(turntableEncoder.getPosition()));
+        shuffleboardTurretVelo.setDouble(Math.toDegrees(turntableEncoder.getVelocity()));
+        turntablePidController.setReference(Math.toRadians(shuffleboardTarget.getDouble(0)), ControlType.kSmartMotion);
+        System.out.println("Turret Pos: " + turntableEncoder.getPosition());
+        System.out.println("Turret Deg: " + Math.toDegrees(turntableEncoder.getPosition()));
     }
 
     /**

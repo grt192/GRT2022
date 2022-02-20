@@ -192,7 +192,7 @@ public class RobotContainer {
                 //System.out.println("Turntable power: " + turntablePower);
                 //System.out.println("Hood power: " + hoodPower);
 
-                turretSubsystem.setTurntablePower(turntablePower);
+                // turretSubsystem.setTurntablePower(turntablePower);
                 turretSubsystem.setHoodPower(hoodPower);
             }, turretSubsystem));
         }
