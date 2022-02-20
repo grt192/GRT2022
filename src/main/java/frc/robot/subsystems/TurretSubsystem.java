@@ -12,6 +12,9 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.CANSparkMax.ControlType;
+import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
@@ -58,7 +61,9 @@ public class TurretSubsystem extends GRTSubsystem {
     private final TankSubsystem tankSubsystem;
     private final JetsonConnection jetson;
 
-    private final WPI_TalonSRX turntable;
+    private final CANSparkMax turntable;
+    private final RelativeEncoder turntableEncoder;
+    private final SparkMaxPIDController turntablePidController;
     private final WPI_TalonSRX hood;
 
     private final CANSparkMax flywheel;
@@ -127,24 +132,23 @@ public class TurretSubsystem extends GRTSubsystem {
         this.tankSubsystem = tankSubsystem;
         this.jetson = connection;
 
-        // Initialize turntable CIM and encoder PID
-        turntable = new WPI_TalonSRX(turntablePort);
-        turntable.configFactoryDefault();
-        turntable.setNeutralMode(NeutralMode.Brake);
-
-        turntable.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-        turntable.setSelectedSensorPosition(0);
-        turntable.setSensorPhase(false);
-        turntable.config_kP(0, turntableP);
-        turntable.config_kI(0, turntableI);
-        turntable.config_kD(0, turntableD);
-
-        // Enable talon soft limiting, stopping the motor if it's going forwards past MAX_ANGLE and backwards past MIN_ANGLE
-        // https://www.chiefdelphi.com/t/soft-limit-switches-with-talonsrx-and-victorspx-and-vendor-libraries/345054
-        turntable.configForwardSoftLimitEnable(true);
-        turntable.configReverseSoftLimitEnable(true);
-        turntable.configForwardSoftLimitThreshold(TURNTABLE_MAX_POS);
-        turntable.configReverseSoftLimitThreshold(TURNTABLE_MIN_POS);
+        // Initialize turntable SparkMax and encoder PID
+        turntable = new CANSparkMax(turntablePort, MotorType.kBrushless);
+        turntable.restoreFactoryDefaults();
+        turntable.setIdleMode(IdleMode.kBrake);
+        turntable.setInverted(false);
+ 
+        turntableEncoder = turntable.getEncoder();
+        turntableEncoder.setPosition(0);
+ 
+        turntablePidController = turntable.getPIDController();
+        turntablePidController.setP(turntableP);
+        turntablePidController.setI(turntableI);
+        turntablePidController.setD(turntableD);
+ 
+        turntable.setSoftLimit(com.revrobotics.CANSparkMax.SoftLimitDirection.kForward, (float) TURNTABLE_MAX_POS);
+        turntable.setSoftLimit(com.revrobotics.CANSparkMax.SoftLimitDirection.kReverse, (float) TURNTABLE_MIN_POS);
+ 
 
         // Initialize hood 775 and encoder PID
         hood = new WPI_TalonSRX(hoodPort);
@@ -254,7 +258,7 @@ public class TurretSubsystem extends GRTSubsystem {
                 }
 
                 // Set the turntable position from the relative theta given by vision
-                desiredTurntablePosition = turntable.getSelectedSensorPosition() + theta * DEGREES_TO_TURNTABLE_TICKS;
+                desiredTurntablePosition = turntableEncoder.getPosition() + theta * DEGREES_TO_TURNTABLE_TICKS;
 
                 // TODO: constants, interpolation
                 desiredFlywheelSpeed = 30;
@@ -306,7 +310,7 @@ public class TurretSubsystem extends GRTSubsystem {
             return ModuleState.UNALIGNED;
 
         // TODO: test thresholding values
-        double diff = Math.abs(turntable.getSelectedSensorPosition() - desiredTurntablePosition);
+        double diff = Math.abs(turntableEncoder.getPosition() - desiredTurntablePosition);
         return diff < 10 ? ModuleState.HIGH_TOLERANCE
             : diff < 20 ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
@@ -359,7 +363,7 @@ public class TurretSubsystem extends GRTSubsystem {
     public void setCurrentLimit(double limit) {
         int motorLimit = (int) Math.floor(limit / 3);
 
-        turntable.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
+        turntable.setSmartCurrentLimit(motorLimit);
         hood.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         flywheel.setSmartCurrentLimit(motorLimit);
     }
