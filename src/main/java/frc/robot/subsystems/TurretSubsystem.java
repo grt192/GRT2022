@@ -1,9 +1,5 @@
 package frc.robot.subsystems;
 
-import static frc.robot.Constants.TurretConstants.flywheelPort;
-import static frc.robot.Constants.TurretConstants.hoodPort;
-import static frc.robot.Constants.TurretConstants.turntablePort;
-
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
@@ -14,6 +10,7 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -56,8 +53,6 @@ public class TurretSubsystem extends GRTSubsystem {
         HIGH_TOLERANCE, LOW_TOLERANCE, UNALIGNED
     }
 
-    public boolean spin = false;
-
     private final TankSubsystem tankSubsystem;
     private final JetsonConnection jetson;
 
@@ -92,13 +87,14 @@ public class TurretSubsystem extends GRTSubsystem {
     private double r;
     private Pose2d previousPosition = new Pose2d();
 
-    private double desiredFlywheelSpeed = 30.0;
-    private double desiredTurntablePosition = 0.0;
-    private double desiredHoodAngle = 0.0;
+    private double desiredFlywheelSpeed = 30.0; // TODO: units? RPM?
+    private double desiredTurntableRadians = 0.0;
+    private double desiredHoodAngle = 0.0; // TODO: radians or degrees?
 
     private TurretMode mode = TurretMode.SHOOTING;
 
-    // Soft limit constants
+    // Encoder constants
+    private static final double ENCODER_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.8095201253890992;
     private static final double TURNTABLE_MIN_POS = Math.toRadians(-120);
     private static final double TURNTABLE_MAX_POS = Math.toRadians(120);
 
@@ -139,9 +135,11 @@ public class TurretSubsystem extends GRTSubsystem {
         turntable.setIdleMode(IdleMode.kBrake);
         turntable.setInverted(false);
  
+        // Position conversion: Rotations -> radians
+        // Velocity conversion: RPM -> radians / minute
         turntableEncoder = turntable.getEncoder();
-        turntableEncoder.setPositionConversionFactor((Math.PI/2.) / 3.8095201253890992);
-        turntableEncoder.setVelocityConversionFactor((Math.PI/2.) / 3.8095201253890992);
+        turntableEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_RADIANS);
+        turntableEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_RADIANS);
         turntableEncoder.setPosition(0);
  
         turntablePidController = turntable.getPIDController();
@@ -152,9 +150,10 @@ public class TurretSubsystem extends GRTSubsystem {
         turntablePidController.setFF(0);
         turntablePidController.setOutputRange(-1, 1);
  
-        turntable.setSoftLimit(com.revrobotics.CANSparkMax.SoftLimitDirection.kForward, (float) TURNTABLE_MAX_POS);
-        turntable.setSoftLimit(com.revrobotics.CANSparkMax.SoftLimitDirection.kReverse, (float) TURNTABLE_MIN_POS);
- 
+        /*
+        turntable.setSoftLimit(SoftLimitDirection.kForward, (float) TURNTABLE_MAX_POS);
+        turntable.setSoftLimit(SoftLimitDirection.kReverse, (float) TURNTABLE_MIN_POS);
+        */
 
         // Initialize hood 775 and encoder PID
         hood = new WPI_TalonSRX(hoodPort);
@@ -199,7 +198,7 @@ public class TurretSubsystem extends GRTSubsystem {
         shuffleboardTarget = shuffleboardTab.add("target pos", 90).getEntry();
         shuffleboardTurret = shuffleboardTab.add("turret pos", 0).getEntry();
         shuffleboardTurretVelo = shuffleboardTab.add("turret velo", 0).getEntry();
-        
+
         shuffleboardTurntableMinVelEntry = shuffleboardTab.add("minvel", 0).getEntry();
         shuffleboardTurntableMaxVelEntry = shuffleboardTab.add("maxvel", 10000).getEntry();
         shuffleboardTurntableMaxAccelEntry = shuffleboardTab.add("maxaccel", 400).getEntry();
@@ -234,13 +233,13 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // If retracted, skip jetson logic and calculations
         if (mode == TurretMode.RETRACTED) {
-            desiredTurntablePosition = 0;
+            desiredTurntableRadians = 0;
             desiredHoodAngle = 0;
             desiredFlywheelSpeed = 0;
         } else {
-            if (jetson != null) {
-                Pose2d currentPosition = tankSubsystem.getRobotPosition();
+            Pose2d currentPosition = tankSubsystem.getRobotPosition();
 
+            if (jetson != null) {
                 // If the hub is in vision range, use vision's `r` and `theta` as ground truth
                 if (jetson.turretVisionWorking()) {
                     r = jetson.getHubDistance();
@@ -274,13 +273,16 @@ public class TurretSubsystem extends GRTSubsystem {
                 }
 
                 // Set the turntable position from the relative theta given by vision
-                desiredTurntablePosition = turntableEncoder.getPosition() + theta;
+                desiredTurntableRadians = turntableEncoder.getPosition() + theta;
 
                 // TODO: constants, interpolation
                 desiredFlywheelSpeed = 30;
 
                 previousPosition = currentPosition;
             }
+
+            // Turntable position: heading + theta to maintain desired angle
+            desiredTurntableRadians = Math.toRadians(shuffleboardTarget.getDouble(0)) - currentPosition.getRotation().getRadians();
 
             // If rejecting, scale down flywheel speed
             if (mode == TurretMode.REJECTING) desiredFlywheelSpeed *= 0.5;
@@ -293,7 +295,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // System.out.println("Turret RPM: " + flywheelEncoder.getVelocity());
         shuffleboardTurret.setDouble(Math.toDegrees(turntableEncoder.getPosition()));
         shuffleboardTurretVelo.setDouble(Math.toDegrees(turntableEncoder.getVelocity()));
-        turntablePidController.setReference(Math.toRadians(shuffleboardTarget.getDouble(0)), ControlType.kSmartMotion);
+        turntablePidController.setReference(desiredTurntableRadians, ControlType.kSmartMotion);
     }
 
     /**
@@ -325,11 +327,11 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     private ModuleState turntableAligned() {
         // If the calculated theta is in the blind spot, return UNALIGNED
-        if (desiredTurntablePosition < TURNTABLE_MIN_POS || desiredTurntablePosition > TURNTABLE_MAX_POS)
+        if (desiredTurntableRadians < TURNTABLE_MIN_POS || desiredTurntableRadians > TURNTABLE_MAX_POS)
             return ModuleState.UNALIGNED;
 
         // TODO: test thresholding values
-        double diff = Math.abs(turntableEncoder.getPosition() - desiredTurntablePosition);
+        double diff = Math.abs(turntableEncoder.getPosition() - desiredTurntableRadians);
         return diff < 10 ? ModuleState.HIGH_TOLERANCE
             : diff < 20 ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;

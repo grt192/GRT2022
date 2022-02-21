@@ -180,11 +180,6 @@ public class RobotContainer {
         }
 
         if (turretSubsystem != null) {
-            driveXButton.whileHeld(new StartEndCommand(
-                () -> turretSubsystem.spin = true, 
-                () -> turretSubsystem.spin = false, 
-                turretSubsystem));
-
             turretSubsystem.setDefaultCommand(new RunCommand(() -> {
                 double turntablePower = -mechController.getLeftY();
                 double hoodPower = -mechController.getRightY();

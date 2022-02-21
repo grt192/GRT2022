@@ -1,6 +1,7 @@
 package frc.robot.subsystems.tank;
 
 import com.kauailabs.navx.frc.AHRS;
+
 import com.revrobotics.RelativeEncoder;
 
 import edu.wpi.first.math.MatBuilder;
@@ -22,14 +23,26 @@ public class PoseEstimatorThread {
         thread.start();
     }
 
+    /**
+     * Gets the estimated current position of the robot.
+     * @return The estimated position of the robot as a Pose2d.
+     */
     public Pose2d getPosition() {
         return runnable.getPosition();
     }
 
+    /**
+     * Resets the robot's position to a given Pose2D.
+     * @param pose The pose to reset the pose estimator to.
+     */
     public void setPosition(Pose2d pose) {
         runnable.setPosition(pose);
     }
 
+    /**
+     * Gets the last measured wheel speeds of the drivetrain.
+     * @return The last measured drivetrain wheel speeds as a DifferentialDriveWheelSpeeds object.
+     */
     public DifferentialDriveWheelSpeeds getWheelSpeeds() {
         return runnable.getLastWheelSpeeds();
     }
@@ -38,7 +51,6 @@ public class PoseEstimatorThread {
         private final DifferentialDrivePoseEstimator poseEstimator;
 
         private final AHRS ahrs;
-
         private final RelativeEncoder leftEncoder;
         private final RelativeEncoder rightEncoder;
 
@@ -51,11 +63,11 @@ public class PoseEstimatorThread {
 
             // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose_state-estimators.html
             poseEstimator = new DifferentialDrivePoseEstimator(new Rotation2d(), new Pose2d(),
-                // State measurement standard deviations. X, Y, theta.
+                // State measurement standard deviations. X, Y, theta, dist_l, dist_r.
                 new MatBuilder<>(Nat.N5(), Nat.N1()).fill(0.02, 0.02, 0.01, 0.02, 0.02),
-                // Local measurement standard deviations. Left encoder, right encoder, gyro.
+                // Odometry measurement standard deviations. Left encoder, right encoder, gyro.
                 new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01),
-                // Global measurement standard deviations. X, Y, and theta.
+                // Vision measurement standard deviations. X, Y, and theta.
                 new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01));
         }
 
@@ -72,10 +84,18 @@ public class PoseEstimatorThread {
             }
         }
 
+        /**
+         * Gets the estimated current position of the robot.
+         * @return The estimated position of the robot as a Pose2d.
+         */
         public Pose2d getPosition() {
             return poseEstimator.getEstimatedPosition();
         }
 
+        /**
+         * Resets the robot's position to a given Pose2D.
+         * @param pose The pose to reset the pose estimator to.
+         */
         public void setPosition(Pose2d pose) {
             leftEncoder.setPosition(0);
             rightEncoder.setPosition(0);
@@ -85,7 +105,7 @@ public class PoseEstimatorThread {
         }
 
         /**
-         * Gets the gyro angle given by the NavX AHRS, inverted to be counterclockwise positive.
+         * Gets the gyro angle given by the NavX AHRS, inverted to be counterclockwise positive. 
          * @return The robot heading as a Rotation2d.
          */
         private Rotation2d getGyroHeading() {
@@ -93,7 +113,7 @@ public class PoseEstimatorThread {
         }
 
         /**
-         * Gets the wheel speeds of the drivetrain.
+         * Gets the wheel speeds of the drivetrain. 
          * @return The drivetrain wheel speeds as a DifferentialDriveWheelSpeeds object.
          */
         private DifferentialDriveWheelSpeeds getWheelSpeeds() {
@@ -103,8 +123,8 @@ public class PoseEstimatorThread {
         }
 
         /**
-         * Gets the last constructed wheel speeds of the drivetrain.
-         * @return 
+         * Gets the last measured wheel speeds of the drivetrain.
+         * @return The last measured drivetrain wheel speeds as a DifferentialDriveWheelSpeeds object.
          */
         public DifferentialDriveWheelSpeeds getLastWheelSpeeds() {
             return this.lastWheelSpeeds;
