@@ -23,6 +23,7 @@ import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
+import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.internals.InternalSubsystem;
@@ -38,11 +39,13 @@ import frc.robot.subsystems.tank.TankSubsystem;
 public class RobotContainer {
 
     // Subsystems
+    /*
     private final TankSubsystem tankSubsystem;
     private final TurretSubsystem turretSubsystem;
     private final IntakeSubsystem intakeSubsystem;
     private final InternalSubsystem internalSubsystem;
-    // private final ClimbSubsystem climbSubsystem;
+    */
+    private final ClimbSubsystem climbSubsystem;
 
     private final JetsonConnection jetson = null;
     private final PowerController powerController = null;
@@ -74,11 +77,13 @@ public class RobotContainer {
         // jetson.run();
 
         // Instantiate subsystems
+        /*
         tankSubsystem = new TankSubsystem();
         turretSubsystem = new TurretSubsystem(tankSubsystem, jetson);
         internalSubsystem = new InternalSubsystem(turretSubsystem);
         intakeSubsystem = new IntakeSubsystem(internalSubsystem);
-        // climbSubsystem = new ClimbSubsystem();
+        */
+        climbSubsystem = new ClimbSubsystem();
 
         // Instantiate power controller
         /*
@@ -93,6 +98,7 @@ public class RobotContainer {
 
         // Instantiate commands
         // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
+        /*
         if (tankSubsystem != null) {
             autonCommand = new FollowPathCommand(
                 tankSubsystem,
@@ -106,6 +112,8 @@ public class RobotContainer {
         } else {
             autonCommand = new InstantCommand();
         }
+        */
+        autonCommand = new InstantCommand();
 
         // Configure the button bindings
         configureButtonBindings();
@@ -135,9 +143,15 @@ public class RobotContainer {
      * X button -> start climb sequence (climb)
      */
     private void controllerBindings() {
+        driveAButton.whenPressed(new InstantCommand(() -> climbSubsystem.toggleSixBrake()));
+        climbSubsystem.setDefaultCommand(new RunCommand(() -> {
+            climbSubsystem.setSixArmPower(-driveController.getLeftY());
+        }, climbSubsystem));
+
         //driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
         //driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
 
+        /*
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));
 
@@ -196,6 +210,7 @@ public class RobotContainer {
                 turretSubsystem.setHoodPower(hoodPower);
             }, turretSubsystem));
         }
+        */
     }
 
     /**

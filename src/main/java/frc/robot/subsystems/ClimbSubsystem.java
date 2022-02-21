@@ -57,6 +57,9 @@ public class ClimbSubsystem extends GRTSubsystem {
     private static final double fifteenI = 0;
     private static final double fifteenD = 0;
 
+    // Temp states for brake toggles
+    private boolean sixBrakeOn = false;
+
     private final ShuffleboardTab shuffleboardTab;
     private final NetworkTableEntry shuffleboardSixPEntry;
     private final NetworkTableEntry shuffleboardSixIEntry;
@@ -160,6 +163,22 @@ public class ClimbSubsystem extends GRTSubsystem {
         fifteenMain.config_kP(0, shuffleboardFifteenPEntry.getDouble(fifteenP));
         fifteenMain.config_kI(0, shuffleboardFifteenIEntry.getDouble(fifteenI));
         fifteenMain.config_kD(0, shuffleboardFifteenDEntry.getDouble(fifteenD));
+    }
+
+    /**
+     * Testing function to supply raw power to the six point arm winch.
+     * @param pow The power to set.
+     */
+    public void setSixArmPower(double pow) {
+        six.set(pow);
+    }
+
+    /**
+     * Testing function to toggle the six point brake.
+     */
+    public void toggleSixBrake() {
+        sixBrakeOn = !sixBrakeOn;
+        sixBrake.set(sixBrakeOn ? 1 : 0);
     }
 
     /**
