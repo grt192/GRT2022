@@ -104,6 +104,8 @@ public class InternalSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
+        System.out.println("Ball count: " + ballCount);
+
         boolean entranceDetected = entrance.get() >= 0.4;
         if (!prevEntranceDetected && entranceDetected) ballCount++;
         prevEntranceDetected = entranceDetected;
@@ -218,6 +220,13 @@ public class InternalSubsystem extends GRTSubsystem {
      */
     public int getBallCount() {
         return ballCount;
+    }
+
+    /**
+     * Sets the ball count to the initial expected when autonomous starts (1).
+     */
+    public void setAutonInitialBallCount() {
+        ballCount = 1;
     }
 
     /**

@@ -91,6 +91,7 @@ public class RobotContainer {
 
         // Instantiate commands
         // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
+        /*
         if (tankSubsystem != null) {
             autonCommand = new FollowPathCommand(
                 tankSubsystem,
@@ -104,6 +105,8 @@ public class RobotContainer {
         } else {
             autonCommand = new InstantCommand();
         }
+        */
+        autonCommand = new InstantCommand();
 
         // Configure the button bindings
         configureButtonBindings();
@@ -198,7 +201,6 @@ public class RobotContainer {
 
     /**
      * Use this to pass the autonomous command to the main {@link Robot} class.
-     * 
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
@@ -206,11 +208,18 @@ public class RobotContainer {
     }
 
     /**
-     * Gets the PowerController instance.
-     * 
+     * Gets the PowerController instance for scaling in `Robot.periodic()`.
      * @return The PowerController instance.
      */
     public PowerController getPowerController() {
         return powerController;
+    }
+
+    /**
+     * Gets the InternalSubsystem for setting initial ball count in `Robot.autonomousInit()`.
+     * @return The InternalSubsystem instance.
+     */
+    public InternalSubsystem getInternalSubsystem() {
+        return internalSubsystem;
     }
 }
