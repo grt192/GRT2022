@@ -141,8 +141,8 @@ public class TurretSubsystem extends GRTSubsystem {
         // Position conversion: Rotations -> radians
         // Velocity conversion: RPM -> radians / minute
         turntableEncoder = turntable.getEncoder();
-        turntableEncoder.setPositionConversionFactor((Math.PI/2.) / 3.8095201253890992);
-        turntableEncoder.setVelocityConversionFactor((Math.PI/2.) / 3.8095201253890992);
+        turntableEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_RADIANS);
+        turntableEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_RADIANS);
         turntableEncoder.setPosition(Math.toRadians(180));
  
         turntablePidController = turntable.getPIDController();
@@ -155,8 +155,8 @@ public class TurretSubsystem extends GRTSubsystem {
         turntablePidController.setSmartMotionMaxVelocity(maxVel, 0);
         turntablePidController.setSmartMotionMaxAccel(maxAccel, 0);
 
-        turntable.setSoftLimit(com.revrobotics.CANSparkMax.SoftLimitDirection.kForward, (float) TURNTABLE_MAX_POS);
-        turntable.setSoftLimit(com.revrobotics.CANSparkMax.SoftLimitDirection.kReverse, (float) TURNTABLE_MIN_POS);
+        turntable.setSoftLimit(SoftLimitDirection.kForward, (float) TURNTABLE_MAX_POS);
+        turntable.setSoftLimit(SoftLimitDirection.kReverse, (float) TURNTABLE_MIN_POS);
         turntable.enableSoftLimit(SoftLimitDirection.kForward, true);
         turntable.enableSoftLimit(SoftLimitDirection.kReverse, true);
 
@@ -203,7 +203,6 @@ public class TurretSubsystem extends GRTSubsystem {
         // shuffleboardTurntableFFEntry = shuffleboardTab.add("Turntable FF", .002).getEntry();
         // shuffleboardTarget = shuffleboardTab.add("target pos", 90).getEntry();
         // shuffleboardTurretVelo = shuffleboardTab.add("turret velo", 0).getEntry();
-        
         // shuffleboardTurntableMinVelEntry = shuffleboardTab.add("minvel", 0).getEntry();
         // shuffleboardTurntableMaxVelEntry = shuffleboardTab.add("maxvel", 10000).getEntry();
         // shuffleboardTurntableMaxAccelEntry = shuffleboardTab.add("maxaccel", 400).getEntry();
@@ -287,7 +286,7 @@ public class TurretSubsystem extends GRTSubsystem {
             }
 
             // Turntable position: heading + theta to maintain desired angle
-            desiredTurntableRadians = Math.toRadians(shuffleboardTarget.getDouble(0)) - currentPosition.getRotation().getRadians();
+            desiredTurntableRadians = Math.toRadians(180) - currentPosition.getRotation().getRadians();
 
             // If rejecting, scale down flywheel speed
             if (mode == TurretMode.REJECTING) desiredFlywheelSpeed *= 0.5;
