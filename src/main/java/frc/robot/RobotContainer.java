@@ -188,7 +188,6 @@ public class RobotContainer {
                 //System.out.println("Hood power: " + hoodPower);
 
                 // turretSubsystem.setTurntablePower(turntablePower);
-                turretSubsystem.turretHeading = Math.toRadians(180) - tankSubsystem.getRobotPosition().getRotation().getRadians();
                 turretSubsystem.setHoodPower(hoodPower);
             }, turretSubsystem));
         }

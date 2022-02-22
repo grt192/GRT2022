@@ -81,15 +81,6 @@ public class PoseEstimatorThread {
                 double rightDistance = rightEncoder.getPosition();
 
                 poseEstimator.update(gyroAngle, lastWheelSpeeds, leftDistance, rightDistance);
-
-                System.out.println(getPosition());
-
-                try {
-                    Thread.sleep(20);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
             }
         }
 

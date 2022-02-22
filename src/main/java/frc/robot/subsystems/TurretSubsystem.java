@@ -137,14 +137,14 @@ public class TurretSubsystem extends GRTSubsystem {
         turntable.restoreFactoryDefaults();
         turntable.setIdleMode(IdleMode.kBrake);
         turntable.setInverted(false);
- 
+
         // Position conversion: Rotations -> radians
         // Velocity conversion: RPM -> radians / minute
         turntableEncoder = turntable.getEncoder();
         turntableEncoder.setPositionConversionFactor(ENCODER_ROTATIONS_TO_RADIANS);
         turntableEncoder.setVelocityConversionFactor(ENCODER_ROTATIONS_TO_RADIANS);
         turntableEncoder.setPosition(Math.toRadians(180));
- 
+
         turntablePidController = turntable.getPIDController();
         turntablePidController.setP(turntableP);
         turntablePidController.setI(turntableI);
