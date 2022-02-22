@@ -69,4 +69,8 @@ public final class Constants {
         public static final int jetsonPort = 1337;
         public static final String jetsonIP = "10.1.92.94";
     }
+
+    public static final class ShuffleboardConstants {
+        public static final double UPDATE_TIME = 0.5; // seconds between each update
+    }
 }

@@ -19,7 +19,7 @@ public class PoseEstimatorThread {
 
         Thread thread = new Thread(runnable);
         thread.setDaemon(true);
-        //thread.start();
+        thread.start();
     }
 
     public Pose2d getPosition() {

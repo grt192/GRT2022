@@ -1,29 +1,27 @@
 package frc.robot.subsystems;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
+import static frc.robot.Constants.TurretConstants.flywheelPort;
+import static frc.robot.Constants.TurretConstants.hoodPort;
+import static frc.robot.Constants.TurretConstants.turntablePort;
+
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
-import com.revrobotics.CANSparkMax.ControlType;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
-
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.jetson.JetsonConnection;
+import frc.robot.shuffleboard.GRTNetworkTableEntry;
 import frc.robot.subsystems.tank.TankSubsystem;
-
-import static frc.robot.Constants.TurretConstants.*;
 
 /**
  * A subsystem which controls the turret mechanism on the robot. 
@@ -67,6 +65,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private final RelativeEncoder flywheelEncoder;
     private final SparkMaxPIDController flywheelPidController;
 
+    // constants
     // Turntable position PID constants
     private static final double turntableP = 0.125;
     private static final double turntableI = 0;
@@ -82,16 +81,6 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double flywheelI = 0;
     private static final double flywheelD = 0;
 
-    // Desired state variables
-    // TODO: measure these, add constants
-    private double theta;
-    private double r;
-    private Pose2d previousPosition;
-
-    private double desiredFlywheelSpeed = 30.0;
-    private double desiredTurntablePosition = 0.0;
-    private double desiredHoodAngle = 0.0;
-
     private static final double DEGREES_TO_TURNTABLE_TICKS = 1.0 / 1.0;
     private static final double DEGREES_TO_HOOD_TICKS = 1.0 / 1.0;
 
@@ -102,20 +91,34 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double TURNTABLE_MAX_POS = 270.0 * DEGREES_TO_TURNTABLE_TICKS;
 
     private static final double HOOD_MAX_POS = 50.0 * DEGREES_TO_HOOD_TICKS;
-    private static final double HOOD_MIN_POS = 0.0 * DEGREES_TO_HOOD_TICKS;    
+    private static final double HOOD_MIN_POS = 0.0 * DEGREES_TO_HOOD_TICKS;
+    
+    private static final double FLYWHEEL_RATIO = .36/.16;
 
+    // Desired state variables
+    // TODO: measure these, add constants
+    private double theta;
+    private double r;
+    private Pose2d previousPosition;
+
+    private double desiredFlywheelSpeed = 30.0;
+    private double desiredTurntablePosition = 0.0;
+    private double desiredHoodAngle = 0.0;
+
+    // shuffleboard
     private final ShuffleboardTab shuffleboardTab;
-    private final NetworkTableEntry shuffleboardTurntablePEntry;
-    private final NetworkTableEntry shuffleboardTurntableIEntry;
-    private final NetworkTableEntry shuffleboardTurntableDEntry;
+    private final GRTNetworkTableEntry shuffleboardFlywheel;
+    // private final NetworkTableEntry shuffleboardTurntablePEntry = null;
+    // private final NetworkTableEntry shuffleboardTurntableIEntry = null;
+    // private final NetworkTableEntry shuffleboardTurntableDEntry = null;
 
-    private final NetworkTableEntry shuffleboardHoodPEntry;
-    private final NetworkTableEntry shuffleboardHoodIEntry;
-    private final NetworkTableEntry shuffleboardHoodDEntry;
+    // private final NetworkTableEntry shuffleboardHoodPEntry = null;
+    // private final NetworkTableEntry shuffleboardHoodIEntry = null;
+    // private final NetworkTableEntry shuffleboardHoodDEntry = null;
 
-    private final NetworkTableEntry shuffleboardFlywheelPEntry;
-    private final NetworkTableEntry shuffleboardFlywheelIEntry;
-    private final NetworkTableEntry shuffleboardFlywheelDEntry;
+    // private final NetworkTableEntry shuffleboardFlywheelPEntry = null;
+    // private final NetworkTableEntry shuffleboardFlywheelIEntry = null;
+    // private final NetworkTableEntry shuffleboardFlywheelDEntry = null;
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
@@ -169,6 +172,7 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheel.setInverted(false);
 
         flywheelEncoder = flywheel.getEncoder();
+        flywheelEncoder.setVelocityConversionFactor(FLYWHEEL_RATIO);
         flywheelEncoder.setPosition(0);
 
         flywheelPidController = flywheel.getPIDController();
@@ -177,18 +181,20 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheelPidController.setD(flywheelD);
 
         // Initialize Shuffleboard entries
-        shuffleboardTab = Shuffleboard.getTab("Shooter");
-        shuffleboardTurntablePEntry = shuffleboardTab.add("Turntable kP", turntableP).getEntry();
-        shuffleboardTurntableIEntry = shuffleboardTab.add("Turntable kI", turntableI).getEntry();
-        shuffleboardTurntableDEntry = shuffleboardTab.add("Turntable kD", turntableD).getEntry();
+        shuffleboardTab = Shuffleboard.getTab("Turret");
+        shuffleboardFlywheel = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel RPM", 0).getEntry());
+        
+        // shuffleboardTurntablePEntry = shuffleboardTab.add("Turntable kP", turntableP).getEntry();
+        // shuffleboardTurntableIEntry = shuffleboardTab.add("Turntable kI", turntableI).getEntry();
+        // shuffleboardTurntableDEntry = shuffleboardTab.add("Turntable kD", turntableD).getEntry();
 
-        shuffleboardHoodPEntry = shuffleboardTab.add("Hood kP", hoodP).getEntry();
-        shuffleboardHoodIEntry = shuffleboardTab.add("Hood kI", hoodI).getEntry();
-        shuffleboardHoodDEntry = shuffleboardTab.add("Hood kD", hoodD).getEntry();
+        // shuffleboardHoodPEntry = shuffleboardTab.add("Hood kP", hoodP).getEntry();
+        // shuffleboardHoodIEntry = shuffleboardTab.add("Hood kI", hoodI).getEntry();
+        // shuffleboardHoodDEntry = shuffleboardTab.add("Hood kD", hoodD).getEntry();
 
-        shuffleboardFlywheelPEntry = shuffleboardTab.add("Flywheel kP", flywheelP).getEntry();
-        shuffleboardFlywheelIEntry = shuffleboardTab.add("Flywheel kI", flywheelI).getEntry();
-        shuffleboardFlywheelDEntry = shuffleboardTab.add("Flywheel kD", flywheelD).getEntry();
+        // shuffleboardFlywheelPEntry = shuffleboardTab.add("Flywheel kP", flywheelP).getEntry();
+        // shuffleboardFlywheelIEntry = shuffleboardTab.add("Flywheel kI", flywheelI).getEntry();
+        // shuffleboardFlywheelDEntry = shuffleboardTab.add("Flywheel kD", flywheelD).getEntry();
     }
 
     @Override
@@ -264,7 +270,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // hood.set(ControlMode.Position, desiredHoodAngle);
         // turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
 
-        //System.out.println("Turret RPM: " + flywheelEncoder.getVelocity());
+        shuffleboardFlywheel.setValue(flywheelEncoder.getVelocity());
     }
 
     /**

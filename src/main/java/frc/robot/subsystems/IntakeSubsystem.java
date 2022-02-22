@@ -11,13 +11,11 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
-import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
-import frc.robot.commands.intake.DeployIntakeCommand;
-import frc.robot.commands.intake.RaiseIntakeCommand;
+import frc.robot.shuffleboard.GRTNetworkTableEntry;
 import frc.robot.subsystems.internals.InternalSubsystem;
 
 public class IntakeSubsystem extends GRTSubsystem {
@@ -52,10 +50,10 @@ public class IntakeSubsystem extends GRTSubsystem {
     private static final double kD = 0;
 
     private final ShuffleboardTab shuffleboardTab;
-    private final NetworkTableEntry shuffleboardPEntry;
-    private final NetworkTableEntry shuffleboardIEntry;
-    private final NetworkTableEntry shuffleboardDEntry;
-    private final NetworkTableEntry shuffleboardDeployPosition;
+    private final GRTNetworkTableEntry shuffleboardDeployPosition;
+    // private final NetworkTableEntry shuffleboardPEntry = null;
+    // private final NetworkTableEntry shuffleboardIEntry = null;
+    // private final NetworkTableEntry shuffleboardDEntry = null;
 
     // TODO: measure this
     // private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
@@ -93,22 +91,23 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Intake");
-        shuffleboardPEntry = shuffleboardTab.add("kP", kP).getEntry();
-        shuffleboardIEntry = shuffleboardTab.add("kI", kI).getEntry();
-        shuffleboardDEntry = shuffleboardTab.add("kD", kD).getEntry();
+        // shuffleboardPEntry = shuffleboardTab.add("kP", kP).getEntry();
+        // shuffleboardIEntry = shuffleboardTab.add("kI", kI).getEntry();
+        // shuffleboardDEntry = shuffleboardTab.add("kD", kD).getEntry();
 
-        shuffleboardDeployPosition = shuffleboardTab.add("Deploy Position", 0).getEntry();
+        shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy Position", 0).getEntry());
 
-        shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
-        shuffleboardTab.add("Deploy", new DeployIntakeCommand(this));
+        // shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
+        // shuffleboardTab.add("Deploy", new DeployIntakeCommand(this));
     }
 
     @Override
     public void periodic() {
         // Get PID constants from Shuffleboard for testing
-        deploy.config_kP(0, shuffleboardPEntry.getDouble(kP));
-        deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
-        deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
+        // deploy.config_kP(0, shuffleboardPEntry.getDouble(kP));
+        // deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
+        // deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
+        
 
         // If the jetson detects a ball or the driver is running the intake, the intake
         // is deployed,
@@ -122,7 +121,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         intake.set(readyToIntake ? intakePower : 0);
 
-        shuffleboardDeployPosition.setDouble(deploy.getSelectedSensorPosition());
+        shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
     }
 
     /**

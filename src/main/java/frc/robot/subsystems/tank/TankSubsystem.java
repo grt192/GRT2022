@@ -1,7 +1,13 @@
 package frc.robot.subsystems.tank;
 
-import com.kauailabs.navx.frc.AHRS;
+import static frc.robot.Constants.TankConstants.bLeftMotorPort;
+import static frc.robot.Constants.TankConstants.bRightMotorPort;
+import static frc.robot.Constants.TankConstants.fLeftMotorPort;
+import static frc.robot.Constants.TankConstants.fRightMotorPort;
+import static frc.robot.Constants.TankConstants.mLeftMotorPort;
+import static frc.robot.Constants.TankConstants.mRightMotorPort;
 
+import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -9,16 +15,13 @@ import com.revrobotics.RelativeEncoder;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
-import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
-
-import static frc.robot.Constants.TankConstants.*;
+import frc.robot.shuffleboard.GRTNetworkTableEntry;
 
 /**
  * A subsystem which controls the robot's drivetrain. This subsystem handles both driving and odometry.
@@ -35,8 +38,9 @@ public class TankSubsystem extends GRTSubsystem {
     private final PoseEstimatorThread poseEstimatorThread;
 
     private final ShuffleboardTab shuffleboardTab;
-    private final NetworkTableEntry shuffleboardXEntry;
-    private final NetworkTableEntry shuffleboardYEntry;
+    private final GRTNetworkTableEntry shuffleX;
+    private final GRTNetworkTableEntry shuffleY;
+    private final GRTNetworkTableEntry shuffleHeading;
     private final Field2d shuffleboardField;
 
     // TODO: measure this for new robot
@@ -96,11 +100,11 @@ public class TankSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Drivetrain");
-        shuffleboardXEntry = shuffleboardTab.add("Robot x", 0).getEntry();
-        shuffleboardYEntry = shuffleboardTab.add("Robot y", 0).getEntry();
-        //shuffleboardTab.add("Gyro", ahrs);
+        shuffleX = new GRTNetworkTableEntry(shuffleboardTab.add("Robot x", 0).getEntry());
+        shuffleY = new GRTNetworkTableEntry(shuffleboardTab.add("Robot y", 0).getEntry());
+        shuffleHeading = new GRTNetworkTableEntry(shuffleboardTab.add("Robot heading", 0).getEntry());
         shuffleboardField = new Field2d();
-        //shuffleboardTab.add("Field", shuffleboardField);
+        shuffleboardTab.add("Field", shuffleboardField);
     }
 
     /**
@@ -170,13 +174,12 @@ public class TankSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // Update Shuffleboard entries
-        //Pose2d pose = getRobotPosition();
-
-        /*
-        shuffleboardXEntry.setDouble(pose.getX());
-        shuffleboardYEntry.setDouble(pose.getY());
+        Pose2d pose = getRobotPosition();
+        
+        shuffleX.setValue(pose.getX());
+        shuffleY.setValue(pose.getY());
+        shuffleHeading.setValue(pose.getRotation().getRadians());
         shuffleboardField.setRobotPose(pose);
-        */
     }
 
     /**
