@@ -145,7 +145,7 @@ public class RobotContainer {
     private void controllerBindings() {
         driveAButton.whenPressed(new InstantCommand(() -> climbSubsystem.toggleSixBrake()));
         climbSubsystem.setDefaultCommand(new RunCommand(() -> {
-            climbSubsystem.setSixArmPower(-driveController.getLeftY());
+            climbSubsystem.setSixArmPower(driveController.getLeftY());
         }, climbSubsystem));
 
         //driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));

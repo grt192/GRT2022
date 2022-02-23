@@ -14,6 +14,7 @@ import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.CommandBase;
@@ -59,7 +60,11 @@ public class ClimbSubsystem extends GRTSubsystem {
 
     // Temp states for brake toggles
     private boolean sixBrakeOn = false;
+    private boolean lastRetracted = false;
+    private boolean retractToExtend = false;
+    private Timer brakeSwitch;
 
+    /*
     private final ShuffleboardTab shuffleboardTab;
     private final NetworkTableEntry shuffleboardSixPEntry;
     private final NetworkTableEntry shuffleboardSixIEntry;
@@ -72,6 +77,7 @@ public class ClimbSubsystem extends GRTSubsystem {
     private final NetworkTableEntry shuffleboardFifteenPEntry;
     private final NetworkTableEntry shuffleboardFifteenIEntry;
     private final NetworkTableEntry shuffleboardFifteenDEntry;
+*/
 
     public ClimbSubsystem() {
         // TODO: measure this
@@ -134,6 +140,7 @@ public class ClimbSubsystem extends GRTSubsystem {
         fifteenFollow.follow(fifteenMain);
         fifteenMain.setNeutralMode(NeutralMode.Brake);
 
+        /*
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Climb");
         shuffleboardSixPEntry = shuffleboardTab.add("Six point arm kP", sixP).getEntry();
@@ -147,10 +154,13 @@ public class ClimbSubsystem extends GRTSubsystem {
         shuffleboardFifteenPEntry = shuffleboardTab.add("Fifteen point arm kP", fifteenP).getEntry();
         shuffleboardFifteenIEntry = shuffleboardTab.add("Fifteen point arm kI", fifteenI).getEntry();
         shuffleboardFifteenDEntry = shuffleboardTab.add("Fifteen point arm kD", fifteenD).getEntry();
+    */
     }
 
     @Override
     public void periodic() {
+        
+        /*
         // Get PID constants from Shuffleboard for testing
         sixPidController.setP(shuffleboardSixPEntry.getDouble(sixP));
         sixPidController.setP(shuffleboardSixIEntry.getDouble(sixI));
@@ -163,14 +173,63 @@ public class ClimbSubsystem extends GRTSubsystem {
         fifteenMain.config_kP(0, shuffleboardFifteenPEntry.getDouble(fifteenP));
         fifteenMain.config_kI(0, shuffleboardFifteenIEntry.getDouble(fifteenI));
         fifteenMain.config_kD(0, shuffleboardFifteenDEntry.getDouble(fifteenD));
+    */
     }
 
     /**
-     * Testing function to supply raw power to the six point arm winch.
+     * Testing fnction to supply raw power to the six point arm winch.
+     * Also sets brake power.
      * @param pow The power to set.
      */
     public void setSixArmPower(double pow) {
+         //+ power is extending
+        //- power is retracting
+
         six.set(pow);
+        if (pow < 0) {
+            lastRetracted = true;
+        }
+        sixBrake.setVoltage(sixBrakeOn ? 5 : 0);
+        
+        /* BASIC BRAKE MANAGEMENT
+        // if we need to extend after being retracted,
+        // we need to contract first to disengage the brake for a short time
+        if (lastRetracted && (pow > 0)) {
+            brakeSwitch.start();
+            lastRetracted = false;
+            six.set(-0.25);
+            retractToExtend = true;
+        }
+        if (retractToExtend) {
+            six.set(-0.25);
+        }
+
+        //stop retracting and start extending
+        if (brakeSwitch.hasElapsed(0.2)) {
+            sixBrake.setVoltage(sixBrakeOn ? 5 : 0);
+            retractToExtend = false;
+            six.set(pow);
+            brakeSwitch.reset();
+        }
+        */
+
+        //TODO implement extension resetting because encoder gets off each time
+        //after extending/retracting is down to ~ -40 instead of -190
+
+        //if we are fully extended/retracted, don't extend/retract any more
+        if (Math.abs(sixEncoder.getPosition()) >= 189 && pow > 0) {
+            System.out.println("EXTENDED");
+            six.set(0);
+        }
+        //if (sixEncoder.getPosition() >= -1 && pow < 0) {
+         //   System.out.println("RETRACTED");
+          //  six.set(0);
+       // }
+
+        System.out.println(sixEncoder.getPosition());
+        System.out.println("six arm power is " + pow);
+       // System.out.println("six brake voltage is " + sixBrake.getMotorOutputVoltage());
+
     }
 
     /**
@@ -178,7 +237,7 @@ public class ClimbSubsystem extends GRTSubsystem {
      */
     public void toggleSixBrake() {
         sixBrakeOn = !sixBrakeOn;
-        sixBrake.set(sixBrakeOn ? 1 : 0);
+
     }
 
     /**
