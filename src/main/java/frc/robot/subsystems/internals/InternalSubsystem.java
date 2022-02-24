@@ -57,6 +57,8 @@ public class InternalSubsystem extends GRTSubsystem {
     private boolean rejecting = false;
     private boolean rejectingChecked = false;
 
+    Runnable callback;
+
     private boolean driverOverride = false;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
@@ -201,6 +203,10 @@ public class InternalSubsystem extends GRTSubsystem {
                         //stagingExitBallCount--;
                         totalBallCount--;
                         System.out.println("ball exited turret");
+
+                        // TODO: better way to do single-run callbacks?
+                        if (callback != null) callback.run();
+                        callback = null;
                     }  
             }
         }
@@ -233,6 +239,15 @@ public class InternalSubsystem extends GRTSubsystem {
      */
     public void requestShot() {
         this.shotRequested = true;
+    }
+
+    /**
+     * Request that a ball be loaded and shot, and executes a callback when it does.
+     * The ball will *actually* be shot when the turret is aimed and ready.
+     */
+    public void requestShot(Runnable callback) {
+        this.shotRequested = true;
+        this.callback = callback;
     }
 
     /**
