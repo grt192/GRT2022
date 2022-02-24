@@ -6,7 +6,6 @@ import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
@@ -16,7 +15,6 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 
@@ -110,7 +108,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double HOOD_MIN_POS = 0.0;
     private static final double HOOD_MAX_POS = Math.toRadians(40) * HOOD_RADIANS_TO_TICKS;
 
-    private static final double FLYWHEEL_GEAR_RATIO = 1.0; // TODO
+    private static final double FLYWHEEL_GEAR_RATIO = 0.36 / 0.16;
 
     // Shuffleboard
     private final ShuffleboardTab shuffleboardTab;
