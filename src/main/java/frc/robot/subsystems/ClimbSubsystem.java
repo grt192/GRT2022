@@ -59,10 +59,13 @@ public class ClimbSubsystem extends GRTSubsystem {
     private static final double fifteenD = 0;
 
     // Temp states for brake toggles
-    private boolean sixBrakeOn = false;
+    private boolean sixBrakeEngaged = false;
     private boolean lastRetracted = false;
     private boolean retractToExtend = false;
     private Timer brakeSwitch;
+
+    private static final double FULLY_RETRACTED = 0;
+    private static final double FULLY_EXTENDED = -190;
 
     /*
     private final ShuffleboardTab shuffleboardTab;
@@ -185,50 +188,55 @@ public class ClimbSubsystem extends GRTSubsystem {
          //+ power is extending
         //- power is retracting
 
+        // set power and brake mode
         six.set(pow);
         if (pow < 0) {
             lastRetracted = true;
         }
-        sixBrake.setVoltage(sixBrakeOn ? 5 : 0);
+        sixBrake.setVoltage(sixBrakeEngaged ? 0 : 5);
         
         /* BASIC BRAKE MANAGEMENT
-        // if we need to extend after being retracted,
-        // we need to contract first to disengage the brake for a short time
-        if (lastRetracted && (pow > 0)) {
+         if we need to extend after being retracted, and the brake is on,
+         we need to contract first to disengage the brake
+        */
+        if (lastRetracted && sixBrakeEngaged && (pow > 0)) {
             brakeSwitch.start();
             lastRetracted = false;
             six.set(-0.25);
             retractToExtend = true;
-        }
-        if (retractToExtend) {
+        } else if (retractToExtend) {
             six.set(-0.25);
         }
 
         //stop retracting and start extending
-        if (brakeSwitch.hasElapsed(0.2)) {
-            sixBrake.setVoltage(sixBrakeOn ? 5 : 0);
+        if (brakeSwitch.hasElapsed(0.01)) {
+            sixBrake.setVoltage(5);
+            sixBrakeEngaged = false;
             retractToExtend = false;
             six.set(pow);
             brakeSwitch.reset();
         }
-        */
+        
 
         //TODO implement extension resetting because encoder gets off each time
         //after extending/retracting is down to ~ -40 instead of -190
+        
+        //IMPORTANT so if the code is breaking and not letting you move it, 
+        //comment out all this
 
+        //for this to work, you MUST initialize the robot with climb *retracted*
         //if we are fully extended/retracted, don't extend/retract any more
-        if (Math.abs(sixEncoder.getPosition()) >= 189 && pow > 0) {
+        if ((sixEncoder.getPosition()) <= FULLY_EXTENDED && pow > 0) {
             System.out.println("EXTENDED");
             six.set(0);
         }
-        //if (sixEncoder.getPosition() >= -1 && pow < 0) {
-         //   System.out.println("RETRACTED");
-          //  six.set(0);
-       // }
+        if (sixEncoder.getPosition() >= FULLY_RETRACTED && pow < 0) {
+            System.out.println("RETRACTED");
+            six.set(0);
+        }
 
-        System.out.println(sixEncoder.getPosition());
-        System.out.println("six arm power is " + pow);
-       // System.out.println("six brake voltage is " + sixBrake.getMotorOutputVoltage());
+        System.out.println("arm position is " + sixEncoder.getPosition());
+        System.out.println("six arm power is " + pow + ", brake is " + sixBrakeEngaged);
 
     }
 
@@ -236,7 +244,7 @@ public class ClimbSubsystem extends GRTSubsystem {
      * Testing function to toggle the six point brake.
      */
     public void toggleSixBrake() {
-        sixBrakeOn = !sixBrakeOn;
+        sixBrakeEngaged = !sixBrakeEngaged;
 
     }
 
