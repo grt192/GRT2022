@@ -113,9 +113,8 @@ public class IntakeSubsystem extends GRTSubsystem {
         // deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         // deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
 
-        // Get the limit switch value
-        boolean limitSwitchEngaged = limitSwitch.get();
-        if (limitSwitchEngaged) deploy.setSelectedSensorPosition(0);
+        // Check limit switch and reset encoder if detected
+        if (limitSwitch.get()) deploy.setSelectedSensorPosition(0);
 
         // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
         if (!(internalSubsystem.getBallCount() < 2 && currentPosition == IntakePosition.DEPLOYED)) {

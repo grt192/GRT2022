@@ -16,6 +16,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 
@@ -69,6 +70,9 @@ public class TurretSubsystem extends GRTSubsystem {
     private final RelativeEncoder flywheelEncoder;
     private final SparkMaxPIDController flywheelPidController;
 
+    private final DigitalInput leftLimitSwitch;
+    private final DigitalInput rightLimitSwitch;
+
     // constants
     // Turntable position PID constants
     private static final double turntableFF = 0.0022;
@@ -97,7 +101,6 @@ public class TurretSubsystem extends GRTSubsystem {
 
     private double desiredFlywheelRPM = 100.0;
     private double desiredTurntableRadians = 0.0;
-    private double previousDesiredTurntableRadians = 0.0;
     private double desiredHoodRadians = 0.0;
 
     private TurretMode mode = TurretMode.SHOOTING;
@@ -187,6 +190,10 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheelPidController.setD(flywheelD);
         flywheelPidController.setFF(flywheelFF);
 
+        // Initialize limit switches
+        leftLimitSwitch = new DigitalInput(lLimitSwitchPort);
+        rightLimitSwitch = new DigitalInput(rLimitSwitchPort);
+
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Turret");
     }
@@ -204,6 +211,10 @@ public class TurretSubsystem extends GRTSubsystem {
             flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
             return;
         }
+
+        // Check limit switches and reset encoders if detected
+        if (leftLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MIN_RADIANS);
+        if (rightLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MAX_RADIANS);
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
 
@@ -245,20 +256,25 @@ public class TurretSubsystem extends GRTSubsystem {
         //desiredTurntableRadians = turntableEncoder.getPosition() + theta;
         // Temporary angle for calculations:
         // Turntable position: heading + theta to maintain desired angle
-        desiredTurntableRadians = Math.toRadians(180) - currentPosition.getRotation().getRadians();
-        double deltaTurntableRadians = desiredTurntableRadians - previousDesiredTurntableRadians;
+        double newTurntableRadians = Math.toRadians(180) - currentPosition.getRotation().getRadians();
+
+        // Apply feedforward and constrain within max and min angle
+        double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
+        double turntableReference = Math.min(Math.max(
+            newTurntableRadians + deltaTurntableRadians * TURNTABLE_FF, 
+            TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
 
         // TODO: constants, interpolation
         // If rejecting, scale down flywheel speed
         desiredFlywheelRPM = 100;
         if (mode == TurretMode.REJECTING) desiredFlywheelRPM *= 0.5;
 
-        turntablePidController.setReference(desiredTurntableRadians + deltaTurntableRadians * TURNTABLE_FF, ControlType.kSmartMotion);
+        turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
         //hood.set(ControlMode.Position, desiredHoodRadians);
         //flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
 
         previousPosition = currentPosition;
-        previousDesiredTurntableRadians = desiredTurntableRadians;
+        desiredTurntableRadians = newTurntableRadians;
     }
 
     /**

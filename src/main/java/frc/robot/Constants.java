@@ -31,6 +31,9 @@ public final class Constants {
         public static final int turntablePort = 17;
         public static final int hoodPort = 16;
         public static final int flywheelPort = 15;
+
+        public static final int lLimitSwitchPort = 4;
+        public static final int rLimitSwitchPort = 5;
     }
 
     public static final class InternalConstants {
