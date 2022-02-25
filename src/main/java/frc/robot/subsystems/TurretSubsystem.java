@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
@@ -94,8 +95,9 @@ public class TurretSubsystem extends GRTSubsystem {
     private double r;
     private Pose2d previousPosition = new Pose2d();
 
-    private double desiredFlywheelSpeed = 30.0; // TODO: units? RPM?
+    private double desiredFlywheelRPM = 100.0;
     private double desiredTurntableRadians = 0.0;
+    private double previousDesiredTurntableRadians = 0.0;
     private double desiredHoodRadians = 0.0;
 
     private TurretMode mode = TurretMode.SHOOTING;
@@ -103,6 +105,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.8095201253890992;
     private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(60);
     private static final double TURNTABLE_MAX_RADIANS = Math.toRadians(300);
+    private static final double TURNTABLE_FF = 0.00021; // TODO: tune
 
     private static final double HOOD_RADIANS_TO_TICKS = 189705.0 / Math.toRadians(33.924);
     private static final double HOOD_MIN_POS = 0.0;
@@ -192,67 +195,70 @@ public class TurretSubsystem extends GRTSubsystem {
     public void periodic() {
         // If retracted, skip jetson logic and calculations
         if (mode == TurretMode.RETRACTED) {
-            desiredTurntableRadians = 0;
+            desiredTurntableRadians = Math.toRadians(180);
             desiredHoodRadians = 0;
-            desiredFlywheelSpeed = 0;
-        } else {
-            Pose2d currentPosition = tankSubsystem.getRobotPosition();
+            desiredFlywheelRPM = 0;
 
-            if (jetson != null) {
-                // If the hub is in vision range, use vision's `r` and `theta` as ground truth
-                if (jetson.turretVisionWorking()) {
-                    r = jetson.getHubDistance();
-                    theta = jetson.getTurretTheta();
-                } else {
-                    // Otherwise, update our `r` and `theta` state system from the previous `r` and `theta` values
-                    // and the delta X and Y since our last position. We do this instead of using raw odometry coordinates
-                    // to prevent error accumulation over time; `r` and `theta` are reset to vision values when vision is in
-                    // range, so our states only accumulate error while vision is out of range (as opposed to odometry, which
-                    // accumulates error throughout the match).
-
-                    double deltaX = currentPosition.getX() - previousPosition.getX();
-                    double deltaY = currentPosition.getY() - previousPosition.getY();
-                    double deltaThetaRadians = currentPosition.getRotation().getRadians() - previousPosition.getRotation().getRadians();
-
-                    double thetaRadians = Units.degreesToRadians(theta);
-                    double thetaComplementRadians = Units.degreesToRadians(90 - theta);
-
-                    // Localize deltas to Y-axis position
-                    double localizedDeltaX = deltaX * Math.sin(thetaRadians) + deltaY * Math.sin(thetaComplementRadians);
-                    double localizedDeltaY = deltaX * Math.cos(thetaRadians) + deltaY * Math.cos(thetaComplementRadians);
-
-                    // Pythagorean theorem to calculate R'
-                    double rPrime = Math.sqrt(Math.pow(r + localizedDeltaY, 2) + Math.pow(localizedDeltaX, 2));
-
-                    // Calculate theta' from theta, delta theta, and phi (the change in turret angle between P and P', given
-                    // by arccos(R / R'))
-                    double phi = Math.acos(r / rPrime);
-                    r = rPrime;
-                    theta += Units.radiansToDegrees(deltaThetaRadians + phi);
-                }
-
-                // Set the turntable position from the relative theta given by vision
-                desiredTurntableRadians = turntableEncoder.getPosition() + theta;
-
-                // TODO: constants, interpolation
-                desiredFlywheelSpeed = 30;
-
-                previousPosition = currentPosition;
-            }
-
-            // Turntable position: heading + theta to maintain desired angle
-            desiredTurntableRadians = Math.toRadians(180) - currentPosition.getRotation().getRadians();
-
-            // If rejecting, scale down flywheel speed
-            if (mode == TurretMode.REJECTING) desiredFlywheelSpeed *= 0.5;
+            turntablePidController.setReference(desiredTurntableRadians, ControlType.kSmartMotion);
+            hood.set(ControlMode.Position, desiredHoodRadians);
+            flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
+            return;
         }
 
-        // flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
-        // hood.set(ControlMode.Position, desiredHoodAngle);
-        // turntable.set(ControlMode.Position, Math.max(Math.min(desiredTurntablePosition, TURNTABLE_MAX_POS), TURNTABLE_MIN_POS));
+        Pose2d currentPosition = tankSubsystem.getRobotPosition();
 
-        // System.out.println("Turret RPM: " + flywheelEncoder.getVelocity());
-        turntablePidController.setReference(desiredTurntableRadians, ControlType.kSmartMotion);
+        if (jetson != null) {
+            // If the hub is in vision range, use vision's `r` and `theta` as ground truth
+            if (jetson.turretVisionWorking()) {
+                r = jetson.getHubDistance();
+                theta = jetson.getTurretTheta();
+            } else {
+                // Otherwise, update our `r` and `theta` state system from the previous `r` and `theta` values
+                // and the delta X and Y since our last position. We do this instead of using raw odometry coordinates
+                // to prevent error accumulation over time; `r` and `theta` are reset to vision values when vision is in
+                // range, so our states only accumulate error while vision is out of range (as opposed to odometry, which
+                // accumulates error throughout the match).
+
+                double deltaX = currentPosition.getX() - previousPosition.getX();
+                double deltaY = currentPosition.getY() - previousPosition.getY();
+                double deltaThetaRadians = currentPosition.getRotation().getRadians() - previousPosition.getRotation().getRadians();
+
+                double thetaRadians = Units.degreesToRadians(theta);
+                double thetaComplementRadians = Units.degreesToRadians(90 - theta);
+
+                // Localize deltas to Y-axis position
+                double localizedDeltaX = deltaX * Math.sin(thetaRadians) + deltaY * Math.sin(thetaComplementRadians);
+                double localizedDeltaY = deltaX * Math.cos(thetaRadians) + deltaY * Math.cos(thetaComplementRadians);
+
+                // Pythagorean theorem to calculate R'
+                double rPrime = Math.sqrt(Math.pow(r + localizedDeltaY, 2) + Math.pow(localizedDeltaX, 2));
+
+                // Calculate theta' from theta, delta theta, and phi (the change in turret angle between P and P', given
+                // by arccos(R / R'))
+                double phi = Math.acos(r / rPrime);
+                r = rPrime;
+                theta += Units.radiansToDegrees(deltaThetaRadians + phi);
+            }
+        }
+
+        // Set the turntable position from the relative theta given by vision
+        //desiredTurntableRadians = turntableEncoder.getPosition() + theta;
+        // Temporary angle for calculations:
+        // Turntable position: heading + theta to maintain desired angle
+        desiredTurntableRadians = Math.toRadians(180) - currentPosition.getRotation().getRadians();
+        double deltaTurntableRadians = desiredTurntableRadians - previousDesiredTurntableRadians;
+
+        // TODO: constants, interpolation
+        // If rejecting, scale down flywheel speed
+        desiredFlywheelRPM = 100;
+        if (mode == TurretMode.REJECTING) desiredFlywheelRPM *= 0.5;
+
+        turntablePidController.setReference(desiredTurntableRadians + deltaTurntableRadians * TURNTABLE_FF, ControlType.kSmartMotion);
+        //hood.set(ControlMode.Position, desiredHoodRadians);
+        //flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
+
+        previousPosition = currentPosition;
+        previousDesiredTurntableRadians = desiredTurntableRadians;
     }
 
     /**
@@ -273,7 +279,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private ModuleState flywheelReady() {
         // Thresholding in units of RPM
         // TODO: test thresholding values
-        double diffRPM = Math.abs(flywheelEncoder.getVelocity() - desiredFlywheelSpeed);
+        double diffRPM = Math.abs(flywheelEncoder.getVelocity() - desiredFlywheelRPM);
         return diffRPM < 10 ? ModuleState.HIGH_TOLERANCE
             : diffRPM < 20 ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
