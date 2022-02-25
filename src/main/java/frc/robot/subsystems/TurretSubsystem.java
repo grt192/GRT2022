@@ -108,7 +108,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double HOOD_MIN_POS = 0.0;
     private static final double HOOD_MAX_POS = Math.toRadians(40) * HOOD_RADIANS_TO_TICKS;
 
-    private static final double FLYWHEEL_GEAR_RATIO = 0.36 / 0.16;
+    private static final double FLYWHEEL_GEAR_RATIO = 36.0 / 16.0;
 
     // Shuffleboard
     private final ShuffleboardTab shuffleboardTab;

@@ -1,22 +1,24 @@
 package frc.robot.subsystems;
 
-import static frc.robot.Constants.IntakeConstants.deploymentPort;
-import static frc.robot.Constants.IntakeConstants.intakePort;
-
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
+import frc.robot.jetson.JetsonConnection;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
 import frc.robot.subsystems.internals.InternalSubsystem;
+
+import static frc.robot.Constants.IntakeConstants.*;
 
 public class IntakeSubsystem extends GRTSubsystem {
     /**
@@ -35,15 +37,15 @@ public class IntakeSubsystem extends GRTSubsystem {
     }
 
     private final InternalSubsystem internalSubsystem;
-    // private final JetsonConnection jetson;
+    private final JetsonConnection jetson;
 
     private final CANSparkMax intake;
     private final WPI_TalonSRX deploy;
 
-    private IntakePosition currentPosition = IntakePosition.DEPLOYED;
-
     private double intakePower = 0;
-    private boolean internalsFull = false;
+    private boolean driverOverride = false;
+
+    private IntakePosition currentPosition = IntakePosition.DEPLOYED;
 
     // Deploy position PID constants
     private static final double kP = 0.125;
@@ -59,12 +61,12 @@ public class IntakeSubsystem extends GRTSubsystem {
     // TODO: measure this
     // private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
 
-    public IntakeSubsystem(InternalSubsystem internalSubsystem /* , JetsonConnection jetson */) {
+    public IntakeSubsystem(InternalSubsystem internalSubsystem, JetsonConnection jetson) {
         // TODO: measure this
         super(50);
 
         this.internalSubsystem = internalSubsystem;
-        // this.jetson = jetson;
+        this.jetson = jetson;
 
         // Initialize the intake (roller) motor
         intake = new CANSparkMax(intakePort, MotorType.kBrushless);
@@ -108,24 +110,23 @@ public class IntakeSubsystem extends GRTSubsystem {
         // deploy.config_kP(0, shuffleboardPEntry.getDouble(kP));
         // deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         // deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
-        
 
-        // If the jetson detects a ball or the driver is running the intake, the intake
-        // is deployed,
-        // and there are less than 2 balls in internals, run the intake motor
-        // TODO: how should we work in the jetson ball detection code with variable
-        // intake speeds from the driver?
-        boolean readyToIntake = internalSubsystem.getBallCount() < 2 &&
-                currentPosition == IntakePosition.DEPLOYED;
-                
-        intake.set((readyToIntake) ? intakePower : 0);
+        // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
+        if (!(internalSubsystem.getBallCount() < 2 && currentPosition == IntakePosition.DEPLOYED)) {
+            intake.set(0);
+        } else {
+            // Otherwise, use driver input if they're overriding and default to running intake automatically from vision
+            intake.set(driverOverride ? intakePower 
+                : jetson.ballDetected() ? 0.5 : 0);
+        }
 
+        // TODO: is a constant still needed?
+        deploy.set(ControlMode.Position, currentPosition.value /* * DEGREES_TO_ENCODER_TICKS */);
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
     }
 
     /**
      * Temp testing function to supply raw power to the deploy motor.
-     * 
      * @param power The percent power to supply.
      */
     public void setDeployPower(double power) {
@@ -134,7 +135,6 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Sets the power of the intake rollers.
-     * 
      * @param intakePower The power (in percent output) to run the motors at.
      */
     public void setIntakePower(double intakePower) {
@@ -143,12 +143,18 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Sets the position of the intake mechanism.
-     * 
      * @param position The position to set the intake to.
      */
     public void setPosition(IntakePosition position) {
         currentPosition = position;
-        deploy.set(ControlMode.Position, position.value /* * DEGREES_TO_ENCODER_TICKS */);
+    }
+
+    /**
+     * Sets whether the driver is overriding the intake's automatic run procedure.
+     * @param override Whether to use driver input as power.
+     */
+    public void setDriverOverride(boolean override) {
+        driverOverride = override;
     }
 
     @Override

@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.brownout.PowerController;
+import frc.robot.commands.intake.RunIntakeCommand;
 import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
@@ -125,8 +126,8 @@ public class RobotContainer {
      * TODO: finalize these, talk to drivers
      * 
      * Controller 1 (driver):
-     * Joysticks -> car drive (tank)
-     * Left trigger -> run intake (intake)
+     * Joysticks -> car drive -- left Y -> foward, right X -> angular (tank)
+     * Triggers -> manual override intake -- left backwards, right forwards (intake)
      * A button -> lower intake (intake)
      * B button -> raise intake (intake)
      * 
@@ -150,19 +151,7 @@ public class RobotContainer {
         }
 
         if (intakeSubsystem != null) {
-            // TODO: tune deadband
-            Runnable intake = () -> {
-                intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
-
-                double deployPow = 0;
-                if (driveController.getPOV() == 90) {
-                    deployPow = 0.2;
-                } else if (driveController.getPOV() == 270) {
-                    deployPow = -0.2;
-                }
-                intakeSubsystem.setDeployPower(deployPow);
-            };
-            intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
+            intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, driveController));
         }
 
         if (internalSubsystem != null) {
