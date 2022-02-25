@@ -9,6 +9,7 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 
@@ -41,6 +42,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     private final CANSparkMax intake;
     private final WPI_TalonSRX deploy;
+    private final DigitalInput limitSwitch;
 
     private double intakePower = 0;
     private boolean driverOverride = false;
@@ -85,12 +87,12 @@ public class IntakeSubsystem extends GRTSubsystem {
         deploy.config_kD(0, kD);
 
         // Soft limit deploy between RAISED and DEPLOYED
-        /*
         deploy.configForwardSoftLimitEnable(true);
         deploy.configReverseSoftLimitEnable(true);
         deploy.configForwardSoftLimitThreshold(IntakePosition.RAISED.value);
         deploy.configReverseSoftLimitThreshold(IntakePosition.DEPLOYED.value);
-        */
+
+        limitSwitch = new DigitalInput(limitSwitchPort);
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Intake");
@@ -110,6 +112,10 @@ public class IntakeSubsystem extends GRTSubsystem {
         // deploy.config_kP(0, shuffleboardPEntry.getDouble(kP));
         // deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         // deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
+
+        // Get the limit switch value
+        boolean limitSwitchEngaged = limitSwitch.get();
+        if (limitSwitchEngaged) deploy.setSelectedSensorPosition(0);
 
         // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
         if (!(internalSubsystem.getBallCount() < 2 && currentPosition == IntakePosition.DEPLOYED)) {
