@@ -65,7 +65,7 @@ public class InternalSubsystem extends GRTSubsystem {
     private final GRTNetworkTableEntry entranceRawEntry, storageRawEntry, stagingRawEntry;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
-        super(15);
+        super(15, motorPortBottom, motorPortTop);
 
         this.turretSubsystem = turretSubsystem;
 
@@ -307,11 +307,6 @@ public class InternalSubsystem extends GRTSubsystem {
             : c == BLUE ? "BLUE" 
             : c == EMPTY ? "EMPTY" 
             : "NULL";
-    }
-
-    @Override
-    public double getTotalCurrentDrawn() {
-        return PowerController.getCurrentDrawnFromPDH(motorPortBottom, motorPortTop);
     }
 
     @Override

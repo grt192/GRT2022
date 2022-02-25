@@ -48,7 +48,7 @@ public class TankSubsystem extends GRTSubsystem {
 
     public TankSubsystem() {
         // TODO: measure this
-        super(40);
+        super(40, fRightMotorPort, fLeftMotorPort, mRightMotorPort, mLeftMotorPort, bRightMotorPort, bLeftMotorPort);
 
         // Init left main and follower motors and encoders
         leftMain = new CANSparkMax(fLeftMotorPort, MotorType.kBrushless);
@@ -238,11 +238,6 @@ public class TankSubsystem extends GRTSubsystem {
      */
     private double squareInput(double value) {
         return Math.copySign(value * value, value);
-    }
-
-    @Override
-    public double getTotalCurrentDrawn() {
-        return PowerController.getCurrentDrawnFromPDH(fRightMotorPort, fLeftMotorPort, bRightMotorPort, bLeftMotorPort);
     }
 
     @Override

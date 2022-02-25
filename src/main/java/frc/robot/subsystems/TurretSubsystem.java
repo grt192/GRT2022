@@ -205,7 +205,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
-        super(40);
+        super(40, turntablePort, hoodPort, flywheelPort);
 
         this.tankSubsystem = tankSubsystem;
         this.jetson = connection;
@@ -747,11 +747,6 @@ public class TurretSubsystem extends GRTSubsystem {
             this.frozenTheta = this.thetaFeedForward;
         }
         this.frozen = frozen;
-    }
-
-    @Override
-    public double getTotalCurrentDrawn() {
-        return PowerController.getCurrentDrawnFromPDH(turntablePort, hoodPort, flywheelPort);
     }
 
     @Override

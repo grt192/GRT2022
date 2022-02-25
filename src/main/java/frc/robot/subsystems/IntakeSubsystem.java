@@ -86,7 +86,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     public IntakeSubsystem(InternalSubsystem internalSubsystem, JetsonConnection jetson) {
         // TODO: measure this
-        super(20);
+        super(20, intakePort, deploymentPort);
 
         this.internalSubsystem = internalSubsystem;
         this.jetson = jetson;
@@ -287,11 +287,6 @@ public class IntakeSubsystem extends GRTSubsystem {
         this.targetPosition = this.targetPosition == IntakePosition.DEPLOYED
             ? IntakePosition.RAISED
             : IntakePosition.DEPLOYED;
-    }
-
-    @Override
-    public double getTotalCurrentDrawn() {
-        return PowerController.getCurrentDrawnFromPDH(intakePort, deploymentPort);
     }
 
     @Override
