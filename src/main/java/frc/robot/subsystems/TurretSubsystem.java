@@ -253,10 +253,10 @@ public class TurretSubsystem extends GRTSubsystem {
         }
 
         // Set the turntable position from the relative theta given by vision
-        //desiredTurntableRadians = turntableEncoder.getPosition() + theta;
-        // Temporary angle for calculations:
-        // Turntable position: heading + theta to maintain desired angle
-        double newTurntableRadians = Math.toRadians(180) - currentPosition.getRotation().getRadians();
+        //double newTurntableRadians = (turntableEncoder.getPosition() + theta) % (2 * Math.PI);
+        // Temp turntable calculation: heading + theta to maintain same angle as startup
+        // TODO: threshold for wrapping to prevent excessive swing-between
+        double newTurntableRadians = (Math.toRadians(180) - currentPosition.getRotation().getRadians()) % (2 * Math.PI);
 
         // Apply feedforward and constrain within max and min angle
         double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
@@ -286,6 +286,17 @@ public class TurretSubsystem extends GRTSubsystem {
         // TODO: is this necessary? will internals still be executing periodic logic during climb?
         if (mode == TurretMode.RETRACTED) return;
         mode = reject ? TurretMode.REJECTING : TurretMode.SHOOTING;
+    }
+
+    /**
+     * Sets whether the turret should engage lazy tracking (whether it should PID at a lower speed to conserve power).
+     * Set this to true when there's no point in perfect turntable alignment with the hub (like when there isn't a ball
+     * in internals).
+     * @param lazy Whether to engage lazy tracking.
+     */
+    public void setLazyTracking(boolean lazy) {
+        double pow = lazy ? 0.25 : 0.5;
+        turntablePidController.setOutputRange(-pow, pow);
     }
 
     /**
