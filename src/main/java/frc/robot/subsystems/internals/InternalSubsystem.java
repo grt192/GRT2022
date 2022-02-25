@@ -94,33 +94,25 @@ public class InternalSubsystem extends GRTSubsystem {
             default: ALLIANCE_COLOR = RED; break;
         }
 
-        // check if there are balls inside robot and adjust ball count accordingly
+        // TODO: it probably isn't great to do this in the constructor? probably hard code the ball count
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
         boolean storageDetected = isBall(storageColor);
         boolean stagingDetected = staging.get() >= 0.2;
         ballCount = (stagingDetected ? 1 : 0) + (storageDetected ? 1 : 0);
-
     }
 
     @Override
     public void periodic() {
-
+        // If a new ball has entered internals, increment ball count
+        // TODO: either we keep this or use storage and staging to set ball count; currently this is redundant
         boolean entranceDetected = entrance.get() >= 0.4;
-        if (!prevEntranceDetected && entranceDetected) {
-            ballCount++;
-        }
+        if (!prevEntranceDetected && entranceDetected) ballCount++;
         prevEntranceDetected = entranceDetected;
 
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
         boolean storageDetected = isBall(storageColor);
 
         boolean stagingDetected = staging.get() >= 0.2;
-
-        // Testing prints, Y = ball detected, N = no ball
-        /*System.out.println("COUNT: " + ballCount + " Entrance: " + (prevEntranceDetected ? "Y" : "N") + 
-                            ", Storage: " + (storageDetected ? "Y" : "N") + 
-                            ", Staging: " + (stagingDetected ? "Y" : "N"));
-*/
 
         // for making sure ball count is correct
         ballCount = (stagingDetected ? 1 : 0) + (storageDetected ? 1 : 0);
@@ -142,8 +134,6 @@ public class InternalSubsystem extends GRTSubsystem {
             //entranceTimer.reset();
             motorBottom.set(0);
             entToStorage = false;
-
-            prevEntranceDetected = false;
         }
 
         // If there is a ball between storage and staging and staging is empty, run the top and bottom motors
@@ -165,16 +155,14 @@ public class InternalSubsystem extends GRTSubsystem {
             storageTimer.reset();
             motorTop.set(0);
             motorBottom.set(0);
-
         }
 
         // If there is a ball in staging, we don't want to push it into turret, especially if there is a shot going
-        if (stagingDetected) {
-            motorTop.set(0);
-        }
+        if (stagingDetected) motorTop.set(0);
 
         if (turretSubsystem != null) {
             // If a shot was requested and the turret is ready, load a ball into the turret.
+            // TODO: why do we no longer check turret for alignment before shooting?
             turretSubsystem.setReject(rejecting);
             if (shotRequested) {
                 // Spin the top motor on a timer

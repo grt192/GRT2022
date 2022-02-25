@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+
 import frc.robot.brownout.PowerController;
 import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.FollowPathCommand;
@@ -41,7 +42,7 @@ public class RobotContainer {
     private final InternalSubsystem internalSubsystem;
     // private final ClimbSubsystem climbSubsystem;
 
-    private JetsonConnection jetson = null;
+    private final JetsonConnection jetson;
     private final PowerController powerController = null;
 
     // Controllers and buttons
@@ -66,6 +67,8 @@ public class RobotContainer {
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
+        // Instantiate the Jetson connection
+        jetson = new JetsonConnection();
         
         // Instantiate subsystems
         tankSubsystem = new TankSubsystem();
@@ -193,9 +196,6 @@ public class RobotContainer {
                 turretSubsystem.setHoodPower(hoodPower);
             }, turretSubsystem));
         }
-        // Instantiate the Jetson connection
-        jetson = new JetsonConnection();
-        
     }
 
     /**
