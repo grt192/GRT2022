@@ -43,6 +43,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     private IntakePosition currentPosition = IntakePosition.DEPLOYED;
 
     private double intakePower = 0;
+    private boolean internalsFull = false;
 
     // Deploy position PID constants
     private static final double kP = 0.125;
@@ -114,12 +115,10 @@ public class IntakeSubsystem extends GRTSubsystem {
         // and there are less than 2 balls in internals, run the intake motor
         // TODO: how should we work in the jetson ball detection code with variable
         // intake speeds from the driver?
-        // Also, if running the intake in reverse is an option, how should internals
-        // ball count be worked into this?
-        boolean readyToIntake = /* internalSubsystem.getBallCount() < 2 && */
+        boolean readyToIntake = internalSubsystem.getBallCount() < 2 &&
                 currentPosition == IntakePosition.DEPLOYED;
-
-        intake.set(readyToIntake ? intakePower : 0);
+                
+        intake.set((readyToIntake) ? intakePower : 0);
 
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
     }

@@ -41,7 +41,7 @@ public class RobotContainer {
     private final InternalSubsystem internalSubsystem;
     // private final ClimbSubsystem climbSubsystem;
 
-    private final JetsonConnection jetson = null;
+    private JetsonConnection jetson = null;
     private final PowerController powerController = null;
 
     // Controllers and buttons
@@ -66,11 +66,7 @@ public class RobotContainer {
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
-
-        // Instantiate the Jetson connection
-        // jetson = new JetsonConnection();
-        // jetson.run();
-
+        
         // Instantiate subsystems
         tankSubsystem = new TankSubsystem();
         turretSubsystem = new TurretSubsystem(tankSubsystem, jetson);
@@ -197,6 +193,9 @@ public class RobotContainer {
                 turretSubsystem.setHoodPower(hoodPower);
             }, turretSubsystem));
         }
+        // Instantiate the Jetson connection
+        jetson = new JetsonConnection();
+        
     }
 
     /**
