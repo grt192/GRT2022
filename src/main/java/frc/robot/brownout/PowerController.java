@@ -28,7 +28,6 @@ public class PowerController {
      */
     public void calculateLimits() {
         double totalDraw = PDH.getTotalCurrent();
-        if (totalDraw == 0) return;
         calculateLimits(totalSustainableCurrent, totalDraw, Set.of(subsystems));
     }
 
@@ -42,6 +41,12 @@ public class PowerController {
      * @param remaining The remaining (non-scaled) subsystems.
      */
     private void calculateLimits(double totalCurrent, double totalDraw, Set<GRTSubsystem> remaining) {
+        // If the total draw is 0, avoid `NaN` by setting all remaining subsystems to their minimums
+        if (totalDraw == 0) {
+            remaining.forEach(subsystem -> subsystem.setCurrentLimit(subsystem.getMinCurrent()));
+            return;
+        }
+
         // Calculate the "ideal ratio" from the total drawn current
         double idealRatio = totalCurrent / totalDraw;
 
