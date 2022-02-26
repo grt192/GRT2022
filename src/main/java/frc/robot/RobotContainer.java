@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+
 import frc.robot.brownout.PowerController;
 import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.FollowPathCommand;
@@ -41,7 +42,7 @@ public class RobotContainer {
     private final InternalSubsystem internalSubsystem;
     // private final ClimbSubsystem climbSubsystem;
 
-    private final JetsonConnection jetson = null;
+    private final JetsonConnection jetson;
     private final PowerController powerController = null;
 
     // Controllers and buttons
@@ -66,11 +67,9 @@ public class RobotContainer {
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
-
         // Instantiate the Jetson connection
-        // jetson = new JetsonConnection();
-        // jetson.run();
-
+        jetson = new JetsonConnection();
+        
         // Instantiate subsystems
         tankSubsystem = new TankSubsystem();
         turretSubsystem = new TurretSubsystem(tankSubsystem, jetson);
@@ -91,6 +90,7 @@ public class RobotContainer {
 
         // Instantiate commands
         // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
+        /*
         if (tankSubsystem != null) {
             autonCommand = new FollowPathCommand(
                 tankSubsystem,
@@ -104,6 +104,8 @@ public class RobotContainer {
         } else {
             autonCommand = new InstantCommand();
         }
+        */
+        autonCommand = new InstantCommand();
 
         // Configure the button bindings
         configureButtonBindings();
@@ -198,7 +200,6 @@ public class RobotContainer {
 
     /**
      * Use this to pass the autonomous command to the main {@link Robot} class.
-     * 
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
@@ -206,11 +207,18 @@ public class RobotContainer {
     }
 
     /**
-     * Gets the PowerController instance.
-     * 
+     * Gets the PowerController instance for scaling in `Robot.periodic()`.
      * @return The PowerController instance.
      */
     public PowerController getPowerController() {
         return powerController;
+    }
+
+    /**
+     * Gets the InternalSubsystem for setting initial ball count in `Robot.autonomousInit()`.
+     * @return The InternalSubsystem instance.
+     */
+    public InternalSubsystem getInternalSubsystem() {
+        return internalSubsystem;
     }
 }
