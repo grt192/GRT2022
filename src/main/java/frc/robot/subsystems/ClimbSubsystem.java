@@ -64,8 +64,9 @@ public class ClimbSubsystem extends GRTSubsystem {
     private boolean retractToExtend = false;
     private Timer brakeSwitch;
 
-    private static final double FULLY_RETRACTED = 0;
-    private static final double FULLY_EXTENDED = -190;
+    private static final double SIX_FULLY_RETRACTED = 0;
+    private static final double SIX_FULLY_EXTENDED = -190;
+    private static final double SIX_PART_RETRACTED = -130;
 
     /*
     private final ShuffleboardTab shuffleboardTab;
@@ -189,9 +190,9 @@ public class ClimbSubsystem extends GRTSubsystem {
          //+ power is retracting
         //- power is extending
         double power = pow;
-
-        // set power and brake mode
-        six.set(power);
+        //if (sixBrakeEngaged && pow > 0) {
+        //    power = 0;
+        //}
         if (power > 0) {
             lastRetracted = true;
             
@@ -238,10 +239,14 @@ public class ClimbSubsystem extends GRTSubsystem {
         }
         */
 
+        // set power and brake mode
         six.set(power);
+        
+        // brake engaged -> not powered, disengaged -> powered
         sixBrake.set(sixBrakeEngaged ? 0 : 1);
 
-        System.out.println("arm position is " + sixEncoder.getPosition() + " power is " + power + " last retracted? " + lastRetracted);;
+        System.out.println("arm position is " + sixEncoder.getPosition() + 
+            " power is " + power + " last retracted? " + lastRetracted);
 
     }
 
@@ -261,20 +266,20 @@ public class ClimbSubsystem extends GRTSubsystem {
         @Override
         public void initialize() {
             // Disengage the six point arm brake and extend the arm to grab the rung
-            sixBrake.set(0);
-            sixPidController.setReference(20, ControlType.kPosition);
+            sixBrake.set(1);
+            sixPidController.setReference(SIX_FULLY_EXTENDED, ControlType.kPosition);
         }
 
         @Override
         public boolean isFinished() {
-            return withinThreshold(sixEncoder.getPosition(), 20);
+            return withinThreshold(sixEncoder.getPosition(), SIX_FULLY_RETRACTED);
         }
 
         @Override
         public void end(boolean interrupted) {
             // Engage the brake and partially retract the arm after grabbing
-            sixBrake.set(1);
-            sixPidController.setReference(10, ControlType.kPosition);
+            sixBrake.set(0);
+            sixPidController.setReference(SIX_PART_RETRACTED, ControlType.kPosition);
         }
     }
 
@@ -286,21 +291,21 @@ public class ClimbSubsystem extends GRTSubsystem {
         public void initialize() {
             // Disengage the ten point arm brake and extend the arm, simultaneously further retracting the six point arm.
             // After this motion the robot should be flat under the 10 point rung.
-            tenBrake.set(0);
+            tenBrake.set(1);
             tenPidController.setReference(20, ControlType.kPosition);
-            sixPidController.setReference(5, ControlType.kPosition);
+            sixPidController.setReference(SIX_FULLY_RETRACTED, ControlType.kPosition);
         }
 
         @Override
         public boolean isFinished() {
             return withinThreshold(tenEncoder.getPosition(), 20)
-                && withinThreshold(sixEncoder.getPosition(), 5);
+                && withinThreshold(sixEncoder.getPosition(), SIX_FULLY_RETRACTED);
         }
 
         @Override
         public void end(boolean interrupted) {
             // Engage the brake and partially retract the arm after grabbing
-            tenBrake.set(1);
+            tenBrake.set(0);
             tenPidController.setReference(10, ControlType.kPosition);
         }
     }
@@ -323,7 +328,7 @@ public class ClimbSubsystem extends GRTSubsystem {
         @Override
         public void end(boolean interrupted) {
             // Release the six point arm by extending it, and the ten point arm using a solenoid mechanism
-            sixBrake.set(0);
+            sixBrake.set(1);
             sixPidController.setReference(20, ControlType.kPosition);
             tenSolenoidMain.set(1);
         }
