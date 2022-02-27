@@ -75,10 +75,10 @@ public class TurretSubsystem extends GRTSubsystem {
 
     // constants
     // Turntable position PID constants
-    private static final double turntableFF = 0.0022;
     private static final double turntableP = 0;
     private static final double turntableI = 0;
     private static final double turntableD = 0;
+    private static final double turntableFF = 0 /* 0.00009 */;
     private static final double maxVel = 9000;
     private static final double maxAccel = 220;
 
@@ -218,7 +218,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
 
-        if (jetson != null) {
+        if (jetson != null && false) {
             // If the hub is in vision range, use vision's `r` and `theta` as ground truth
             if (jetson.turretVisionWorking()) {
                 r = jetson.getHubDistance();
@@ -252,17 +252,22 @@ public class TurretSubsystem extends GRTSubsystem {
             }
         }
 
+        System.out.println("Turntable pos: " + Math.toDegrees(turntableEncoder.getPosition()));
+
         // Set the turntable position from the relative theta given by vision
         //double newTurntableRadians = (turntableEncoder.getPosition() + theta) % (2 * Math.PI);
         // Temp turntable calculation: heading + theta to maintain same angle as startup
         // TODO: threshold for wrapping to prevent excessive swing-between
         double newTurntableRadians = (Math.toRadians(180) - currentPosition.getRotation().getRadians()) % (2 * Math.PI);
+        System.out.println("Turntable degs: " + Math.toDegrees(newTurntableRadians));
 
         // Apply feedforward and constrain within max and min angle
         double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
+        System.out.println("Turntable delta: " + Math.toDegrees(deltaTurntableRadians));
         double turntableReference = Math.min(Math.max(
             newTurntableRadians + deltaTurntableRadians * TURNTABLE_FF, 
             TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
+        System.out.println("Turntable ref: " + Math.toDegrees(turntableReference));
 
         // TODO: constants, interpolation
         // If rejecting, scale down flywheel speed

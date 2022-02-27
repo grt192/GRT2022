@@ -75,7 +75,7 @@ public class RobotContainer {
         tankSubsystem = new TankSubsystem();
         turretSubsystem = new TurretSubsystem(tankSubsystem, jetson);
         internalSubsystem = new InternalSubsystem(turretSubsystem);
-        intakeSubsystem = new IntakeSubsystem(internalSubsystem);
+        intakeSubsystem = new IntakeSubsystem(internalSubsystem, jetson);
         // climbSubsystem = new ClimbSubsystem();
 
         // Instantiate power controller

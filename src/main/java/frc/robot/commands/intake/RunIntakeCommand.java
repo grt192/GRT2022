@@ -31,6 +31,6 @@ public class RunIntakeCommand extends RunCommand {
                 // Otherwise, if 2 seconds have passed without driver input, resume automatic intake control
                 intakeSubsystem.setDriverOverride(false);
             }
-        });
+        }, intakeSubsystem);
     }
 }
