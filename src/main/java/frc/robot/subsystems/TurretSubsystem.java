@@ -93,6 +93,17 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double flywheelD = 0;
     private static final double flywheelFF = 0.00021;
 
+    // The interpolation table from shooter testing.
+    // Every entry can be thought of as a tuple representing [hub distance (ft), flywheel speed (RPM), hood angle (rads)];
+    // for any given hub distance, the desired flywheel speed and hood angle can be linearly interpolated 
+    // from the immediately higher and lower points.
+    // IMPORTANT: entries are assumed to be in order by hub distance. Without this assumption the array would have to be 
+    // sorted before interpolation.
+    private static final double[][] INTERPOLATION_TABLE = {
+        {0, 0, 0},
+        {30, 0, 0}
+    };
+
     // Desired state variables
     // TODO: measure these, add constants
     private double theta;
@@ -269,10 +280,29 @@ public class TurretSubsystem extends GRTSubsystem {
             TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
         System.out.println("Turntable ref: " + Math.toDegrees(turntableReference));
 
-        // TODO: constants, interpolation
-        // If rejecting, scale down flywheel speed
-        desiredFlywheelRPM = 100;
-        if (mode == TurretMode.REJECTING) desiredFlywheelRPM *= 0.5;
+        // Interpolate the hood angle and flywheel RPM.
+        // If rejecting, scale down flywheel speed to prevent scoring.
+        for (int i = 1; i < INTERPOLATION_TABLE.length; i++) {
+            double[] entry = INTERPOLATION_TABLE[i];
+            double[] previous = INTERPOLATION_TABLE[i - 1];
+
+            double rTop = entry[0];
+            double flywheelTop = entry[1];
+            double hoodAngleTop = entry[2];
+
+            double rBottom = entry[1];
+            double flywheelBottom = previous[1];
+            double hoodAngleBottom = previous[2];
+
+            // If the entry's distance is above the current distance, the current distance is between the entry 
+            // and the previous entry.
+            if (rTop > r) {
+                double ratio = (r - rBottom) / (rTop - rBottom);
+                desiredFlywheelRPM = (flywheelTop - flywheelBottom) * ratio + flywheelBottom;
+                desiredHoodRadians = (hoodAngleTop - hoodAngleBottom) * ratio + hoodAngleBottom;
+                if (mode == TurretMode.REJECTING) desiredFlywheelRPM *= 0.5;
+            }
+        }
 
         turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
         //hood.set(ControlMode.Position, desiredHoodRadians);
