@@ -22,6 +22,7 @@ import frc.robot.commands.intake.RunIntakeCommand;
 import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
+import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.internals.InternalSubsystem;
@@ -41,7 +42,7 @@ public class RobotContainer {
     private final TurretSubsystem turretSubsystem;
     private final IntakeSubsystem intakeSubsystem;
     private final InternalSubsystem internalSubsystem;
-    // private final ClimbSubsystem climbSubsystem;
+    private final ClimbSubsystem climbSubsystem;
 
     private final JetsonConnection jetson;
     private final PowerController powerController = null;
@@ -76,7 +77,7 @@ public class RobotContainer {
         turretSubsystem = new TurretSubsystem(tankSubsystem, jetson);
         internalSubsystem = new InternalSubsystem(turretSubsystem);
         intakeSubsystem = new IntakeSubsystem(internalSubsystem, jetson);
-        // climbSubsystem = new ClimbSubsystem();
+        climbSubsystem = new ClimbSubsystem();
 
         // Instantiate power controller
         /*
@@ -139,6 +140,15 @@ public class RobotContainer {
         //driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
         //driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
 
+
+        // CLIMB TESTING!! if not using, comment out and comment BACK IN turret manual control below this.
+        // use the X button on the drive controller for the brake
+        // mech left y axis for power
+        driveXButton.whenPressed(new InstantCommand(() -> climbSubsystem.toggleSixBrake()));
+        climbSubsystem.setDefaultCommand(new RunCommand(() -> {
+            climbSubsystem.setSixArmPower(mechController.getLeftY());
+        }, climbSubsystem));
+
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));
 
@@ -168,6 +178,8 @@ public class RobotContainer {
             }, internalSubsystem));
         }
 
+        /*
+        // TURRET TESTING CODE! comment out climb testing code if using
         if (turretSubsystem != null) {
             turretSubsystem.setDefaultCommand(new RunCommand(() -> {
                 double turntablePower = -mechController.getLeftY();
@@ -180,6 +192,7 @@ public class RobotContainer {
                 turretSubsystem.setHoodPower(hoodPower);
             }, turretSubsystem));
         }
+        */
     }
 
     /**

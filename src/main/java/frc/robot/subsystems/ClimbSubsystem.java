@@ -14,6 +14,7 @@ import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.CommandBase;
@@ -57,6 +58,16 @@ public class ClimbSubsystem extends GRTSubsystem {
     private static final double fifteenI = 0;
     private static final double fifteenD = 0;
 
+     // Temp states for brake toggles
+     private boolean sixBrakeEngaged = false;
+     private boolean lastRetracted = false;
+     private boolean retractToExtend = false;
+     private Timer brakeSwitch;
+ 
+     private static final double SIX_FULLY_RETRACTED = 0;
+     private static final double SIX_FULLY_EXTENDED = -190;
+     private static final double SIX_PART_RETRACTED = -130;
+
     private final ShuffleboardTab shuffleboardTab;
     // private final NetworkTableEntry shuffleboardSixPEntry;
     // private final NetworkTableEntry shuffleboardSixIEntry;
@@ -73,6 +84,8 @@ public class ClimbSubsystem extends GRTSubsystem {
     public ClimbSubsystem() {
         // TODO: measure this
         super(20);
+
+        brakeSwitch = new Timer();
 
         // Initialize six point arm NEO, encoder PID, and solenoid brake
         six = new CANSparkMax(sixMotorPort, MotorType.kBrushless);
@@ -161,6 +174,83 @@ public class ClimbSubsystem extends GRTSubsystem {
         // fifteenMain.config_kI(0, shuffleboardFifteenIEntry.getDouble(fifteenI));
         // fifteenMain.config_kD(0, shuffleboardFifteenDEntry.getDouble(fifteenD));
     }
+
+     /**
+     * Testing fnction to supply raw power to the six point arm winch.
+     * Also sets brake power.
+     * @param pow The power to set.
+     */
+    public void setSixArmPower(double pow) {
+        //+ power is retracting
+       //- power is extending
+       double power = pow;
+       //if (sixBrakeEngaged && pow > 0) {
+       //    power = 0;
+       //}
+       if (power > 0) {
+           lastRetracted = true;
+           
+       }
+       
+       /* BASIC BRAKE MANAGEMENT
+        if we need to extend after being retracted, and the brake is on,
+        we need to contract first to disengage the brake
+       */
+       if (lastRetracted && sixBrakeEngaged && (power < 0)) {
+           System.out.println("retracting to extend");
+           System.out.println();
+           brakeSwitch.start();
+           lastRetracted = false;
+           power = 0.1;
+           retractToExtend = true;
+       } else if (retractToExtend) {
+           power = 0.1;
+       }
+
+       //stop retracting and start extending
+       if (retractToExtend && brakeSwitch.hasElapsed(0.25)) { 
+           System.out.println("finished retracting, extending");
+           System.out.println();
+           sixBrake.set(1);
+           sixBrakeEngaged = false;
+           retractToExtend = false;
+           brakeSwitch.stop();
+           brakeSwitch.reset();
+       }
+
+       //TODO implement extension resetting because encoder gets off each time
+       //after extending/retracting is down to ~ -40 instead of -190
+
+       /*//for this to work, you MUST initialize the robot with climb *retracted*
+       //if we are fully extended/retracted, don't extend/retract any more
+       if ((sixEncoder.getPosition()) <= FULLY_EXTENDED && pow < 0) {
+           System.out.println("EXTENDED");
+           power = 0;
+       }
+       if (sixEncoder.getPosition() >= FULLY_RETRACTED && pow > 0) {
+           System.out.println("RETRACTED");
+           power = 0;
+       }
+       */
+
+       // set power and brake mode
+       six.set(power);
+       
+       // brake engaged -> not powered, disengaged -> powered
+       sixBrake.set(sixBrakeEngaged ? 0 : 1);
+
+       System.out.println("arm position is " + sixEncoder.getPosition() + 
+           " power is " + power + " last retracted? " + lastRetracted);
+
+   }
+
+   /**
+    * Testing function to toggle the six point brake.
+    */
+   public void toggleSixBrake() {
+       sixBrakeEngaged = !sixBrakeEngaged;
+
+   }
 
     /**
      * PHASE 1 (6 point rung)
