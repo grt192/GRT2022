@@ -53,11 +53,11 @@ public final class Constants {
     }
 
     public static final class ClimbConstants {
-        public static final int sixMotorPort = 0;
-        public static final int sixBrakePort = 1;
+        public static final int sixMotorPort = 3;
+        public static final int sixBrakePort = 2;
 
-        public static final int tenMotorPort = 3;
-        public static final int tenBrakePort = 2;
+        public static final int tenMotorPort = 1;
+        public static final int tenBrakePort = 0;
 
         public static final int tenLeftSolenoidPort = 18;
         public static final int tenRightSolenoidPort = 18;
