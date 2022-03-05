@@ -117,15 +117,14 @@ public class TurretSubsystem extends GRTSubsystem {
 
     private TurretMode mode = TurretMode.SHOOTING;
 
-    // 
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
     private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(60);
     private static final double TURNTABLE_MAX_RADIANS = Math.toRadians(300);
-    private static final double TURNTABLE_FF = 0.00021; // TODO: tune
+    private static final double TURNTABLE_THETA_FF = 0.00021; // TODO: tune
 
-    private static final double HOOD_RADIANS_TO_TICKS = 189705.0 / Math.toRadians(33.924);
+    private static final double HOOD_RADIANS_TO_TICKS = 243732.0 / Math.toRadians(35.8029900116);
     private static final double HOOD_MIN_POS = 0.0;
-    private static final double HOOD_MAX_POS = Math.toRadians(40) * HOOD_RADIANS_TO_TICKS;
+    private static final double HOOD_MAX_POS = Math.toRadians(36) * HOOD_RADIANS_TO_TICKS; // 243758
 
     private static final double FLYWHEEL_GEAR_RATIO = 36.0 / 16.0;
 
@@ -178,6 +177,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // Initialize hood 775 and encoder PID
         hood = new WPI_TalonSRX(hoodPort);
         hood.configFactoryDefault();
+        hood.setInverted(true);
         hood.setNeutralMode(NeutralMode.Brake);
 
         hood.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
@@ -304,7 +304,7 @@ public class TurretSubsystem extends GRTSubsystem {
         double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
         // System.out.println("Turntable delta: " + Math.toDegrees(deltaTurntableRadians));
         double turntableReference = Math.min(Math.max(
-            newTurntableRadians + deltaTurntableRadians * TURNTABLE_FF, 
+            newTurntableRadians + deltaTurntableRadians * TURNTABLE_THETA_FF, 
             TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
         //System.out.println("Turntable ref: " + Math.toDegrees(turntableReference));
 
