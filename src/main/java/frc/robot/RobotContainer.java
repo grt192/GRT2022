@@ -140,7 +140,7 @@ public class RobotContainer {
         //driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
         //driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
 
-
+/*
         // CLIMB TESTING!! if not using, comment out and comment BACK IN turret manual control below this.
         // use the X button on the drive controller for the brake
         // mech left y axis for power
@@ -148,6 +148,7 @@ public class RobotContainer {
         climbSubsystem.setDefaultCommand(new RunCommand(() -> {
             climbSubsystem.setSixArmPower(mechController.getLeftY());
         }, climbSubsystem));
+        */
 
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));
@@ -178,7 +179,7 @@ public class RobotContainer {
             }, internalSubsystem));
         }
 
-        /*
+        
         // TURRET TESTING CODE! comment out climb testing code if using
         if (turretSubsystem != null) {
             turretSubsystem.setDefaultCommand(new RunCommand(() -> {
@@ -192,7 +193,7 @@ public class RobotContainer {
                 turretSubsystem.setHoodPower(hoodPower);
             }, turretSubsystem));
         }
-        */
+        
     }
 
     /**

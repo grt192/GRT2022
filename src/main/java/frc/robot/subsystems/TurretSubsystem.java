@@ -16,6 +16,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -70,17 +71,17 @@ public class TurretSubsystem extends GRTSubsystem {
     private final RelativeEncoder flywheelEncoder;
     private final SparkMaxPIDController flywheelPidController;
 
-    private final DigitalInput leftLimitSwitch;
-    private final DigitalInput rightLimitSwitch;
+    // private final DigitalInput leftLimitSwitch;
+    // private final DigitalInput rightLimitSwitch;
 
     // constants
     // Turntable position PID constants
-    private static final double turntableP = 0;
+    private static final double turntableP = 0.001;
     private static final double turntableI = 0;
     private static final double turntableD = 0;
-    private static final double turntableFF = 0 /* 0.00009 */;
+    private static final double turntableFF = 0.001;
     private static final double maxVel = 9000;
-    private static final double maxAccel = 220;
+    private static final double maxAccel = 300;
 
     // Hood position PID constants
     private static final double hoodP = 0.125;
@@ -116,7 +117,8 @@ public class TurretSubsystem extends GRTSubsystem {
 
     private TurretMode mode = TurretMode.SHOOTING;
 
-    private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.8095201253890992;
+    // 
+    private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
     private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(60);
     private static final double TURNTABLE_MAX_RADIANS = Math.toRadians(300);
     private static final double TURNTABLE_FF = 0.00021; // TODO: tune
@@ -129,6 +131,14 @@ public class TurretSubsystem extends GRTSubsystem {
 
     // Shuffleboard
     private final ShuffleboardTab shuffleboardTab;
+    private final NetworkTableEntry shuffleboardPEntry;
+    private final NetworkTableEntry shuffleboardIEntry;
+    private final NetworkTableEntry shuffleboardDEntry;
+    private final NetworkTableEntry shuffleboardFFEntry;
+    private final NetworkTableEntry shuffleboardMaxVelEntry;
+    private final NetworkTableEntry shuffleboardMaxAccEntry;
+    private final NetworkTableEntry shuffleboardPosEntry;
+    private final NetworkTableEntry shuffleboardRefPosEntry;
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
@@ -171,7 +181,7 @@ public class TurretSubsystem extends GRTSubsystem {
         hood.setNeutralMode(NeutralMode.Brake);
 
         hood.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-        hood.setSelectedSensorPosition(0);
+        hood.setSelectedSensorPosition(0); // 180, 270, 90
         hood.setSensorPhase(true);
         hood.config_kP(0, hoodP);
         hood.config_kI(0, hoodI);
@@ -202,15 +212,33 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheelPidController.setFF(flywheelFF);
 
         // Initialize limit switches
-        leftLimitSwitch = new DigitalInput(lLimitSwitchPort);
-        rightLimitSwitch = new DigitalInput(rLimitSwitchPort);
+        // leftLimitSwitch = new DigitalInput(lLimitSwitchPort);
+        // rightLimitSwitch = new DigitalInput(rLimitSwitchPort);
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Turret");
+        
+        shuffleboardPEntry = shuffleboardTab.add("turntable kP", turntableP).getEntry();
+        shuffleboardIEntry = shuffleboardTab.add("turntable kI", turntableI).getEntry();
+        shuffleboardDEntry = shuffleboardTab.add("turntable kD", turntableD).getEntry();
+        shuffleboardFFEntry = shuffleboardTab.add("turntable kFF", turntableFF).getEntry();
+        shuffleboardMaxVelEntry = shuffleboardTab.add("turntable maxVel", maxVel).getEntry();
+        shuffleboardMaxAccEntry = shuffleboardTab.add("turntable maxAcc", maxAccel).getEntry();
+        shuffleboardPosEntry = shuffleboardTab.add("turntable pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry();
+        shuffleboardRefPosEntry = shuffleboardTab.add("turntable ref pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry();
     }
 
     @Override
     public void periodic() {
+
+        turntablePidController.setP(shuffleboardPEntry.getDouble(turntableP));
+        turntablePidController.setI(shuffleboardIEntry.getDouble(turntableI));
+        turntablePidController.setD(shuffleboardDEntry.getDouble(turntableD));
+        turntablePidController.setFF(shuffleboardFFEntry.getDouble(turntableFF));
+        turntablePidController.setSmartMotionMaxVelocity(shuffleboardMaxVelEntry.getDouble(maxVel), 0);
+        turntablePidController.setSmartMotionMaxAccel(shuffleboardMaxAccEntry.getDouble(maxAccel), 0);
+        shuffleboardPosEntry.setDouble(Math.toDegrees(turntableEncoder.getPosition()));
+
         // If retracted, skip jetson logic and calculations
         if (mode == TurretMode.RETRACTED) {
             desiredTurntableRadians = Math.toRadians(180);
@@ -224,8 +252,8 @@ public class TurretSubsystem extends GRTSubsystem {
         }
 
         // Check limit switches and reset encoders if detected
-        if (leftLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MIN_RADIANS);
-        if (rightLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MAX_RADIANS);
+        // if (leftLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MIN_RADIANS);
+        // if (rightLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MAX_RADIANS);
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
 
@@ -263,22 +291,22 @@ public class TurretSubsystem extends GRTSubsystem {
             }
         }
 
-        System.out.println("Turntable pos: " + Math.toDegrees(turntableEncoder.getPosition()));
+        // System.out.println("Turntable pos: " + Math.toDegrees(turntableEncoder.getPosition()));
 
         // Set the turntable position from the relative theta given by vision
         //double newTurntableRadians = (turntableEncoder.getPosition() + theta) % (2 * Math.PI);
         // Temp turntable calculation: heading + theta to maintain same angle as startup
         // TODO: threshold for wrapping to prevent excessive swing-between
         double newTurntableRadians = (Math.toRadians(180) - currentPosition.getRotation().getRadians()) % (2 * Math.PI);
-        System.out.println("Turntable degs: " + Math.toDegrees(newTurntableRadians));
+        // System.out.println("Turntable degs: " + Math.toDegrees(newTurntableRadians));
 
         // Apply feedforward and constrain within max and min angle
         double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
-        System.out.println("Turntable delta: " + Math.toDegrees(deltaTurntableRadians));
+        // System.out.println("Turntable delta: " + Math.toDegrees(deltaTurntableRadians));
         double turntableReference = Math.min(Math.max(
             newTurntableRadians + deltaTurntableRadians * TURNTABLE_FF, 
             TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
-        System.out.println("Turntable ref: " + Math.toDegrees(turntableReference));
+        //System.out.println("Turntable ref: " + Math.toDegrees(turntableReference));
 
         // Interpolate the hood angle and flywheel RPM.
         // If rejecting, scale down flywheel speed to prevent scoring.
@@ -304,12 +332,16 @@ public class TurretSubsystem extends GRTSubsystem {
             }
         }
 
-        turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
+
+        turntablePidController.setReference(Math.toRadians(shuffleboardRefPosEntry.getDouble(turntableEncoder.getPosition())), ControlType.kSmartMotion);
         //hood.set(ControlMode.Position, desiredHoodRadians);
         //flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
 
         previousPosition = currentPosition;
         desiredTurntableRadians = newTurntableRadians;
+
+        System.out.println("Turntable encoder: " + Math.toDegrees(turntableEncoder.getPosition()));
+
     }
 
     /**
