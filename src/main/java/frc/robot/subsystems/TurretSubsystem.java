@@ -16,6 +16,8 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.EntryListenerFlags;
+import edu.wpi.first.networktables.EntryNotification;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -120,7 +122,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
     private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(60);
     private static final double TURNTABLE_MAX_RADIANS = Math.toRadians(300);
-    private static final double TURNTABLE_THETA_FF = 0.00021; // TODO: tune
+    private double TURNTABLE_THETA_FF = 0.00021; // TODO: tune
 
     private static final double HOOD_RADIANS_TO_TICKS = 243732.0 / Math.toRadians(35.8029900116);
     private static final double HOOD_MIN_POS = 0.0;
@@ -130,12 +132,6 @@ public class TurretSubsystem extends GRTSubsystem {
 
     // Shuffleboard
     private final ShuffleboardTab shuffleboardTab;
-    private final GRTNetworkTableEntry shuffleboardPEntry;
-    private final GRTNetworkTableEntry shuffleboardIEntry;
-    private final GRTNetworkTableEntry shuffleboardDEntry;
-    private final GRTNetworkTableEntry shuffleboardFFEntry;
-    private final GRTNetworkTableEntry shuffleboardMaxVelEntry;
-    private final GRTNetworkTableEntry shuffleboardMaxAccEntry;
     private final GRTNetworkTableEntry shuffleboardPosEntry;
     private final GRTNetworkTableEntry shuffleboardRefPosEntry;
 
@@ -217,26 +213,26 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Turret");
-        
-        shuffleboardPEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable kP", turntableP).getEntry());
-        shuffleboardIEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable kI", turntableI).getEntry());
-        shuffleboardDEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable kD", turntableD).getEntry());
-        shuffleboardFFEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable kFF", turntableFF).getEntry());
-        shuffleboardMaxVelEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable maxVel", maxVel).getEntry());
-        shuffleboardMaxAccEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable maxAcc", maxAccel).getEntry());
+        shuffleboardTab.add("turntable kP", turntableP).getEntry()
+            .addListener(this::setTurntableP, EntryListenerFlags.kUpdate);
+        shuffleboardTab.add("turntable kI", turntableI).getEntry()
+            .addListener(this::setTurntableI, EntryListenerFlags.kUpdate);
+        shuffleboardTab.add("turntable kD", turntableD).getEntry()
+            .addListener(this::setTurntableD, EntryListenerFlags.kUpdate);
+        shuffleboardTab.add("turntable kFF", turntableFF).getEntry()
+            .addListener(this::setTurntableFF, EntryListenerFlags.kUpdate);
+        shuffleboardTab.add("turntable maxVel", maxVel).getEntry()
+            .addListener(this::setTurntableMaxVel, EntryListenerFlags.kUpdate);
+        shuffleboardTab.add("turntable maxAcc", maxAccel).getEntry()
+            .addListener(this::setTurntableMaxAcc, EntryListenerFlags.kUpdate);
+        shuffleboardTab.add("turntable theta FF", TURNTABLE_THETA_FF).getEntry()
+            .addListener(this::setTurntableThetaFF, EntryListenerFlags.kUpdate);                            
         shuffleboardPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry());
         shuffleboardRefPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable ref pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry());
     }
 
     @Override
     public void periodic() {
-
-        turntablePidController.setP((double) shuffleboardPEntry.getValue());
-        turntablePidController.setI((double) shuffleboardIEntry.getValue());
-        turntablePidController.setD((double) shuffleboardDEntry.getValue());
-        turntablePidController.setFF((double) shuffleboardFFEntry.getValue());
-        turntablePidController.setSmartMotionMaxVelocity((double) shuffleboardMaxVelEntry.getValue(), 0);
-        turntablePidController.setSmartMotionMaxAccel((double) shuffleboardMaxAccEntry.getValue(), 0);
         shuffleboardPosEntry.setValue(Math.toDegrees(turntableEncoder.getPosition()));
 
         // If retracted, skip jetson logic and calculations
@@ -467,5 +463,37 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     public void setFlywheelPower(double pow) {
         flywheel.set(pow);
+    }
+
+    /**
+     * Turntable PID tuning NetworkTable callbacks.
+     * @param change The `EntryNotification` representing the NetworkTable entry change.
+     */
+    private void setTurntableP(EntryNotification change) {
+        turntablePidController.setP(change.value.getDouble());
+    }
+
+    private void setTurntableI(EntryNotification change) {
+        turntablePidController.setI(change.value.getDouble());
+    }
+
+    private void setTurntableD(EntryNotification change) {
+        turntablePidController.setD(change.value.getDouble());
+    }
+
+    private void setTurntableFF(EntryNotification change) {
+        turntablePidController.setFF(change.value.getDouble());
+    }
+
+    private void setTurntableMaxVel(EntryNotification change) {
+        turntablePidController.setSmartMotionMaxVelocity(change.value.getDouble(), 0);
+    }
+
+    private void setTurntableMaxAcc(EntryNotification change) {
+        turntablePidController.setSmartMotionMaxAccel(change.value.getDouble(), 0);
+    }
+
+    private void setTurntableThetaFF(EntryNotification change) {
+        TURNTABLE_THETA_FF = change.value.getDouble();
     }
 }
