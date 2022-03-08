@@ -131,7 +131,6 @@ public class JetsonConnection {
                 String in = stdIn.readLine();
                 if (in != null) {
                     String[] data = in.replace("(", "").replace(")", "").split(",");
-                    System.out.println(Arrays.toString(data));
 
                     turretVisionStatus = strToBool(data[0]);
                     turretTheta = Double.parseDouble(data[1]);
