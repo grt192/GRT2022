@@ -9,6 +9,8 @@ import frc.robot.subsystems.internals.InternalSubsystem;
  */
 public class ShootCommand extends CommandBase {
     private final InternalSubsystem internals;
+
+    private boolean shotRequested = false;
     private boolean finished = false;
 
     public ShootCommand(InternalSubsystem internals) {
@@ -18,11 +20,14 @@ public class ShootCommand extends CommandBase {
 
     @Override
     public void initialize() {
-        internals.requestShot(() -> finished = true);
+        internals.requestShot();
+        shotRequested = true;
     }
 
     @Override
     public boolean isFinished() {
+        boolean doneShooting = shotRequested && !internals.shotRequested();
+        this.finished = finished || doneShooting; // in case someone ever queues a new shot before successive isFinished calls (???)
         return finished;
     }
 }
