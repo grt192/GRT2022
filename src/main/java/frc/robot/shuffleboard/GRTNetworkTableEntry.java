@@ -33,13 +33,12 @@ public class GRTNetworkTableEntry {
     public void update() {
         switch (this.type) {
             case GET:
-                buffer = tableEntry.getValue();
+                buffer = tableEntry.getValue().getValue();
                 break;
             case SET:
                 tableEntry.setValue(buffer);
                 break;
-        }
-        ;
+        };
     }
 
     public Object getValue() {

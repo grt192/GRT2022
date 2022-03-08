@@ -99,7 +99,7 @@ public class TurretSubsystem extends GRTSubsystem {
     // TODO: measure these, add constants
     private double theta;
     private double r;
-    private Pose2d previousPosition;
+    private Pose2d previousPosition = new Pose2d();
 
     private double desiredFlywheelSpeed = 30.0;
     private double desiredTurntablePosition = 0.0;
