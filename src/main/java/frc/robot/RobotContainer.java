@@ -37,12 +37,11 @@ public class RobotContainer {
 
     // Subsystems
     private final TankSubsystem tankSubsystem;
-    private final TurretSubsystem turretSubsystem;
+    private final TurretSubsystem turretSubsystem = null;
     private final IntakeSubsystem intakeSubsystem;
-    private final InternalSubsystem internalSubsystem;
-    // private final ClimbSubsystem climbSubsystem;
+    private final InternalSubsystem internalSubsystem = null;
 
-    private final JetsonConnection jetson;
+    private final JetsonConnection jetson = null;
     private final PowerController powerController = null;
 
     // Controllers and buttons
@@ -67,44 +66,11 @@ public class RobotContainer {
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
-        // Instantiate the Jetson connection
-        jetson = new JetsonConnection();
-        
         // Instantiate subsystems
         tankSubsystem = new TankSubsystem();
-        turretSubsystem = new TurretSubsystem(tankSubsystem, jetson);
-        internalSubsystem = new InternalSubsystem(turretSubsystem);
         intakeSubsystem = new IntakeSubsystem(internalSubsystem);
-        // climbSubsystem = new ClimbSubsystem();
-
-        // Instantiate power controller
-        /*
-        powerController = new PowerController(
-            tankSubsystem,
-            turretSubsystem,
-            internalSubsystem,
-            intakeSubsystem
-            //, climbSubsystem
-        );
-        */
 
         // Instantiate commands
-        // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
-        /*
-        if (tankSubsystem != null) {
-            autonCommand = new FollowPathCommand(
-                tankSubsystem,
-                new Pose2d(),
-                List.of(
-                    new Translation2d(1, 1),
-                    new Translation2d(2, -1)
-                ),
-                new Pose2d(3, 0, new Rotation2d())
-            );
-        } else {
-            autonCommand = new InstantCommand();
-        }
-        */
         autonCommand = new InstantCommand();
 
         // Configure the button bindings
@@ -122,80 +88,27 @@ public class RobotContainer {
     }
 
     /**
-     * TODO: finalize these, talk to drivers
-     * 
      * Controller 1 (driver):
-     * Joysticks -> car drive (tank)
-     * Left trigger -> run intake (intake)
-     * A button -> lower intake (intake)
-     * B button -> raise intake (intake)
-     * 
-     * Controller 2 (mechanisms):
-     * A button -> request shot (internals)
-     * X button -> start climb sequence (climb)
+     * Joysticks -> car drive: left Y -> foward, right X -> angular (tank)
+     * Triggers -> intake: left backwards, right forwards (intake)
      */
     private void controllerBindings() {
-        //driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
-        //driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+        Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
+        tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
 
-        mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
-        mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));
+        // TODO: tune deadband
+        Runnable intake = () -> {
+            intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
 
-        mechYButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0.2)));
-        mechBButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0)));
-
-        if (tankSubsystem != null) {
-            Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
-            tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
-        }
-
-        if (intakeSubsystem != null) {
-            // TODO: tune deadband
-            Runnable intake = () -> {
-                intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
-
-                double deployPow = 0;
-                if (driveController.getPOV() == 90) {
-                    deployPow = 0.2;
-                } else if (driveController.getPOV() == 270) {
-                    deployPow = -0.2;
-                }
-                intakeSubsystem.setDeployPower(deployPow);
-            };
-            intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
-        }
-
-        if (internalSubsystem != null) {
-            internalSubsystem.setDefaultCommand(new RunCommand(() -> {
-                double leftTrigger = mechController.getLeftTriggerAxis();
-                double rightTrigger = mechController.getRightTriggerAxis();
-
-                if (leftTrigger != 0 || rightTrigger != 0) {
-                    internalSubsystem.setDriverOverride(true);
-                    internalSubsystem.setPower(leftTrigger - rightTrigger);
-                } else {
-                    internalSubsystem.setDriverOverride(false);
-                }
-            }, internalSubsystem));
-        }
-
-        if (turretSubsystem != null) {
-            driveXButton.whileHeld(new StartEndCommand(
-                () -> turretSubsystem.spin = true, 
-                () -> turretSubsystem.spin = false, 
-                turretSubsystem));
-
-            turretSubsystem.setDefaultCommand(new RunCommand(() -> {
-                double turntablePower = -mechController.getLeftY();
-                double hoodPower = -mechController.getRightY();
-
-                //System.out.println("Turntable power: " + turntablePower);
-                //System.out.println("Hood power: " + hoodPower);
-
-                turretSubsystem.setTurntablePower(turntablePower);
-                turretSubsystem.setHoodPower(hoodPower);
-            }, turretSubsystem));
-        }
+            double deployPow = 0;
+            if (driveController.getPOV() == 90) {
+                deployPow = 0.2;
+            } else if (driveController.getPOV() == 270) {
+                deployPow = -0.2;
+            }
+            intakeSubsystem.setDeployPower(deployPow);
+        };
+        intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
     }
 
     /**
