@@ -15,17 +15,13 @@ public class JetsonConnection {
 
     private final JetsonConnectionRunnable runnable;
 
-    // Instance variables
-    private Thread thread;
-
     public JetsonConnection() {
         runnable = new JetsonConnectionRunnable();
-        thread = new Thread(runnable);
+        Thread thread = new Thread(runnable);
         thread.setDaemon(true);
         thread.start();
     }
 
-    
     /**
      * Returns whether the turret camera can see vision targets, in case there are momentary lapses in vision or the
      * hub is currently in the turntable blind spot.
@@ -135,6 +131,7 @@ public class JetsonConnection {
                 String in = stdIn.readLine();
                 if (in != null) {
                     String[] data = in.replace("(", "").replace(")", "").split(",");
+                    System.out.println(Arrays.toString(data));
 
                     turretVisionStatus = strToBool(data[0]);
                     turretTheta = Double.parseDouble(data[1]);

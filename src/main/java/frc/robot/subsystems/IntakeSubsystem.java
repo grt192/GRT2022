@@ -28,7 +28,7 @@ public class IntakeSubsystem extends GRTSubsystem {
      * counterclockwise angle from straight upwards. In degrees.
      */
     public enum IntakePosition {
-        RAISED(0), DEPLOYED(200000);
+        START(0), RAISED(0), DEPLOYED(200000);
 
         public final double value;
 
@@ -80,17 +80,19 @@ public class IntakeSubsystem extends GRTSubsystem {
         deploy.setNeutralMode(NeutralMode.Brake);
 
         deploy.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-        deploy.setSelectedSensorPosition(0);
+        deploy.setSelectedSensorPosition(IntakePosition.START.value);
         deploy.setSensorPhase(false);
         deploy.config_kP(0, kP);
         deploy.config_kI(0, kI);
         deploy.config_kD(0, kD);
 
         // Soft limit deploy between RAISED and DEPLOYED
+        /*
         deploy.configForwardSoftLimitEnable(true);
         deploy.configReverseSoftLimitEnable(true);
         deploy.configForwardSoftLimitThreshold(IntakePosition.RAISED.value);
         deploy.configReverseSoftLimitThreshold(IntakePosition.DEPLOYED.value);
+        */
 
         limitSwitch = new DigitalInput(limitSwitchPort);
 
@@ -114,7 +116,7 @@ public class IntakeSubsystem extends GRTSubsystem {
         // deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
 
         // Check limit switch and reset encoder if detected
-        if (limitSwitch.get()) deploy.setSelectedSensorPosition(0);
+        //if (limitSwitch.get()) deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);
 
         // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
         if (!(internalSubsystem.getBallCount() < 2 && currentPosition == IntakePosition.DEPLOYED)) {
@@ -126,7 +128,7 @@ public class IntakeSubsystem extends GRTSubsystem {
         }
 
         // TODO: is a constant still needed?
-        deploy.set(ControlMode.Position, currentPosition.value /* * DEGREES_TO_ENCODER_TICKS */);
+        //deploy.set(ControlMode.Position, currentPosition.value /* * DEGREES_TO_ENCODER_TICKS */);
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
     }
 

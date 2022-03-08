@@ -297,7 +297,7 @@ public class TurretSubsystem extends GRTSubsystem {
         //double newTurntableRadians = (turntableEncoder.getPosition() + theta) % (2 * Math.PI);
         // Temp turntable calculation: heading + theta to maintain same angle as startup
         // TODO: threshold for wrapping to prevent excessive swing-between
-        double newTurntableRadians = (Math.toRadians(180) - currentPosition.getRotation().getRadians()) % (2 * Math.PI);
+        double newTurntableRadians = (Math.toRadians(shuffleboardRefPosEntry.getDouble(180)) - currentPosition.getRotation().getRadians()) % (2 * Math.PI);
         // System.out.println("Turntable degs: " + Math.toDegrees(newTurntableRadians));
 
         // Apply feedforward and constrain within max and min angle
@@ -332,16 +332,12 @@ public class TurretSubsystem extends GRTSubsystem {
             }
         }
 
-
-        turntablePidController.setReference(Math.toRadians(shuffleboardRefPosEntry.getDouble(turntableEncoder.getPosition())), ControlType.kSmartMotion);
+        turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
         //hood.set(ControlMode.Position, desiredHoodRadians);
         //flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
 
         previousPosition = currentPosition;
         desiredTurntableRadians = newTurntableRadians;
-
-        System.out.println("Turntable encoder: " + Math.toDegrees(turntableEncoder.getPosition()));
-
     }
 
     /**
