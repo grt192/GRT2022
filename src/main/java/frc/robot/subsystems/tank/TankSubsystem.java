@@ -14,6 +14,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -35,7 +36,7 @@ public class TankSubsystem extends GRTSubsystem {
     private final CANSparkMax rightMiddle;
     private final CANSparkMax rightBack;
 
-    private final PoseEstimatorThread poseEstimatorThread;
+    private final PoseEstimator poseEstimator;
 
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleX;
@@ -96,7 +97,8 @@ public class TankSubsystem extends GRTSubsystem {
         AHRS ahrs = new AHRS(SPI.Port.kMXP);
 
         // Start pose estimator thread
-        poseEstimatorThread = new PoseEstimatorThread(ahrs, leftEncoder, rightEncoder);
+        poseEstimator = new PoseEstimator(ahrs, leftEncoder, rightEncoder);
+        poseEstimator.setPosition(new Pose2d(0, 0, new Rotation2d(0)));
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Drivetrain");
@@ -173,6 +175,8 @@ public class TankSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
+        poseEstimator.update();
+
         // Update Shuffleboard entries
         Pose2d pose = getRobotPosition();
         
@@ -187,11 +191,12 @@ public class TankSubsystem extends GRTSubsystem {
      * @return The estimated position of the robot as a Pose2d.
      */
     public Pose2d getRobotPosition() {
-        return poseEstimatorThread.getPosition();
+        return poseEstimator.getPosition();
     }
 
     public DifferentialDriveWheelSpeeds getWheelSpeeds() {
-        return poseEstimatorThread.getWheelSpeeds();
+        // TODO: is this ok?
+        return poseEstimator.getLastWheelSpeeds();
     }
 
     /**
@@ -199,7 +204,7 @@ public class TankSubsystem extends GRTSubsystem {
      * @param position The position to reset the pose estimator to.
      */
     public void resetPosition(Pose2d position) {
-        poseEstimatorThread.setPosition(position);
+        poseEstimator.setPosition(position);
     }
 
     /**

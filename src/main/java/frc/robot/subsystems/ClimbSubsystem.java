@@ -32,10 +32,10 @@ public class ClimbSubsystem extends GRTSubsystem {
     private final SparkMaxPIDController sixPidController;
     private final WPI_TalonSRX sixBrake;
 
-    private final CANSparkMax ten;
-    private final RelativeEncoder tenEncoder;
-    private final SparkMaxPIDController tenPidController;
-    private final WPI_TalonSRX tenBrake;
+    private final CANSparkMax ten = null;
+    private final RelativeEncoder tenEncoder = null;
+    private final SparkMaxPIDController tenPidController = null;
+    private final WPI_TalonSRX tenBrake = null;
 
     private final WPI_TalonSRX tenSolenoidMain;
     private final WPI_TalonSRX tenSolenoidFollow;
@@ -104,20 +104,20 @@ public class ClimbSubsystem extends GRTSubsystem {
         sixBrake.configFactoryDefault();
 
         // Initialize ten point arm NEO, encoder PID, and solenoid brake
-        ten = new CANSparkMax(tenMotorPort, MotorType.kBrushless);
-        ten.restoreFactoryDefaults();
-        ten.setIdleMode(IdleMode.kBrake);
+        // ten = new CANSparkMax(tenMotorPort, MotorType.kBrushless);
+        // ten.restoreFactoryDefaults();
+        // ten.setIdleMode(IdleMode.kBrake);
 
-        tenEncoder = ten.getEncoder();
-        tenEncoder.setPosition(0);
+        // tenEncoder = ten.getEncoder();
+        // tenEncoder.setPosition(0);
 
-        tenPidController = ten.getPIDController();
-        tenPidController.setP(tenP);
-        tenPidController.setI(tenI);
-        tenPidController.setD(tenD);
+        // tenPidController = ten.getPIDController();
+        // tenPidController.setP(tenP);
+        // tenPidController.setI(tenI);
+        // tenPidController.setD(tenD);
 
-        tenBrake = new WPI_TalonSRX(tenBrakePort);
-        tenBrake.configFactoryDefault();
+        // tenBrake = new WPI_TalonSRX(tenBrakePort);
+        // tenBrake.configFactoryDefault();
 
         // Initialize ten point arm solenoid release mechanisms
         tenSolenoidMain = new WPI_TalonSRX(tenLeftSolenoidPort);

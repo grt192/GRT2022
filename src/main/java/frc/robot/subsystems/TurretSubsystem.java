@@ -13,6 +13,7 @@ import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.SparkMaxPIDController.AccelStrategy;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
@@ -78,11 +79,11 @@ public class TurretSubsystem extends GRTSubsystem {
 
     // constants
     // Turntable position PID constants
-    private static final double turntableP = 0.001;
+    private static final double turntableP = 0.00015;
     private static final double turntableI = 0;
     private static final double turntableD = 0;
-    private static final double turntableFF = 0.001;
-    private static final double maxVel = 9000;
+    private static final double turntableFF = 0.0009;
+    private static final double maxVel = 150;
     private static final double maxAccel = 300;
 
     // Hood position PID constants
@@ -133,6 +134,7 @@ public class TurretSubsystem extends GRTSubsystem {
     // Shuffleboard
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardPosEntry;
+    private final GRTNetworkTableEntry shuffleboardVelo;
     private final GRTNetworkTableEntry shuffleboardRefPosEntry;
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
@@ -223,17 +225,21 @@ public class TurretSubsystem extends GRTSubsystem {
             .addListener(this::setTurntableFF, EntryListenerFlags.kUpdate);
         shuffleboardTab.add("turntable maxVel", maxVel).getEntry()
             .addListener(this::setTurntableMaxVel, EntryListenerFlags.kUpdate);
-        shuffleboardTab.add("turntable maxAcc", maxAccel).getEntry()
+        shuffleboardTab.add("turntable minVel", maxAccel).getEntry()
+        .addListener(this::setTurnMinVel, EntryListenerFlags.kUpdate);
+    shuffleboardTab.add("turntable maxAcc", maxAccel).getEntry()
             .addListener(this::setTurntableMaxAcc, EntryListenerFlags.kUpdate);
         shuffleboardTab.add("turntable theta FF", TURNTABLE_THETA_FF).getEntry()
             .addListener(this::setTurntableThetaFF, EntryListenerFlags.kUpdate);                            
         shuffleboardPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry());
+        shuffleboardVelo = new GRTNetworkTableEntry(shuffleboardTab.add("turn velo", 0).getEntry());
         shuffleboardRefPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable ref pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry());
     }
 
     @Override
     public void periodic() {
         shuffleboardPosEntry.setValue(Math.toDegrees(turntableEncoder.getPosition()));
+        shuffleboardVelo.setValue(turntableEncoder.getVelocity());
 
         // If retracted, skip jetson logic and calculations
         if (mode == TurretMode.RETRACTED) {
@@ -487,6 +493,10 @@ public class TurretSubsystem extends GRTSubsystem {
 
     private void setTurntableMaxVel(EntryNotification change) {
         turntablePidController.setSmartMotionMaxVelocity(change.value.getDouble(), 0);
+    }
+
+    private void setTurnMinVel(EntryNotification change) {
+        turntablePidController.setSmartMotionMinOutputVelocity(change.value.getDouble(), 0);
     }
 
     private void setTurntableMaxAcc(EntryNotification change) {
