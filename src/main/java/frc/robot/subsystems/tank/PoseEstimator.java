@@ -43,10 +43,6 @@ public class PoseEstimator {
         double leftDistance = leftEncoder.getPosition();
         double rightDistance = rightEncoder.getPosition();
 
-        System.out.println("gyro: " + gyroAngle);
-        System.out.println("left: " + leftDistance);
-        System.out.println("right: " + rightDistance);
-
         poseEstimator.update(gyroAngle, lastWheelSpeeds, leftDistance, rightDistance);
     }
 

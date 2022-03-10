@@ -61,6 +61,7 @@ public class InternalSubsystem extends GRTSubsystem {
         motorBottom = new WPI_TalonSRX(motorPortBottom);
         motorBottom.configFactoryDefault();
         motorBottom.setNeutralMode(NeutralMode.Brake);
+        motorBottom.setInverted(true);
 
         // Initialize top motor
         motorTop = new WPI_TalonSRX(motorPortTop);

@@ -137,18 +137,8 @@ public class RobotContainer {
      * X button -> start climb sequence (climb)
      */
     private void controllerBindings() {
-        //driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
+        driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         //driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
-
-/*
-        // CLIMB TESTING!! if not using, comment out and comment BACK IN turret manual control below this.
-        // use the X button on the drive controller for the brake
-        // mech left y axis for power
-        driveXButton.whenPressed(new InstantCommand(() -> climbSubsystem.toggleSixBrake()));
-        climbSubsystem.setDefaultCommand(new RunCommand(() -> {
-            climbSubsystem.setSixArmPower(mechController.getLeftY());
-        }, climbSubsystem));
-        */
 
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));

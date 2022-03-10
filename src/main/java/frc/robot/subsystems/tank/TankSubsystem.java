@@ -98,7 +98,7 @@ public class TankSubsystem extends GRTSubsystem {
 
         // Start pose estimator thread
         poseEstimator = new PoseEstimator(ahrs, leftEncoder, rightEncoder);
-        poseEstimator.setPosition(new Pose2d());
+        resetPosition();
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Drivetrain");
