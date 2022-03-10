@@ -126,9 +126,9 @@ public class TurretSubsystem extends GRTSubsystem {
     private TurretMode mode = TurretMode.SHOOTING;
 
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
-    private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(60);
-    private static final double TURNTABLE_MAX_RADIANS = Math.toRadians(300);
-    private double TURNTABLE_THETA_FF = 0.00021; // TODO: tune
+    private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(40);
+    private static final double TURNTABLE_MAX_RADIANS = Math.toRadians(330);
+    private double TURNTABLE_THETA_FF = 4; // TODO: tune
 
     private static final double HOOD_RADIANS_TO_TICKS = 243732.0 / Math.toRadians(35.8029900116);
     private static final double HOOD_MIN_POS = 0.0;
