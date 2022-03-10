@@ -11,7 +11,6 @@ public class ShootCommand extends CommandBase {
     private final InternalSubsystem internals;
 
     private boolean shotRequested = false;
-    private boolean finished = false;
 
     public ShootCommand(InternalSubsystem internals) {
         this.internals = internals;
@@ -26,8 +25,9 @@ public class ShootCommand extends CommandBase {
 
     @Override
     public boolean isFinished() {
-        boolean doneShooting = shotRequested && !internals.shotRequested();
-        this.finished = finished || doneShooting; // in case someone ever queues a new shot before successive isFinished calls (???)
-        return finished;
+        // If the internals shot has finished (the subsystem no longer counts a shot as requested),
+        // mark this command as finished.
+        // TODO: if initialize() is always called before this, we can remove `shotRequested` entirely
+        return shotRequested && !internals.getShotRequested();
     }
 }

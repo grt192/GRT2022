@@ -4,6 +4,10 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.util.Color;
 
 /**
@@ -72,5 +76,36 @@ public final class Constants {
 
     public static final class ShuffleboardConstants {
         public static final double UPDATE_TIME = 0.5; // seconds between each update
+    }
+
+    /**
+     * Ball coordinates, based off of Kepler's work on onshape:
+     * https://pausd.onshape.com/documents/8003f7997b588f082d72c477/w/14e5661479750659f282841e/e/4af5ee78827743d1d23aca5f
+     * All coordinates assume the field coordinate system (positive x is right, positive y is up, theta ccw from
+     * x axis) with the origin at the hub.
+     */
+    public static final class BallCoordinates {
+        // Tarmac ball translations; these do not include angle because we may choose to approach these balls at
+        // different angles based on our starting position. Declared in clockwise order around the tarmac from 
+        // top right to top left ball.
+        public static final Translation2d 
+            RIGHT_TOP_BLUE = new Translation2d(Units.inchesToMeters(-33.763), Units.inchesToMeters(149.233)),
+            RIGHT_TOP_RED = new Translation2d(Units.inchesToMeters(25.907), Units.inchesToMeters(150.795)),
+            RIGHT_MID_RED = new Translation2d(Units.inchesToMeters(124.952), Units.inchesToMeters(88.302)),
+            RIGHT_MID_BLUE = new Translation2d(Units.inchesToMeters(149.230), Units.inchesToMeters(33.772)),
+            RIGHT_BOTTOM_RED = new Translation2d(Units.inchesToMeters(129.397), Units.inchesToMeters(-81.649)),
+            RIGHT_BOTTOM_BLUE = new Translation2d(Units.inchesToMeters(88.309), Units.inchesToMeters(-124.947)),
+            LEFT_BOTTOM_RED = new Translation2d(Units.inchesToMeters(33.763), Units.inchesToMeters(-149.233)),
+            LEFT_BOTTOM_BLUE = new Translation2d(Units.inchesToMeters(-25.907), Units.inchesToMeters(-150.795)),
+            LEFT_MID_BLUE = new Translation2d(Units.inchesToMeters(-124.952), Units.inchesToMeters(-88.302)),
+            LEFT_MID_RED = new Translation2d(Units.inchesToMeters(-149.230), Units.inchesToMeters(-33.772)),
+            LEFT_TOP_BLUE = new Translation2d(Units.inchesToMeters(-129.397), Units.inchesToMeters(81.649)),
+            LEFT_TOP_RED = new Translation2d(Units.inchesToMeters(-88.309), Units.inchesToMeters(124.947));
+
+        // Terminal ball poses; these include angle because these are close to the wall, so angle of approach
+        // cannot vary too much.
+        public static final Pose2d
+            TERMINAL_RED = new Pose2d(Units.inchesToMeters(284.210), Units.inchesToMeters(120.435), Rotation2d.fromDegrees(45)),
+            TERMINAL_BLUE = new Pose2d(Units.inchesToMeters(-284.210), Units.inchesToMeters(-120.435), Rotation2d.fromDegrees(225));
     }
 }

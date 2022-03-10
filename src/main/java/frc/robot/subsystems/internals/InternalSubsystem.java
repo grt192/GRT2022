@@ -1,13 +1,9 @@
 package frc.robot.subsystems.internals;
 
-import static frc.robot.Constants.InternalConstants.entranceIRPort;
-import static frc.robot.Constants.InternalConstants.motorPortBottom;
-import static frc.robot.Constants.InternalConstants.motorPortTop;
-import static frc.robot.Constants.InternalConstants.stagingIRPort;
-
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+
 import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorMatchResult;
 import com.revrobotics.ColorSensorV3;
@@ -17,9 +13,12 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
+
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.subsystems.TurretSubsystem;
+
+import static frc.robot.Constants.InternalConstants.*;
 
 public class InternalSubsystem extends GRTSubsystem {
 
@@ -245,6 +244,14 @@ public class InternalSubsystem extends GRTSubsystem {
     }
 
     /**
+     * Gets whether a shot has been requested.
+     * @return Whether a shot has been requested.
+     */
+    public boolean getShotRequested() {
+        return shotRequested;
+    }
+
+    /**
      * Normalizes a raw color from a color sensor to the closest stored color in colorMatcher using a tolerance of 0.8, 
      * returning `null` if no color was matched.
      * @param color The color to match.
@@ -289,9 +296,5 @@ public class InternalSubsystem extends GRTSubsystem {
 
     public void setDriverOverride(boolean override) {
         this.driverOverride = override;
-    }
-
-    public boolean shotRequested() {
-        return shotRequested;
     }
 }
