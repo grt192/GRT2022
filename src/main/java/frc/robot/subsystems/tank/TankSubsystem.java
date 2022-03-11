@@ -1,13 +1,7 @@
 package frc.robot.subsystems.tank;
 
-import static frc.robot.Constants.TankConstants.bLeftMotorPort;
-import static frc.robot.Constants.TankConstants.bRightMotorPort;
-import static frc.robot.Constants.TankConstants.fLeftMotorPort;
-import static frc.robot.Constants.TankConstants.fRightMotorPort;
-import static frc.robot.Constants.TankConstants.mLeftMotorPort;
-import static frc.robot.Constants.TankConstants.mRightMotorPort;
-
 import com.kauailabs.navx.frc.AHRS;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -20,9 +14,12 @@ import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
+
+import static frc.robot.Constants.TankConstants.*;
 
 /**
  * A subsystem which controls the robot's drivetrain. This subsystem handles both driving and odometry.
@@ -44,8 +41,7 @@ public class TankSubsystem extends GRTSubsystem {
     private final GRTNetworkTableEntry shuffleHeading;
     private final Field2d shuffleboardField;
 
-    // TODO: measure this for new robot
-    public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 5.0;
+    public static final double ENCODER_ROTATIONS_TO_METERS = 4 / 71.11351407691836;
 
     public TankSubsystem() {
         // TODO: measure this
@@ -176,6 +172,7 @@ public class TankSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         poseEstimator.update();
+        //System.out.println(getRobotPosition());
 
         // Update Shuffleboard entries
         Pose2d pose = getRobotPosition();
