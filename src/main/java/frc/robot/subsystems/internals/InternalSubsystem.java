@@ -98,7 +98,7 @@ public class InternalSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // If a new ball has entered internals, increment ball count
-        boolean entranceDetected = entrance.get() >= 0.4;
+        boolean entranceDetected = entrance.get() >= 0.1;
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
         boolean storageDetected = isBall(storageColor);
 

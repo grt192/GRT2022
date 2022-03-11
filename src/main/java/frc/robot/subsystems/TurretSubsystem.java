@@ -300,6 +300,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
 
+        System.out.println("angle: " + jetson.getTurretTheta());
         if (jetson != null && false) {
             // If the hub is in vision range, use vision's `r` and `theta` as ground truth
             if (jetson.turretVisionWorking()) {
