@@ -103,14 +103,19 @@ public class TurretSubsystem extends GRTSubsystem {
     private double hoodRefPos = 0;
 
     // The interpolation table from shooter testing.
-    // Every entry can be thought of as a tuple representing [hub distance (ft), flywheel speed (RPM), hood angle (rads)];
+    // Every entry can be thought of as a tuple representing [hub distance (in), flywheel speed (RPM), hood angle (degs)];
     // for any given hub distance, the desired flywheel speed and hood angle can be linearly interpolated 
     // from the immediately higher and lower points.
     // IMPORTANT: entries are assumed to be in order by hub distance. Without this assumption the array would have to be 
     // sorted before interpolation.
     private static final double[][] INTERPOLATION_TABLE = {
-        {0, 0, 0},
-        {30, 0, 0}
+        {69, 5000, 7},
+        {88, 5100, 13.5},
+        {112, 5300, 17},
+        {139, 5600, 20},
+        {175, 6000, 25},
+        {202, 6400, 30},
+        {221, 6800, 36}
     };
 
     // Desired state variables
@@ -355,24 +360,25 @@ public class TurretSubsystem extends GRTSubsystem {
         // Interpolate the hood angle and flywheel RPM.
         // If rejecting, scale down flywheel speed to prevent scoring.
         for (int i = 1; i < INTERPOLATION_TABLE.length; i++) {
-            double[] entry = INTERPOLATION_TABLE[i];
-            double[] previous = INTERPOLATION_TABLE[i - 1];
+            double[] above = INTERPOLATION_TABLE[i];
+            double[] below = INTERPOLATION_TABLE[i - 1];
 
-            double rTop = entry[0];
-            double flywheelTop = entry[1];
-            double hoodAngleTop = entry[2];
-
-            double rBottom = entry[1];
-            double flywheelBottom = previous[1];
-            double hoodAngleBottom = previous[2];
+            double rTop = above[0], flywheelTop = above[1], hoodAngleTop = above[2];
+            double rBottom = below[0], flywheelBottom = below[1], hoodAngleBottom = below[2];
 
             // If the entry's distance is above the current distance, the current distance is between the entry 
             // and the previous entry.
             if (rTop > r) {
-                double ratio = (r - rBottom) / (rTop - rBottom);
-                desiredFlywheelRPM = (flywheelTop - flywheelBottom) * ratio + flywheelBottom;
-                desiredHoodRadians = (hoodAngleTop - hoodAngleBottom) * ratio + hoodAngleBottom;
+                // Where x axis is distance d, y axis is flywheel RPM f, the top and bottom points are A and B, 
+                // and the interpolated point is C:
+                // m = (f_A - f_B) / (d_A - d_B)
+                // C = (d_B + (d_C - d_B), mx) = (d_C, md_C)
+                double flywheelSlope = (flywheelTop - flywheelBottom) / (rTop - rBottom);
+                desiredFlywheelRPM = flywheelSlope * r;
                 if (mode == TurretMode.REJECTING) desiredFlywheelRPM *= 0.5;
+
+                double hoodSlope = (hoodAngleTop - hoodAngleBottom) / (rTop - rBottom);
+                desiredHoodRadians = Math.toRadians(hoodSlope * r);
             }
         }
 
