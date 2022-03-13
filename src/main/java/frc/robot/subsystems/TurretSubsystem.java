@@ -306,38 +306,21 @@ public class TurretSubsystem extends GRTSubsystem {
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
 
         System.out.println("angle: " + jetson.getTurretTheta());
-        if (jetson != null && false) {
-            // If the hub is in vision range, use vision's `r` and `theta` as ground truth
-            if (jetson.turretVisionWorking()) {
-                r = jetson.getHubDistance();
-                theta = jetson.getTurretTheta();
-            } else {
-                // Otherwise, update our `r` and `theta` state system from the previous `r` and `theta` values
-                // and the delta X and Y since our last position. We do this instead of using raw odometry coordinates
-                // to prevent error accumulation over time; `r` and `theta` are reset to vision values when vision is in
-                // range, so our states only accumulate error while vision is out of range (as opposed to odometry, which
-                // accumulates error throughout the match).
 
-                double deltaX = currentPosition.getX() - previousPosition.getX();
-                double deltaY = currentPosition.getY() - previousPosition.getY();
-                double deltaThetaRadians = currentPosition.getRotation().getRadians() - previousPosition.getRotation().getRadians();
+        // If the hub is in vision range, use vision's `r` and `theta` as ground truth
+        if (jetson.turretVisionWorking()) {
+            r = jetson.getHubDistance();
+            theta = jetson.getTurretTheta();
+        } else {
+            // Otherwise, update our `r` and `theta` state system from the previous `r` and `theta` values
+            // and the delta X and Y since our last position. We do this instead of using raw odometry coordinates
+            // to prevent error accumulation over time; `r` and `theta` are reset to vision values when vision is in
+            // range, so our states only accumulate error while vision is out of range (as opposed to odometry, which
+            // accumulates error throughout the match).
 
-                double thetaRadians = Units.degreesToRadians(theta);
-                double thetaComplementRadians = Units.degreesToRadians(90 - theta);
-
-                // Localize deltas to Y-axis position
-                double localizedDeltaX = deltaX * Math.sin(thetaRadians) + deltaY * Math.sin(thetaComplementRadians);
-                double localizedDeltaY = deltaX * Math.cos(thetaRadians) + deltaY * Math.cos(thetaComplementRadians);
-
-                // Pythagorean theorem to calculate R'
-                double rPrime = Math.sqrt(Math.pow(r + localizedDeltaY, 2) + Math.pow(localizedDeltaX, 2));
-
-                // Calculate theta' from theta, delta theta, and phi (the change in turret angle between P and P', given
-                // by arccos(R / R'))
-                double phi = Math.acos(r / rPrime);
-                r = rPrime;
-                theta += Units.radiansToDegrees(deltaThetaRadians + phi);
-            }
+            // TODO: this assumes that the last r, theta we got is always 'clean' data.
+            // we need to do filtering of some sort, probably on the jetson, to ensure this is true.
+            manualUpdateRTheta(previousPosition, currentPosition);
         }
 
         // System.out.println("Turntable pos: " + Math.toDegrees(turntableEncoder.getPosition()));
@@ -347,15 +330,12 @@ public class TurretSubsystem extends GRTSubsystem {
         // Temp turntable calculation: heading + theta to maintain same angle as startup
         // TODO: threshold for wrapping to prevent excessive swing-between
         double newTurntableRadians = (Math.toRadians(turntableRefPos) - currentPosition.getRotation().getRadians()) % (2 * Math.PI);
-        // System.out.println("Turntable degs: " + Math.toDegrees(newTurntableRadians));
 
         // Apply feedforward and constrain within max and min angle
         double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
-        // System.out.println("Turntable delta: " + Math.toDegrees(deltaTurntableRadians));
         double turntableReference = Math.min(Math.max(
             newTurntableRadians + deltaTurntableRadians * TURNTABLE_THETA_FF, 
             TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
-        //System.out.println("Turntable ref: " + Math.toDegrees(turntableReference));
 
         // Interpolate the hood angle and flywheel RPM.
         // If rejecting, scale down flywheel speed to prevent scoring.
@@ -391,6 +371,29 @@ public class TurretSubsystem extends GRTSubsystem {
 
         previousPosition = currentPosition;
         desiredTurntableRadians = newTurntableRadians;
+    }
+
+    /**
+     * Updates the state of the turntable's `r` and `theta` coordinate system.
+     * @param lastPosition The previous odometry position.
+     * @param currentPosition The current odometry position.
+     */
+    private void manualUpdateRTheta(Pose2d lastPosition, Pose2d currentPosition) {
+        Pose2d deltas = lastPosition.relativeTo(currentPosition);
+
+        double dx = deltas.getX();
+        double dy = deltas.getY();
+        double dTheta = deltas.getRotation().getRadians();
+
+        double hypot = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+        double beta = Math.atan2(dy, dx);
+        double alpha = beta + this.theta;
+
+        double x = hypot * Math.sin(alpha);
+        double y = r + hypot * Math.cos(alpha);
+
+        this.r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+        this.theta = theta + dTheta + Math.atan2(-x, y);
     }
 
     /**
