@@ -374,6 +374,19 @@ public class TurretSubsystem extends GRTSubsystem {
     }
 
     /**
+     * Sets the initial `r` and `theta` of the subsystem from an initial pose.
+     * @param initial The pose to calculate `r` and `theta` from.
+     */
+    public void setInitialPose(Pose2d initial) {
+        double x = initial.getX();
+        double y = initial.getY();
+        double phi = initial.getRotation().getRadians();
+
+        this.r = Math.sqrt(x * x + y * y);
+        this.theta = Math.atan(y / x) + phi;
+    }
+
+    /**
      * Updates the state of the turntable's `r` and `theta` coordinate system.
      * @param lastPosition The previous odometry position.
      * @param currentPosition The current odometry position.
