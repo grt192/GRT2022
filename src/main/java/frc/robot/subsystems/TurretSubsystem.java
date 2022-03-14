@@ -120,8 +120,8 @@ public class TurretSubsystem extends GRTSubsystem {
 
     // Desired state variables
     // TODO: measure these, add constants
-    private double theta;
-    private double r;
+    private double theta = 0;
+    private double r = 118;
     private Pose2d previousPosition = new Pose2d();
 
     private double desiredFlywheelRPM = 100.0;
@@ -305,7 +305,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
 
-        System.out.println("angle: " + jetson.getTurretTheta());
+        //System.out.println("angle: " + jetson.getTurretTheta());
 
         // If the hub is in vision range, use vision's `r` and `theta` as ground truth
         if (jetson.turretVisionWorking()) {
@@ -326,10 +326,10 @@ public class TurretSubsystem extends GRTSubsystem {
         // System.out.println("Turntable pos: " + Math.toDegrees(turntableEncoder.getPosition()));
 
         // Set the turntable position from the relative theta given by vision
-        //double newTurntableRadians = (turntableEncoder.getPosition() + theta) % (2 * Math.PI);
+        double newTurntableRadians = angleWrap(Math.PI - theta);
         // Temp turntable calculation: heading + theta to maintain same angle as startup
         // TODO: threshold for wrapping to prevent excessive swing-between
-        double newTurntableRadians = (Math.toRadians(turntableRefPos) - currentPosition.getRotation().getRadians()) % (2 * Math.PI);
+        //double newTurntableRadians = (Math.toRadians(turntableRefPos) - currentPosition.getRotation().getRadians()) % (2 * Math.PI);
 
         // Apply feedforward and constrain within max and min angle
         double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
@@ -354,19 +354,22 @@ public class TurretSubsystem extends GRTSubsystem {
                 // m = (f_A - f_B) / (d_A - d_B)
                 // C = (d_B + (d_C - d_B), mx) = (d_C, md_C)
                 double flywheelSlope = (flywheelTop - flywheelBottom) / (rTop - rBottom);
-                desiredFlywheelRPM = flywheelSlope * r;
-                if (mode == TurretMode.REJECTING) desiredFlywheelRPM *= 0.5;
+                desiredFlywheelRPM = flywheelBottom + flywheelSlope * (r - rBottom);
+                //if (mode == TurretMode.REJECTING) desiredFlywheelRPM *= 0.5;
 
                 double hoodSlope = (hoodAngleTop - hoodAngleBottom) / (rTop - rBottom);
-                desiredHoodRadians = Math.toRadians(hoodSlope * r);
+                desiredHoodRadians = Math.toRadians(hoodAngleBottom + hoodSlope * (r - rBottom));
+                break;
             }
         }
 
+        //System.out.println("r: " + r + ", hood: " + Math.toDegrees(desiredHoodRadians) + ", flywheel: " + desiredFlywheelRPM);
+
         turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
-        //hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
-        hood.set(ControlMode.Position, Math.toRadians(hoodRefPos) * HOOD_RADIANS_TO_TICKS);
-        //flywheelPidController.setReference(desiredFlywheelSpeed, ControlType.kVelocity);
-        flywheelPidController.setReference(flywheelRefVel, ControlType.kVelocity);
+        hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
+        //hood.set(ControlMode.Position, Math.toRadians(hoodRefPos) * HOOD_RADIANS_TO_TICKS);
+        flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
+        //flywheelPidController.setReference(flywheelRefVel, ControlType.kVelocity);
         //flywheel.set(flywheelRefVel);
 
         previousPosition = currentPosition;
@@ -382,7 +385,7 @@ public class TurretSubsystem extends GRTSubsystem {
         double y = initial.getY();
         double phi = initial.getRotation().getRadians();
 
-        this.r = Math.sqrt(x * x + y * y);
+        this.r = Math.hypot(x, y);
         this.theta = Math.atan(y / x) + phi;
     }
 
@@ -392,21 +395,31 @@ public class TurretSubsystem extends GRTSubsystem {
      * @param currentPosition The current odometry position.
      */
     private void manualUpdateRTheta(Pose2d lastPosition, Pose2d currentPosition) {
-        Pose2d deltas = lastPosition.relativeTo(currentPosition);
+        Pose2d deltas = currentPosition.relativeTo(lastPosition);
 
-        double dx = deltas.getX();
-        double dy = deltas.getY();
+        double dx = Units.metersToInches(deltas.getX());
+        double dy = Units.metersToInches(deltas.getY());
         double dTheta = deltas.getRotation().getRadians();
 
-        double hypot = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-        double beta = Math.atan2(dy, dx);
-        double alpha = beta + this.theta;
+        //StringBuilder string = new StringBuilder();
+        //string.append("dx: " + dx + " dy: " + dy + " dtheta: " + dTheta).append("\n");
 
-        double x = hypot * Math.sin(alpha);
-        double y = r + hypot * Math.cos(alpha);
+        double h = Math.hypot(dx, dy);
+        double alpha = Math.atan2(-dy, dx);
+        double beta = alpha + this.theta;
+
+        //string.append("h: " + h + " alpha: " + alpha + " beta: " + beta).append("\n");
+
+        double x = r + h * Math.cos(beta);
+        double y = h * Math.sin(beta);
+
+        //string.append("x: " + x + " y: " + y).append("\n");
 
         this.r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
-        this.theta = theta + dTheta + Math.atan2(-x, y);
+        this.theta = -Math.atan2(y, x) + (theta + dTheta);
+
+        //string.append("r: " + r + ", theta: " + Math.toDegrees(theta)).append("\n");
+        //System.out.println(string);
     }
 
     /**
@@ -536,6 +549,22 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     public void setFlywheelPower(double pow) {
         flywheel.set(pow);
+    }
+
+    /**
+     * Contrains an angle between [center - pi, center + pi]. Defaults to [0, 2pi].
+     * @param angle The angle to wrap.
+     * @param center The center of constraint.
+     * @return The wrapped angle.
+     */
+    public double angleWrap(double angle, double center) {
+        angle -= center;
+        double wrapped = angle - (2 * Math.PI) * Math.round(angle / (2 * Math.PI));
+        return wrapped + center;
+    }
+
+    public double angleWrap(double angle) {
+        return angleWrap(angle, Math.PI);
     }
 
     /**
