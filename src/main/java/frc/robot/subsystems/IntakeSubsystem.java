@@ -108,16 +108,15 @@ public class IntakeSubsystem extends GRTSubsystem {
         // deploy.config_kP(0, shuffleboardPEntry.getDouble(kP));
         // deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
         // deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
-        
 
         // If the jetson detects a ball or the driver is running the intake, the intake
         // is deployed,
         // and there are less than 2 balls in internals, run the intake motor
         // TODO: how should we work in the jetson ball detection code with variable
         // intake speeds from the driver?
-        boolean readyToIntake = internalSubsystem.getBallCount() < 2 &&
+        boolean readyToIntake = /* internalSubsystem.getBallCount() < 2 && */
                 currentPosition == IntakePosition.DEPLOYED;
-                
+
         intake.set((readyToIntake) ? intakePower : 0);
 
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
