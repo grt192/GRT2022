@@ -148,8 +148,14 @@ public class TurretSubsystem extends GRTSubsystem {
     private final GRTNetworkTableEntry shuffleboardFlywheelVeloEntry;
     private final GRTNetworkTableEntry shuffleboardHoodPosEntry;
 
-    // Debug flag; turn this on for PID tuning
-    private static boolean DEBUG = true;
+    // Debug flags
+    // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, `dy`, `dtheta`, 
+    // `alpha`, `beta`, `x`, `y`, `h`) system states should be printed
+    private static boolean PRINT_STATES = false; 
+    // Whether PID tuning shuffleboard entries should be displayed
+    private static boolean DEBUG_PID = false; 
+    // Whether the turntable, hood, and flywheel references should be manually set through shuffleboard
+    private static boolean MANUAL_CONTROL = false;
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
@@ -193,7 +199,7 @@ public class TurretSubsystem extends GRTSubsystem {
         hood.setNeutralMode(NeutralMode.Brake);
 
         hood.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-        hood.setSelectedSensorPosition(0); // 180, 270, 90
+        hood.setSelectedSensorPosition(0);
         hood.setSensorPhase(true);
         hood.config_kP(0, hoodP);
         hood.config_kI(0, hoodI);
@@ -207,7 +213,6 @@ public class TurretSubsystem extends GRTSubsystem {
         // Initialize flywheel NEO and encoder PID
         flywheel = new CANSparkMax(flywheelPort, MotorType.kBrushless);
         flywheel.restoreFactoryDefaults();
-        //flywheel.setIdleMode(IdleMode.kBrake);
         flywheel.setInverted(false);
 
         // Position conversion: Motor rotations -> flywheel rotations
@@ -229,55 +234,56 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Turret");
-
-        shuffleboardTab.add("turntable ref pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry()
-            .addListener(this::setTurntableRefPos, EntryListenerFlags.kUpdate);
-        shuffleboardTurntablePosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry());
-        shuffleboardTurntableVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turn velo", 0).getEntry());
+        shuffleboardTurntablePosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Turntable pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry());
+        shuffleboardTurntableVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Turntable vel", 0).getEntry());
+        shuffleboardFlywheelVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel vel", flywheelEncoder.getVelocity()).getEntry());
+        shuffleboardHoodPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Hood pos", 0).getEntry());
 
         // If the DEBUG flag is set, allow for PID tuning on shuffleboard
-        if (DEBUG) {
-            shuffleboardTab.add("turntable kP", turntableP).getEntry()
+        if (DEBUG_PID) {
+            shuffleboardTab.add("Turntable kP", turntableP).getEntry()
                 .addListener(this::setTurntableP, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("turntable kI", turntableI).getEntry()
+            shuffleboardTab.add("Turntable kI", turntableI).getEntry()
                 .addListener(this::setTurntableI, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("turntable kD", turntableD).getEntry()
+            shuffleboardTab.add("Turntable kD", turntableD).getEntry()
                 .addListener(this::setTurntableD, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("turntable kFF", turntableFF).getEntry()
+            shuffleboardTab.add("Turntable kFF", turntableFF).getEntry()
                 .addListener(this::setTurntableFF, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("turntable maxVel", maxVel).getEntry()
+            shuffleboardTab.add("Turntable maxVel", maxVel).getEntry()
                 .addListener(this::setTurntableMaxVel, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("turntable minVel", maxAccel).getEntry()
+            shuffleboardTab.add("Turntable minVel", maxAccel).getEntry()
                 .addListener(this::setTurnMinVel, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("turntable maxAcc", maxAccel).getEntry()
+            shuffleboardTab.add("Turntable maxAcc", maxAccel).getEntry()
                 .addListener(this::setTurntableMaxAcc, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("turntable theta FF", TURNTABLE_THETA_FF).getEntry()
+            shuffleboardTab.add("Turntable theta FF", TURNTABLE_THETA_FF).getEntry()
                 .addListener(this::setTurntableThetaFF, EntryListenerFlags.kUpdate); 
 
-            shuffleboardTab.add("flywheel kP", flywheelP).getEntry()
+            shuffleboardTab.add("Flywheel kP", flywheelP).getEntry()
                 .addListener(this::setFlywheelP, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("flywheel kI", flywheelI).getEntry()
+            shuffleboardTab.add("Flywheel kI", flywheelI).getEntry()
                 .addListener(this::setFlywheelI, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("flywheel kD", flywheelD).getEntry()
+            shuffleboardTab.add("Flywheel kD", flywheelD).getEntry()
                 .addListener(this::setFlywheelD, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("flywheel kFF", flywheelFF).getEntry()
+            shuffleboardTab.add("Flywheel kFF", flywheelFF).getEntry()
                 .addListener(this::setFlywheelFF, EntryListenerFlags.kUpdate);
 
-            shuffleboardTab.add("hood kP", hoodP).getEntry()
+            shuffleboardTab.add("Hood kP", hoodP).getEntry()
                 .addListener(this::setHoodP, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("hood kI", hoodI).getEntry()
+            shuffleboardTab.add("Hood kI", hoodI).getEntry()
                 .addListener(this::setHoodI, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("hood kD", hoodD).getEntry()
+            shuffleboardTab.add("Hood kD", hoodD).getEntry()
                 .addListener(this::setHoodD, EntryListenerFlags.kUpdate);
         }
 
-        shuffleboardFlywheelVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("flywheel velo", flywheelEncoder.getVelocity()).getEntry());
-        shuffleboardTab.add("flywheel ref vel", flywheelRefVel).getEntry()
-            .addListener(this::setFlywheelRefVel, EntryListenerFlags.kUpdate);
-
-        shuffleboardHoodPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("hood pos", 0).getEntry());
-        shuffleboardTab.add("hood ref degs", hoodRefPos).getEntry()
-            .addListener(this::setHoodRefPos, EntryListenerFlags.kUpdate);
+        // If MANUAL_CONTROL is enabled, allow for reference setting on shuffleboard
+        if (MANUAL_CONTROL) {
+            shuffleboardTab.add("Turntable ref pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry()
+                .addListener(this::setTurntableRefPos, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Flywheel ref vel", flywheelRefVel).getEntry()
+                .addListener(this::setFlywheelRefVel, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Hood ref degs", hoodRefPos).getEntry()
+                .addListener(this::setHoodRefPos, EntryListenerFlags.kUpdate);
+        }
     }
 
     @Override
@@ -323,13 +329,12 @@ public class TurretSubsystem extends GRTSubsystem {
             manualUpdateRTheta(previousPosition, currentPosition);
         }
 
-        // System.out.println("Turntable pos: " + Math.toDegrees(turntableEncoder.getPosition()));
-
-        // Set the turntable position from the relative theta given by vision
-        double newTurntableRadians = angleWrap(Math.PI - theta);
-        // Temp turntable calculation: heading + theta to maintain same angle as startup
+        // If MANUAL_CONTROL is enabled, set the turntable reference from shuffleboard.
+        // Otherwise, use the theta given by `rtheta`.
         // TODO: threshold for wrapping to prevent excessive swing-between
-        //double newTurntableRadians = (Math.toRadians(turntableRefPos) - currentPosition.getRotation().getRadians()) % (2 * Math.PI);
+        double newTurntableRadians = MANUAL_CONTROL 
+            ? (Math.toRadians(turntableRefPos) - currentPosition.getRotation().getRadians()) % (2 * Math.PI)
+            : angleWrap(Math.PI - theta);
 
         // Apply feedforward and constrain within max and min angle
         double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
@@ -363,14 +368,20 @@ public class TurretSubsystem extends GRTSubsystem {
             }
         }
 
-        //System.out.println("r: " + r + ", hood: " + Math.toDegrees(desiredHoodRadians) + ", flywheel: " + desiredFlywheelRPM);
+        if (PRINT_STATES)
+            System.out.println("r: " + r + ", hood ref: " + Math.toDegrees(desiredHoodRadians) + ", flywheel ref: " + desiredFlywheelRPM);
 
         turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
-        //hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
-        hood.set(ControlMode.Position, Math.toRadians(hoodRefPos) * HOOD_RADIANS_TO_TICKS);
-        //flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
-        flywheelPidController.setReference(flywheelRefVel, ControlType.kVelocity);
-        //flywheel.set(flywheelRefVel);
+
+        // If MANUAL_CONTROL is enabled, set the references from shuffleboard
+        if (MANUAL_CONTROL) {
+            hood.set(ControlMode.Position, Math.toRadians(hoodRefPos) * HOOD_RADIANS_TO_TICKS);
+            flywheelPidController.setReference(flywheelRefVel, ControlType.kVelocity);
+        } else {
+            // Otherwise, use the interpolated values from hub distance
+            hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
+            flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
+        }
 
         previousPosition = currentPosition;
         desiredTurntableRadians = newTurntableRadians;
@@ -402,25 +413,22 @@ public class TurretSubsystem extends GRTSubsystem {
         double dy = Units.metersToInches(deltas.getY());
         double dTheta = deltas.getRotation().getRadians();
 
-        //StringBuilder string = new StringBuilder();
-        //string.append("dx: " + dx + " dy: " + dy + " dtheta: " + dTheta).append("\n");
-
         double h = Math.hypot(dx, dy);
         double alpha = Math.atan2(-dy, dx);
         double beta = alpha + this.theta;
 
-        //string.append("h: " + h + " alpha: " + alpha + " beta: " + beta).append("\n");
-
         double x = r + h * Math.cos(beta);
         double y = h * Math.sin(beta);
 
-        //string.append("x: " + x + " y: " + y).append("\n");
+        if (PRINT_STATES) System.out.println(
+            "dx: " + dx + " dy: " + dy + " dtheta: " + dTheta
+            + "\nh: " + h + " alpha: " + alpha + " beta: " + beta
+            + "\nx: " + x + " y: " + y
+            + "\nr: " + r + ", theta: " + Math.toDegrees(theta)
+        );
 
-        this.r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
-        this.theta = -Math.atan2(y, x) + (theta + dTheta);
-
-        //string.append("r: " + r + ", theta: " + Math.toDegrees(theta)).append("\n");
-        //System.out.println(string);
+        this.r = Math.hypot(x, y);
+        this.theta = (theta + dTheta) - Math.atan2(y, x);
     }
 
     /**
@@ -506,6 +514,22 @@ public class TurretSubsystem extends GRTSubsystem {
     }
 
     /**
+     * Contrains an angle between [center - pi, center + pi]. Defaults to [0, 2pi].
+     * @param angle The angle to wrap.
+     * @param center The center of constraint.
+     * @return The wrapped angle.
+     */
+    public double angleWrap(double angle, double center) {
+        angle -= center;
+        double wrapped = angle - (2 * Math.PI) * Math.round(angle / (2 * Math.PI));
+        return wrapped + center;
+    }
+
+    public double angleWrap(double angle) {
+        return angleWrap(angle, Math.PI);
+    }
+
+    /**
      * Cleans up the subsystem for climb (sets the Turret's mode to RETRACTED).
      * In RETRACTED, the turntable faces the same direction as the robot, the hood is retracted, and the flywheel is off.
      */
@@ -526,46 +550,6 @@ public class TurretSubsystem extends GRTSubsystem {
         turntable.setSmartCurrentLimit(motorLimit);
         hood.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         flywheel.setSmartCurrentLimit(motorLimit);
-    }
-
-    /**
-     * Test function to run the turntable at a set power.
-     * @param pow The power to run the turntable at.
-     */
-    public void setTurntablePower(double pow) {
-        turntable.set(pow);
-    }
-
-    /**
-     * Test function to run the hood at a set power.
-     * @param pow The power to run the hood at.
-     */
-    public void setHoodPower(double pow) {
-        hood.set(pow);
-    }
-
-    /**
-     * Test function to run the flywheel at a set power.
-     * @param pow The power to run the flywheel at.
-     */
-    public void setFlywheelPower(double pow) {
-        flywheel.set(pow);
-    }
-
-    /**
-     * Contrains an angle between [center - pi, center + pi]. Defaults to [0, 2pi].
-     * @param angle The angle to wrap.
-     * @param center The center of constraint.
-     * @return The wrapped angle.
-     */
-    public double angleWrap(double angle, double center) {
-        angle -= center;
-        double wrapped = angle - (2 * Math.PI) * Math.round(angle / (2 * Math.PI));
-        return wrapped + center;
-    }
-
-    public double angleWrap(double angle) {
-        return angleWrap(angle, Math.PI);
     }
 
     /**
