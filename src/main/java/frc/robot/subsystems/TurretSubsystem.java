@@ -239,7 +239,7 @@ public class TurretSubsystem extends GRTSubsystem {
         shuffleboardFlywheelVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel vel", flywheelEncoder.getVelocity()).getEntry());
         shuffleboardHoodPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Hood pos", 0).getEntry());
 
-        // If the DEBUG flag is set, allow for PID tuning on shuffleboard
+        // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
             shuffleboardTab.add("Turntable kP", turntableP).getEntry()
                 .addListener(this::setTurntableP, EntryListenerFlags.kUpdate);
@@ -394,10 +394,12 @@ public class TurretSubsystem extends GRTSubsystem {
     public void setInitialPose(Pose2d initial) {
         double x = Units.metersToInches(initial.getX());
         double y = Units.metersToInches(initial.getY());
-        double phi = initial.getRotation().getRadians();
+
+        double theta = initial.getRotation().getRadians();
+        double phi = Math.atan2(y, x);
 
         this.r = Math.hypot(x, y);
-        this.theta = Math.atan(y / x) + phi;
+        this.theta = theta - phi;
         this.previousPosition = initial;
     }
 
