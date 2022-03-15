@@ -4,6 +4,9 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -28,7 +31,6 @@ import frc.robot.subsystems.tank.TankSubsystem;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-
     // Subsystems
     private final TankSubsystem tankSubsystem;
     private final TurretSubsystem turretSubsystem;
@@ -103,6 +105,12 @@ public class RobotContainer {
 
         // Configure the button bindings
         configureButtonBindings();
+
+        // Set initial robot position
+        // This is temporary; after shooter-testing is merged, each auton path should call this
+        // in their constructor.
+        double hubDist = 118.0;
+        setInitialPosition(new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d()));
     }
 
     /**
@@ -138,44 +146,10 @@ public class RobotContainer {
         mechYButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0.2)));
         mechBButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0)));
 
-        if (tankSubsystem != null) {
-            Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
-            tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
-        }
+        Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
+        tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
 
-        if (intakeSubsystem != null) {
-            intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, driveController));
-        }
-
-        if (internalSubsystem != null) {
-            internalSubsystem.setDefaultCommand(new RunCommand(() -> {
-                double leftTrigger = mechController.getLeftTriggerAxis();
-                double rightTrigger = mechController.getRightTriggerAxis();
-
-                if (leftTrigger != 0 || rightTrigger != 0) {
-                    internalSubsystem.setDriverOverride(true);
-                    internalSubsystem.setPower(leftTrigger - rightTrigger);
-                } else {
-                    internalSubsystem.setDriverOverride(false);
-                }
-            }, internalSubsystem));
-        }
-
-        
-        // TURRET TESTING CODE! comment out climb testing code if using
-        if (turretSubsystem != null) {
-            turretSubsystem.setDefaultCommand(new RunCommand(() -> {
-                double turntablePower = -mechController.getLeftY();
-                double hoodPower = -mechController.getRightY();
-
-                //System.out.println("Turntable power: " + turntablePower);
-                //System.out.println("Hood power: " + hoodPower);
-
-                // turretSubsystem.setTurntablePower(turntablePower);
-                turretSubsystem.setHoodPower(hoodPower);
-            }, turretSubsystem));
-        }
-        
+        intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, driveController));
     }
 
     /**
@@ -184,6 +158,16 @@ public class RobotContainer {
      */
     public Command getAutonomousCommand() {
         return autonCommand;
+    }
+
+    /**
+     * Sets the initial position of the robot. Wraps a call to reset localization
+     * and set the initial `r` and `theta` of the turret.
+     * @param position The initial position of the robot.
+     */
+    public void setInitialPosition(Pose2d position) {
+        tankSubsystem.resetPosition(position);
+        turretSubsystem.setInitialPose(position);
     }
 
     /**

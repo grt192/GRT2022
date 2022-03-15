@@ -120,9 +120,9 @@ public class TurretSubsystem extends GRTSubsystem {
 
     // Desired state variables
     // TODO: measure these, add constants
-    private double theta = 0;
-    private double r = 118;
-    private Pose2d previousPosition = new Pose2d();
+    private double theta;
+    private double r;
+    private Pose2d previousPosition;
 
     private double desiredFlywheelRPM = 100.0;
     private double desiredTurntableRadians = 0.0;
@@ -308,7 +308,7 @@ public class TurretSubsystem extends GRTSubsystem {
         //System.out.println("angle: " + jetson.getTurretTheta());
 
         // If the hub is in vision range, use vision's `r` and `theta` as ground truth
-        if (jetson.turretVisionWorking()) {
+        if (jetson.turretVisionWorking() && false) {
             r = jetson.getHubDistance();
             theta = jetson.getTurretTheta();
         } else {
@@ -366,10 +366,10 @@ public class TurretSubsystem extends GRTSubsystem {
         //System.out.println("r: " + r + ", hood: " + Math.toDegrees(desiredHoodRadians) + ", flywheel: " + desiredFlywheelRPM);
 
         turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
-        hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
-        //hood.set(ControlMode.Position, Math.toRadians(hoodRefPos) * HOOD_RADIANS_TO_TICKS);
-        flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
-        //flywheelPidController.setReference(flywheelRefVel, ControlType.kVelocity);
+        //hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
+        hood.set(ControlMode.Position, Math.toRadians(hoodRefPos) * HOOD_RADIANS_TO_TICKS);
+        //flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
+        flywheelPidController.setReference(flywheelRefVel, ControlType.kVelocity);
         //flywheel.set(flywheelRefVel);
 
         previousPosition = currentPosition;
@@ -381,12 +381,13 @@ public class TurretSubsystem extends GRTSubsystem {
      * @param initial The pose to calculate `r` and `theta` from.
      */
     public void setInitialPose(Pose2d initial) {
-        double x = initial.getX();
-        double y = initial.getY();
+        double x = Units.metersToInches(initial.getX());
+        double y = Units.metersToInches(initial.getY());
         double phi = initial.getRotation().getRadians();
 
         this.r = Math.hypot(x, y);
         this.theta = Math.atan(y / x) + phi;
+        this.previousPosition = initial;
     }
 
     /**
