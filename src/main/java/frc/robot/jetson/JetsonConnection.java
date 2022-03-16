@@ -3,6 +3,7 @@ package frc.robot.jetson;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -83,11 +84,13 @@ public class JetsonConnection {
                         if (!isConnected) {
                             System.out.println("Unable to connect to Jetson");
                             // Wait before trying to connect again
-                            Thread.sleep(500);
+                            Thread.sleep(2000);
                         }
                     } else {
                         readCameraData();
                     }
+
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                     // If interrupted, exit
                     return;
@@ -131,6 +134,8 @@ public class JetsonConnection {
                 String in = stdIn.readLine();
                 if (in != null) {
                     String[] data = in.replace("(", "").replace(")", "").split(",");
+
+                    System.out.println(Arrays.toString(data));
 
                     turretVisionStatus = strToBool(data[0]);
                     turretTheta = Double.parseDouble(data[1]);

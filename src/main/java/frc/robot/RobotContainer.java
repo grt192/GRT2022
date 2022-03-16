@@ -33,7 +33,7 @@ import frc.robot.subsystems.tank.TankSubsystem;
 public class RobotContainer {
     // Subsystems
     private final TankSubsystem tankSubsystem;
-    private final TurretSubsystem turretSubsystem;
+    public final TurretSubsystem turretSubsystem;
     private final IntakeSubsystem intakeSubsystem;
     private final InternalSubsystem internalSubsystem;
     private final ClimbSubsystem climbSubsystem;
@@ -139,6 +139,7 @@ public class RobotContainer {
     private void controllerBindings() {
         driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         //driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+        driveXButton.whenPressed(new InstantCommand(() -> {turretSubsystem.toggleClimb();}));
 
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));
