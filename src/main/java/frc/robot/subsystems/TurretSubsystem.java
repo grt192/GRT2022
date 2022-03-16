@@ -1,14 +1,11 @@
 package frc.robot.subsystems;
 
-import static frc.robot.Constants.TurretConstants.flywheelPort;
-import static frc.robot.Constants.TurretConstants.hoodPort;
-import static frc.robot.Constants.TurretConstants.turntablePort;
-
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
@@ -23,11 +20,14 @@ import edu.wpi.first.networktables.EntryListenerFlags;
 import edu.wpi.first.networktables.EntryNotification;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
 import frc.robot.subsystems.tank.TankSubsystem;
+
+import static frc.robot.Constants.TurretConstants.*;
 
 /**
  * A subsystem which controls the turret mechanism on the robot. 
@@ -58,9 +58,6 @@ public class TurretSubsystem extends GRTSubsystem {
     public enum ModuleState {
         HIGH_TOLERANCE, LOW_TOLERANCE, UNALIGNED
     }
-
-    // states
-    public double turntableOffset = 0;
 
     private final TankSubsystem tankSubsystem;
     private final JetsonConnection jetson;
@@ -97,10 +94,13 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double flywheelD = 0;
     private static final double flywheelFF = 0.000092;
 
-    // Temp reference for flywheel tuning
+    // Reference variables for MANUAL_CONTROL tuning
     private double turntableRefPos = 180.0;
     private double flywheelRefVel = 0;
     private double hoodRefPos = 0;
+
+    // Temporary state of turntable offset
+    public double turntableOffset = 0;
 
     // The interpolation table from shooter testing.
     // Every entry can be thought of as a tuple representing [hub distance (in), flywheel speed (RPM), hood angle (degs)];
@@ -118,15 +118,17 @@ public class TurretSubsystem extends GRTSubsystem {
         {221, 6800, 36}
     };
 
-    // Desired state variables
-    // TODO: measure these, add constants
+    // System state variables
     private double theta;
     private double r;
     private Pose2d previousPosition;
 
-    private double desiredFlywheelRPM = 100.0;
-    private double desiredTurntableRadians = 0.0;
-    private double desiredHoodRadians = 0.0;
+    // Motor state variables
+    private double desiredFlywheelRPM;
+    private double desiredTurntableRadians;
+    private double desiredHoodRadians;
+
+    private boolean ballReady = false;
 
     private TurretMode mode = TurretMode.SHOOTING;
 
@@ -152,7 +154,7 @@ public class TurretSubsystem extends GRTSubsystem {
     // Debug flags
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, `dy`, `dtheta`, 
     // `alpha`, `beta`, `x`, `y`, `h`) system states should be printed
-    private static boolean PRINT_STATES = false; 
+    private static boolean PRINT_STATES = true; 
     // Whether PID tuning shuffleboard entries should be displayed
     private static boolean DEBUG_PID = false; 
     // Whether the turntable, hood, and flywheel references should be manually set through shuffleboard
@@ -314,11 +316,16 @@ public class TurretSubsystem extends GRTSubsystem {
         // if (rightLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MAX_RADIANS);
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
+        boolean runFlywheel = !tankSubsystem.isMoving() && ballReady;
 
-        //System.out.println("angle: " + jetson.getTurretTheta());
+        // Set turntable lazy tracking if a ball isn't ready
+        double pow = !ballReady ? 0.25 : 0.5;
+        turntablePidController.setOutputRange(-pow, pow);
 
-        // If the hub is in vision range, use vision's `r` and `theta` as ground truth
-        if (jetson.turretVisionWorking()) {
+        // If the hub is in vision range, use vision's `r` and `theta` as ground truth.
+        // While the flywheel is running, use the manual system values instead to prevent camera issues while the flywheel shakes
+        // the turntable.
+        if (jetson.turretVisionWorking() && !runFlywheel && false) {
             r = jetson.getHubDistance();
             theta = jetson.getTurretTheta();
 
@@ -366,7 +373,6 @@ public class TurretSubsystem extends GRTSubsystem {
                 // C = (d_B + (d_C - d_B), mx) = (d_C, md_C)
                 double flywheelSlope = (flywheelTop - flywheelBottom) / (rTop - rBottom);
                 desiredFlywheelRPM = flywheelBottom + flywheelSlope * (r - rBottom);
-                desiredFlywheelRPM = 0;
                 //if (mode == TurretMode.REJECTING) desiredFlywheelRPM *= 0.5;
 
                 double hoodSlope = (hoodAngleTop - hoodAngleBottom) / (rTop - rBottom);
@@ -387,7 +393,7 @@ public class TurretSubsystem extends GRTSubsystem {
         } else {
             // Otherwise, use the interpolated values from hub distance
             hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
-            flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
+            flywheelPidController.setReference(runFlywheel ? desiredFlywheelRPM : 0, ControlType.kVelocity);
         }
 
         previousPosition = currentPosition;
@@ -452,14 +458,12 @@ public class TurretSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Sets whether the turret should engage lazy tracking (whether it should PID at a lower speed to conserve power).
-     * Set this to true when there's no point in perfect turntable alignment with the hub (like when there isn't a ball
-     * in internals).
-     * @param lazy Whether to engage lazy tracking.
+     * Sets whether there is a ball in internals. A ready ball disengages lazy tracking and starts
+     * powering the flywheel when the robot is stationary.
+     * @param ballReady Whether there is a ball in internals.
      */
-    public void setLazyTracking(boolean lazy) {
-        double pow = lazy ? 0.25 : 0.5;
-        turntablePidController.setOutputRange(-pow, pow);
+    public void setBallReady(boolean ballReady) {
+        this.ballReady = ballReady;
     }
 
     /**

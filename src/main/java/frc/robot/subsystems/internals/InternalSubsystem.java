@@ -167,7 +167,7 @@ public class InternalSubsystem extends GRTSubsystem {
                 }
             }
 
-            turretSubsystem.setLazyTracking(ballCount == 0);
+            turretSubsystem.setBallReady(ballCount > 0);
         }
     }
 

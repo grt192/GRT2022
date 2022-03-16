@@ -33,6 +33,7 @@ public class TankSubsystem extends GRTSubsystem {
     private final CANSparkMax rightMiddle;
     private final CANSparkMax rightBack;
 
+    private final AHRS ahrs;
     private final PoseEstimator poseEstimator;
 
     private final ShuffleboardTab shuffleboardTab;
@@ -90,7 +91,7 @@ public class TankSubsystem extends GRTSubsystem {
 
         // Initialize navX AHRS
         // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
-        AHRS ahrs = new AHRS(SPI.Port.kMXP);
+        ahrs = new AHRS(SPI.Port.kMXP);
 
         // Start pose estimator thread
         poseEstimator = new PoseEstimator(ahrs, leftEncoder, rightEncoder);
@@ -121,7 +122,6 @@ public class TankSubsystem extends GRTSubsystem {
             angularScale = squareInput(angularScale);
         }
 
-        // Set motor output state
         double leftPowerTemp = yScale + angularScale;
         double rightPowerTemp = yScale - angularScale;
 
@@ -191,9 +191,26 @@ public class TankSubsystem extends GRTSubsystem {
         return poseEstimator.getPosition();
     }
 
+    /**
+     * Gets the wheel speeds of the robot as a DifferentialDriveWheelSpeeds.
+     * @return The wheel speeds of the robot as a DifferentialDriveWheelSpeeds.
+     */
     public DifferentialDriveWheelSpeeds getWheelSpeeds() {
         // TODO: is this ok?
         return poseEstimator.getLastWheelSpeeds();
+    }
+
+    /**
+     * Gets whether the robot is currently moving, according to the NavX's linear acceleration values
+     * and the left and right wheel speeds.
+     * @return Whether the robot is moving.
+     * TODO: is there a better way to find this?
+     */
+    public boolean isMoving() {
+        DifferentialDriveWheelSpeeds wheelSpeeds = poseEstimator.getLastWheelSpeeds();
+        return ahrs.isMoving() 
+            && Math.abs(wheelSpeeds.leftMetersPerSecond) > 0 
+            && Math.abs(wheelSpeeds.rightMetersPerSecond) > 0;
     }
 
     /**

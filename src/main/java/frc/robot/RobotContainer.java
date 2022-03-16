@@ -109,7 +109,7 @@ public class RobotContainer {
         // Set initial robot position
         // This is temporary; after shooter-testing is merged, each auton path should call this
         // in their constructor.
-        double hubDist = 118.0;
+        double hubDist = 138.0;
         setInitialPosition(new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d()));
     }
 
