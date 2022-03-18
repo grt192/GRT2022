@@ -93,7 +93,11 @@ public class RobotContainer {
      * Triggers -> intake: left backwards, right forwards (intake)
      */
     private void controllerBindings() {
-        Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
+        Runnable tank = () -> {
+            // double turn_stick = driveController.getRightX();
+            double turn = driveController.getRightX() * 0.75;
+            tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), turn);
+        };
         tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
 
         // TODO: tune deadband
