@@ -154,7 +154,7 @@ public class TurretSubsystem extends GRTSubsystem {
     // Debug flags
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, `dy`, `dtheta`, 
     // `alpha`, `beta`, `x`, `y`, `h`) system states should be printed
-    private static boolean PRINT_STATES = true; 
+    private static boolean PRINT_STATES = false; 
     // Whether PID tuning shuffleboard entries should be displayed
     private static boolean DEBUG_PID = false; 
     // Whether the turntable, hood, and flywheel references should be manually set through shuffleboard

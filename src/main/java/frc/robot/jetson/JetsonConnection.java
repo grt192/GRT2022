@@ -131,7 +131,9 @@ public class JetsonConnection {
          */
         public void readCameraData() throws InterruptedException {
             try {
-                String in = stdIn.readLine();
+                String in = null;
+                while (stdIn.ready()) in = stdIn.readLine();
+
                 if (in != null) {
                     String[] data = in.replace("(", "").replace(")", "").split(",");
 
