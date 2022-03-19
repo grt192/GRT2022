@@ -575,7 +575,7 @@ public class TurretSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Turntable PID tuning NetworkTable callbacks.
+     * Turret PID tuning NetworkTable callbacks.
      * @param change The `EntryNotification` representing the NetworkTable entry change.
      */
     private void setTurntableRefPos(EntryNotification change) {

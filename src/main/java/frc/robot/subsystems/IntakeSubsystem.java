@@ -9,12 +9,16 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.networktables.EntryListenerFlags;
+import edu.wpi.first.networktables.EntryNotification;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
+import frc.robot.commands.intake.DeployIntakeCommand;
+import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
 import frc.robot.subsystems.internals.InternalSubsystem;
@@ -47,7 +51,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     private boolean driverOverride = false;
 
     public boolean autoRaiseIntake = false;
-    private IntakePosition currentPosition = IntakePosition.DEPLOYED;
+    private IntakePosition currentPosition = IntakePosition.DEPLOYED; // replace with IntakePosition.START in actual matches
 
     // Deploy position PID constants
     private static final double kP = 0.1;
@@ -55,22 +59,16 @@ public class IntakeSubsystem extends GRTSubsystem {
     private static final double kD = 0;
     private static final double kFF = 0.016;
     private static final double cruiseVel = 20000;
-    private static final double maxAccel = 40000;
+    private static final double accel = 40000;
     private static final int sCurveStrength = 3;
 
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardDeployPosition;
-    private final GRTNetworkTableEntry shuffleboardPEntry;
-    private final GRTNetworkTableEntry shuffleboardIEntry;
-    private final GRTNetworkTableEntry shuffleboardDEntry;
-    private final GRTNetworkTableEntry shuffleboardFFEntry;
     private final GRTNetworkTableEntry shuffleboardVeloEntry;
-    private final GRTNetworkTableEntry shuffleboardCruiseVelEntry;
-    private final GRTNetworkTableEntry shuffleboardAccelEntry;
 
-
-    // TODO: measure this
-    // private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
+    // Debug flags
+    // Whether PID tuning shuffleboard entries should be displayed
+    private static boolean DEBUG_PID = false; 
 
     public IntakeSubsystem(InternalSubsystem internalSubsystem, JetsonConnection jetson) {
         // TODO: measure this
@@ -97,47 +95,45 @@ public class IntakeSubsystem extends GRTSubsystem {
         deploy.config_kD(0, kD);
         deploy.config_kF(0, kFF);
         deploy.configMotionCruiseVelocity(cruiseVel);
-        deploy.configMotionAcceleration(maxAccel);
+        deploy.configMotionAcceleration(accel);
         deploy.configMotionSCurveStrength(sCurveStrength);
 
-        // Soft limit deploy between RAISED and DEPLOYED
-        /*
-        deploy.configForwardSoftLimitEnable(true);
+        // Soft limit deploy to the START position. The soft limit in the other direction is not
+        // needed because of the limit switch and hard stop.
         deploy.configReverseSoftLimitEnable(true);
-        deploy.configForwardSoftLimitThreshold(IntakePosition.RAISED.value);
-        deploy.configReverseSoftLimitThreshold(IntakePosition.DEPLOYED.value);
-        */
+        deploy.configReverseSoftLimitThreshold(IntakePosition.START.value);
 
         limitSwitch = new DigitalInput(limitSwitchPort);
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Intake");
-        shuffleboardPEntry = new GRTNetworkTableEntry(shuffleboardTab.add("kP", kP).getEntry());
-        shuffleboardIEntry = new GRTNetworkTableEntry(shuffleboardTab.add("kI", kI).getEntry());
-        shuffleboardDEntry = new GRTNetworkTableEntry(shuffleboardTab.add("kD", kD).getEntry());
-        shuffleboardFFEntry = new GRTNetworkTableEntry(shuffleboardTab.add("kFF", kFF).getEntry());
-        shuffleboardCruiseVelEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Cruise Vel", cruiseVel).getEntry());
-        shuffleboardAccelEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Accel", maxAccel).getEntry());
-
         shuffleboardVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("velo", deploy.getSelectedSensorVelocity()).getEntry());
-        shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy Position", 0).getEntry());
+        shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy position", 0).getEntry());
 
-        // shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
-        // shuffleboardTab.add("Deploy", new DeployIntakeCommand(this));
+        // If DEBUG_PID is set, allow for PID tuning on shuffleboard
+        if (DEBUG_PID) {
+            shuffleboardTab.add("kP", kP).getEntry()
+                .addListener(this::setDeployP, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("kI", kI).getEntry()
+                .addListener(this::setDeployI, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("kD", kD).getEntry()
+                .addListener(this::setDeployD, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("kFF", kFF).getEntry()
+                .addListener(this::setDeployFF, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Cruise Vel", cruiseVel).getEntry()
+                .addListener(this::setDeployCruiseVel, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Accel", accel).getEntry()
+                .addListener(this::setDeployAccel, EntryListenerFlags.kUpdate);
+        }
+
+        shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
+        shuffleboardTab.add("Deploy", new DeployIntakeCommand(this));
     }
 
     @Override
     public void periodic() {
-        // Get PID constants from Shuffleboard for testing
-        deploy.config_kP(0, (double) shuffleboardPEntry.getValue());
-        deploy.config_kI(0, (double) shuffleboardIEntry.getValue());
-        deploy.config_kD(0, (double) shuffleboardDEntry.getValue());
-        deploy.config_kF(0, (double) shuffleboardFFEntry.getValue());
-        
-        deploy.configMotionCruiseVelocity((double) shuffleboardCruiseVelEntry.getValue());
-        deploy.configMotionAcceleration((double) shuffleboardAccelEntry.getValue());
-
         // Check limit switch and reset encoder if detected
+        // If the limit switch returns `false`, it's being pressed and the encoder should be reset
         if (!limitSwitch.get()) deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);
 
         // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
@@ -153,8 +149,7 @@ public class IntakeSubsystem extends GRTSubsystem {
             currentPosition = intakePower > 0.1 ? IntakePosition.DEPLOYED : IntakePosition.RAISED;
         }
 
-        // TODO: is a constant still needed?
-        //deploy.set(ControlMode.Position, currentPosition.value /* * DEGREES_TO_ENCODER_TICKS */);
+        deploy.set(ControlMode.MotionMagic, currentPosition.value);
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
         shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
     }
@@ -202,5 +197,33 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         deploy.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         intake.setSmartCurrentLimit(motorLimit);
+    }
+
+    /**
+     * Intake PID tuning NetworkTable callbacks.
+     * @param change The `EntryNotification` representing the NetworkTable entry change.
+     */
+    private void setDeployP(EntryNotification change) {
+        deploy.config_kP(0, change.value.getDouble());
+    }
+
+    private void setDeployI(EntryNotification change) {
+        deploy.config_kI(0, change.value.getDouble());
+    }
+
+    private void setDeployD(EntryNotification change) {
+        deploy.config_kD(0, change.value.getDouble());
+    }
+
+    private void setDeployFF(EntryNotification change) {
+        deploy.config_kF(0, change.value.getDouble());
+    }
+
+    private void setDeployCruiseVel(EntryNotification change) {
+        deploy.configMotionCruiseVelocity(change.value.getDouble());
+    }
+
+    private void setDeployAccel(EntryNotification change) {
+        deploy.configMotionAcceleration(change.value.getDouble());
     }
 }
