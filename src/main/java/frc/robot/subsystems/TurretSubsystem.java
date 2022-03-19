@@ -74,7 +74,6 @@ public class TurretSubsystem extends GRTSubsystem {
     // private final DigitalInput leftLimitSwitch;
     // private final DigitalInput rightLimitSwitch;
 
-    // constants
     // Turntable position PID constants
     private static final double turntableP = 0.00015;
     private static final double turntableI = 0;
@@ -153,12 +152,14 @@ public class TurretSubsystem extends GRTSubsystem {
 
     // Debug flags
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, `dy`, `dtheta`, 
-    // `alpha`, `beta`, `x`, `y`, `h`) system states should be printed
+    // `alpha`, `beta`, `x`, `y`, `h`) system states should be printed.
     private static boolean PRINT_STATES = false; 
-    // Whether PID tuning shuffleboard entries should be displayed
-    private static boolean DEBUG_PID = false; 
-    // Whether the turntable, hood, and flywheel references should be manually set through shuffleboard
+    // Whether PID tuning shuffleboard entries should be displayed.
+    private static boolean DEBUG_PID = false;
+    // Whether the turntable, hood, and flywheel references should be manually set through shuffleboard.
     private static boolean MANUAL_CONTROL = false;
+    // Whether the turret should fire at full speed regardless of rejection logic.
+    private static boolean SKIP_REJECTION = true;
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
@@ -374,7 +375,7 @@ public class TurretSubsystem extends GRTSubsystem {
                 // C = (d_B + (d_C - d_B), mx) = (d_C, md_C)
                 double flywheelSlope = (flywheelTop - flywheelBottom) / (rTop - rBottom);
                 desiredFlywheelRPM = flywheelBottom + flywheelSlope * (r - rBottom);
-                //if (mode == TurretMode.REJECTING) desiredFlywheelRPM *= 0.5;
+                if (mode == TurretMode.REJECTING && !SKIP_REJECTION) desiredFlywheelRPM *= 0.5;
 
                 double hoodSlope = (hoodAngleTop - hoodAngleBottom) / (rTop - rBottom);
                 desiredHoodRadians = Math.toRadians(hoodAngleBottom + hoodSlope * (r - rBottom));

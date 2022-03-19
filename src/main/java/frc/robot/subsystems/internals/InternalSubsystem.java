@@ -49,6 +49,10 @@ public class InternalSubsystem extends GRTSubsystem {
     private boolean rejecting = false;
     private boolean rejectingChecked = false;
 
+    // Debug flags
+    // Whether to skip the turret tolerance check and fire immediately when the driver requests a shot.
+    private static boolean SKIP_TOLERANCE_CHECK = false;
+
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         super(15);
 
@@ -141,30 +145,29 @@ public class InternalSubsystem extends GRTSubsystem {
         // If there is a ball in staging, we don't want to push it into turret, especially if there is a shot going
         if (stagingDetected) motorTop.set(0);
 
-        if (turretSubsystem != null) {
-            // If a shot was requested and the turret is ready, load a ball into the turret.
-            turretSubsystem.setReject(rejecting);
-            if (shotRequested /* && turretSubsystem.getState() == TurretSubsystem.ModuleState.HIGH_TOLERANCE
-            || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.LOW_TOLERANCE */) {
-               
-                // Spin the top motor on a timer
-                exitTimer.start();
-                motorTop.set(0.5);
+        // If a shot was requested and the turret is ready, load a ball into the turret.
+        turretSubsystem.setReject(rejecting);
+        if (shotRequested && (SKIP_TOLERANCE_CHECK 
+            || turretSubsystem.getState() == TurretSubsystem.ModuleState.HIGH_TOLERANCE
+            || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.LOW_TOLERANCE)
+        ) {
+            // Spin the top motor on a timer
+            exitTimer.start();
+            motorTop.set(0.5);
 
-                // If 0.5 seconds have elapsed, mark the shot as finished
-                if (exitTimer.hasElapsed(0.5)) {
-                    exitTimer.stop();
-                    exitTimer.reset();
-                    motorTop.set(0);
+            // If 0.5 seconds have elapsed, mark the shot as finished
+            if (exitTimer.hasElapsed(0.5)) {
+                exitTimer.stop();
+                exitTimer.reset();
+                motorTop.set(0);
 
-                    // Reset states
-                    shotRequested = false;
-                    rejectingChecked = false;
-                }
+                // Reset states
+                shotRequested = false;
+                rejectingChecked = false;
             }
-
-            turretSubsystem.setBallReady(ballCount > 0);
         }
+
+        turretSubsystem.setBallReady(ballCount > 0);
     }
 
     /**
