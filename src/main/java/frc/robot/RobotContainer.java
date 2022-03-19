@@ -173,12 +173,4 @@ public class RobotContainer {
     public PowerController getPowerController() {
         return powerController;
     }
-
-    /**
-     * Gets the InternalSubsystem for setting initial ball count in `Robot.autonomousInit()`.
-     * @return The InternalSubsystem instance.
-     */
-    public InternalSubsystem getInternalSubsystem() {
-        return internalSubsystem;
-    }
 }

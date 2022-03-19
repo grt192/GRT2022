@@ -71,9 +71,6 @@ public class Robot extends TimedRobot {
         autonomousCommand = robotContainer.getAutonomousCommand();
         if (autonomousCommand != null) autonomousCommand.schedule();
 
-        // Set InternalSubsystem initial ball count
-        robotContainer.getInternalSubsystem().setAutonInitialBallCount();
-
         // Turn on the ring light
         powerDistribution.setSwitchableChannel(true);
     }

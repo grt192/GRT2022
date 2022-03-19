@@ -39,18 +39,15 @@ public class InternalSubsystem extends GRTSubsystem {
 
     private final ColorMatch colorMatcher;
 
+    private final Timer entranceTimer;
     private final Timer exitTimer;
     private final Timer storageTimer;
 
     private int ballCount = 0;
 
-    private boolean entToStorage = false;
-
     private boolean shotRequested = false;
     private boolean rejecting = false;
     private boolean rejectingChecked = false;
-
-    private boolean driverOverride = false;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         super(15);
@@ -60,8 +57,8 @@ public class InternalSubsystem extends GRTSubsystem {
         // Initialize bottom motor
         motorBottom = new WPI_TalonSRX(motorPortBottom);
         motorBottom.configFactoryDefault();
-        motorBottom.setNeutralMode(NeutralMode.Brake);
         motorBottom.setInverted(true);
+        motorBottom.setNeutralMode(NeutralMode.Brake);
 
         // Initialize top motor
         motorTop = new WPI_TalonSRX(motorPortTop);
@@ -82,9 +79,9 @@ public class InternalSubsystem extends GRTSubsystem {
         colorMatcher.addColorMatch(EMPTY);
         colorMatcher.setConfidenceThreshold(0.8);
 
-        exitTimer = new Timer();
-        //entranceTimer = new Timer();
+        entranceTimer = new Timer();
         storageTimer = new Timer();
+        exitTimer = new Timer();
 
         // Set alliance color from FMS
         switch (DriverStation.getAlliance()) {
@@ -92,33 +89,32 @@ public class InternalSubsystem extends GRTSubsystem {
             case Blue: ALLIANCE_COLOR = BLUE; break;
             default: ALLIANCE_COLOR = RED; break;
         }
-
     }
 
     @Override
     public void periodic() {
-        // If a new ball has entered internals, increment ball count
+        // Get states from IR and color sensors
         boolean entranceDetected = entrance.get() >= 0.1;
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
         boolean storageDetected = isBall(storageColor);
-
         boolean stagingDetected = staging.get() >= 0.2;
 
-        // for making sure ball count is correct
+        // Set the ball count from staging and storage.
+        // This leaves a small window while a ball is rolling from the entrance to storage where the actual ball 
+        // count of the subsystem is larger than `ballCount`.
         ballCount = (stagingDetected ? 1 : 0) + (storageDetected ? 1 : 0);
-
-        if (driverOverride) return;
 
         // If there is a ball in the entrance, run the bottom motor.
         if (entranceDetected && !storageDetected) {
             motorBottom.set(0.3);
-            entToStorage = true;
+            entranceTimer.start();
         }
 
-        // If 1.5 second has elapsed and ball has progressed past entrance, stop motor
-        if (storageDetected && entToStorage) {
+        // If 5 seconds have elapsed or the ball has progressed past entrance, stop the bottom motor
+        if ((storageDetected || entranceTimer.hasElapsed(5)) && entranceTimer.get() > 0) {
             motorBottom.set(0);
-            entToStorage = false;
+            entranceTimer.stop();
+            entranceTimer.reset();
         }
 
         // If there is a ball between storage and staging and staging is empty, run the top and bottom motors
@@ -197,13 +193,6 @@ public class InternalSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Sets the ball count to the initial expected when autonomous starts (1).
-     */
-    public void setAutonInitialBallCount() {
-        ballCount = 1;
-    }
-
-    /**
      * Normalizes a raw color from a color sensor to the closest stored color in colorMatcher using a tolerance of 0.8, 
      * returning `null` if no color was matched.
      * @param color The color to match.
@@ -244,9 +233,5 @@ public class InternalSubsystem extends GRTSubsystem {
 
         motorBottom.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         motorTop.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
-    }
-
-    public void setDriverOverride(boolean override) {
-        this.driverOverride = override;
     }
 }
