@@ -130,7 +130,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     private boolean ballReady = false;
 
-    private TurretMode mode = TurretMode.SHOOTING;
+    private TurretMode mode = TurretMode.RETRACTED;
 
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
     private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(47);
@@ -316,7 +316,8 @@ public class TurretSubsystem extends GRTSubsystem {
         // if (rightLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MAX_RADIANS);
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
-        boolean runFlywheel = !tankSubsystem.isMoving() && ballReady;
+        // boolean runFlywheel = !tankSubsystem.isMoving() && ballReady;
+        boolean runFlywheel = ballReady;
 
         // Set turntable lazy tracking if a ball isn't ready
         double pow = !ballReady ? 0.25 : 0.5;
@@ -325,7 +326,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // If the hub is in vision range, use vision's `r` and `theta` as ground truth.
         // While the flywheel is running, use the manual system values instead to prevent camera issues while the flywheel shakes
         // the turntable.
-        if (jetson.turretVisionWorking() && !runFlywheel && false) {
+        if (jetson.turretVisionWorking() && !runFlywheel) {
             r = jetson.getHubDistance();
             theta = jetson.getTurretTheta();
 

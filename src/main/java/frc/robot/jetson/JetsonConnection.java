@@ -79,6 +79,7 @@ public class JetsonConnection {
 
                     // Check if we need to connect
                     if (stdIn == null || socket == null || socket.isClosed() || !socket.isConnected() || !socket.isBound()) {
+                        System.out.println("Connecting to jetson...");
                         isConnected = connect();
 
                         if (!isConnected) {

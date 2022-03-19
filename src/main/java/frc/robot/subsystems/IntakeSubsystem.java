@@ -24,11 +24,10 @@ import static frc.robot.Constants.IntakeConstants.*;
 public class IntakeSubsystem extends GRTSubsystem {
     /**
      * An enum representing the position of the intake, with `IntakePosition.value`
-     * representing the
-     * counterclockwise angle from straight upwards. In degrees.
+     * representing the counterclockwise angle from straight upwards.
      */
     public enum IntakePosition {
-        START(0), RAISED(0), DEPLOYED(200000);
+        START(0), RAISED(17214), DEPLOYED(486209);
 
         public final double value;
 
@@ -47,18 +46,28 @@ public class IntakeSubsystem extends GRTSubsystem {
     private double intakePower = 0;
     private boolean driverOverride = false;
 
+    public boolean autoRaiseIntake = false;
     private IntakePosition currentPosition = IntakePosition.DEPLOYED;
 
     // Deploy position PID constants
-    private static final double kP = 0.125;
+    private static final double kP = 0.1;
     private static final double kI = 0;
     private static final double kD = 0;
+    private static final double kFF = 0.016;
+    private static final double cruiseVel = 20000;
+    private static final double maxAccel = 40000;
+    private static final int sCurveStrength = 3;
 
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardDeployPosition;
-    // private final NetworkTableEntry shuffleboardPEntry = null;
-    // private final NetworkTableEntry shuffleboardIEntry = null;
-    // private final NetworkTableEntry shuffleboardDEntry = null;
+    private final GRTNetworkTableEntry shuffleboardPEntry;
+    private final GRTNetworkTableEntry shuffleboardIEntry;
+    private final GRTNetworkTableEntry shuffleboardDEntry;
+    private final GRTNetworkTableEntry shuffleboardFFEntry;
+    private final GRTNetworkTableEntry shuffleboardVeloEntry;
+    private final GRTNetworkTableEntry shuffleboardCruiseVelEntry;
+    private final GRTNetworkTableEntry shuffleboardAccelEntry;
+
 
     // TODO: measure this
     // private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
@@ -77,14 +86,19 @@ public class IntakeSubsystem extends GRTSubsystem {
         // Initialize the deploy (intake position) motor
         deploy = new WPI_TalonSRX(deploymentPort);
         deploy.configFactoryDefault();
+        deploy.setInverted(true);
         deploy.setNeutralMode(NeutralMode.Brake);
 
         deploy.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
         deploy.setSelectedSensorPosition(IntakePosition.START.value);
-        deploy.setSensorPhase(false);
+        deploy.setSensorPhase(true);
         deploy.config_kP(0, kP);
         deploy.config_kI(0, kI);
         deploy.config_kD(0, kD);
+        deploy.config_kF(0, kFF);
+        deploy.configMotionCruiseVelocity(cruiseVel);
+        deploy.configMotionAcceleration(maxAccel);
+        deploy.configMotionSCurveStrength(sCurveStrength);
 
         // Soft limit deploy between RAISED and DEPLOYED
         /*
@@ -98,10 +112,14 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Intake");
-        // shuffleboardPEntry = shuffleboardTab.add("kP", kP).getEntry();
-        // shuffleboardIEntry = shuffleboardTab.add("kI", kI).getEntry();
-        // shuffleboardDEntry = shuffleboardTab.add("kD", kD).getEntry();
+        shuffleboardPEntry = new GRTNetworkTableEntry(shuffleboardTab.add("kP", kP).getEntry());
+        shuffleboardIEntry = new GRTNetworkTableEntry(shuffleboardTab.add("kI", kI).getEntry());
+        shuffleboardDEntry = new GRTNetworkTableEntry(shuffleboardTab.add("kD", kD).getEntry());
+        shuffleboardFFEntry = new GRTNetworkTableEntry(shuffleboardTab.add("kFF", kFF).getEntry());
+        shuffleboardCruiseVelEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Cruise Vel", cruiseVel).getEntry());
+        shuffleboardAccelEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Accel", maxAccel).getEntry());
 
+        shuffleboardVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("velo", deploy.getSelectedSensorVelocity()).getEntry());
         shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy Position", 0).getEntry());
 
         // shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
@@ -111,12 +129,16 @@ public class IntakeSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // Get PID constants from Shuffleboard for testing
-        // deploy.config_kP(0, shuffleboardPEntry.getDouble(kP));
-        // deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
-        // deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
+        deploy.config_kP(0, (double) shuffleboardPEntry.getValue());
+        deploy.config_kI(0, (double) shuffleboardIEntry.getValue());
+        deploy.config_kD(0, (double) shuffleboardDEntry.getValue());
+        deploy.config_kF(0, (double) shuffleboardFFEntry.getValue());
+        
+        deploy.configMotionCruiseVelocity((double) shuffleboardCruiseVelEntry.getValue());
+        deploy.configMotionAcceleration((double) shuffleboardAccelEntry.getValue());
 
         // Check limit switch and reset encoder if detected
-        //if (limitSwitch.get()) deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);
+        if (!limitSwitch.get()) deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);
 
         // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
         if (!(internalSubsystem.getBallCount() < 2 && currentPosition == IntakePosition.DEPLOYED)) {
@@ -127,9 +149,14 @@ public class IntakeSubsystem extends GRTSubsystem {
                 : jetson.ballDetected() ? 0.5 : 0);
         }
 
+        if (autoRaiseIntake) {
+            currentPosition = intakePower > 0.1 ? IntakePosition.DEPLOYED : IntakePosition.RAISED;
+        }
+
         // TODO: is a constant still needed?
         //deploy.set(ControlMode.Position, currentPosition.value /* * DEGREES_TO_ENCODER_TICKS */);
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
+        shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
     }
 
     /**
