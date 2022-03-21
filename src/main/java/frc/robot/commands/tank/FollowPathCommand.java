@@ -26,6 +26,7 @@ import frc.robot.subsystems.tank.TankSubsystem;
  */
 public class FollowPathCommand extends RamseteCommand {
     // Robot constants
+    // TODO: recalculate track width
     private static final double TRACK_WIDTH = 0.7805022504396351;
     private static final DifferentialDriveKinematics KINEMATICS = 
         new DifferentialDriveKinematics(TRACK_WIDTH);

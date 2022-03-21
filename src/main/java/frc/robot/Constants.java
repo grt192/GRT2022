@@ -8,7 +8,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.util.Color;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide
@@ -85,7 +84,7 @@ public final class Constants {
      * x axis) with the origin at the hub.
      */
     public static final class BallCoordinates {
-        // Tarmac ball translations; these do not include angle because we may choose to approach these balls at
+        // Tarmac ball translations. These do not include angle because we may choose to approach these balls at
         // different angles based on our starting position. Declared in clockwise order around the tarmac from 
         // top right to top left ball.
         public static final Translation2d 
@@ -102,10 +101,9 @@ public final class Constants {
             LEFT_TOP_BLUE = new Translation2d(Units.inchesToMeters(-129.397), Units.inchesToMeters(81.649)),
             LEFT_TOP_RED = new Translation2d(Units.inchesToMeters(-88.309), Units.inchesToMeters(124.947));
 
-        // Terminal ball poses; these include angle because these are close to the wall, so angle of approach
-        // cannot vary too much.
-        public static final Pose2d
-            TERMINAL_RED = new Pose2d(Units.inchesToMeters(284.210), Units.inchesToMeters(120.435), Rotation2d.fromDegrees(45)),
-            TERMINAL_BLUE = new Pose2d(Units.inchesToMeters(-284.210), Units.inchesToMeters(-120.435), Rotation2d.fromDegrees(225));
+        // Terminal ball translations. These should generally be approached at 45 and 225 degrees, respectively.
+        public static final Translation2d
+            TERMINAL_RED = new Translation2d(Units.inchesToMeters(284.210), Units.inchesToMeters(120.435)),
+            TERMINAL_BLUE = new Translation2d(Units.inchesToMeters(-284.210), Units.inchesToMeters(-120.435));
     }
 }
