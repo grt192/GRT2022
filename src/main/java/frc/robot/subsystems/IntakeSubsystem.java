@@ -12,6 +12,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import edu.wpi.first.networktables.EntryListenerFlags;
 import edu.wpi.first.networktables.EntryNotification;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 
@@ -49,6 +50,9 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     private double intakePower = 0;
     private boolean driverOverride = false;
+
+    public static final double DELAY_LIMIT_RESET = 0.3;
+    private Double switchPressed = 0.0;
 
     public boolean autoRaiseIntake = false;
     private IntakePosition currentPosition = IntakePosition.DEPLOYED; // replace with IntakePosition.START in actual matches
@@ -132,9 +136,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
-        // Check limit switch and reset encoder if detected
-        // If the limit switch returns `false`, it's being pressed and the encoder should be reset
-        if (!limitSwitch.get()) deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);
+        limitSwitchReset();
 
         // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
         if (!(internalSubsystem.getBallCount() < 2 && currentPosition == IntakePosition.DEPLOYED)) {
@@ -150,8 +152,25 @@ public class IntakeSubsystem extends GRTSubsystem {
         }
 
         deploy.set(ControlMode.MotionMagic, currentPosition.value);
+        
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
         shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
+    }
+
+    private void limitSwitchReset() {
+        // Check limit switch and reset encoder if detected
+        // If the limit switch returns `false`, it's being pressed and the encoder should be reset
+        if (!limitSwitch.get()) {
+            if (switchPressed == null) {
+                switchPressed = Timer.getFPGATimestamp();
+            }
+        } else {
+            switchPressed = null;
+        }
+
+        if (switchPressed != null && Timer.getFPGATimestamp() > switchPressed + DELAY_LIMIT_RESET) {
+            deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);
+        }
     }
 
     /**

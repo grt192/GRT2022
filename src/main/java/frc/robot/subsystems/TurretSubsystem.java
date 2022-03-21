@@ -98,8 +98,9 @@ public class TurretSubsystem extends GRTSubsystem {
     private double flywheelRefVel = 0;
     private double hoodRefPos = 0;
 
-    // Temporary state of turntable offset
-    public double turntableOffset = 0;
+    // Temporary offset states for manual correction of rtheta drift
+    private double turntableOffset = 0;
+    private double distanceOffset = 0;
 
     // The interpolation table from shooter testing.
     // Every entry can be thought of as a tuple representing [hub distance (in), flywheel speed (RPM), hood angle (degs)];
@@ -145,15 +146,17 @@ public class TurretSubsystem extends GRTSubsystem {
     // Shuffleboard
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardTurntablePosEntry;
-    private final GRTNetworkTableEntry shuffleboardTurntableVeloEntry;
-    private final GRTNetworkTableEntry shuffleboardFlywheelVeloEntry;
-    private final GRTNetworkTableEntry shuffleboardHoodPosEntry;
+    private GRTNetworkTableEntry shuffleboardTurntableVeloEntry;
+    private GRTNetworkTableEntry shuffleboardFlywheelVeloEntry;
+    private GRTNetworkTableEntry shuffleboardHoodPosEntry;
     private final GRTNetworkTableEntry shuffleboardOffset;
+    private GRTNetworkTableEntry rEntry;
+    private GRTNetworkTableEntry thetaEntry;
 
     // Debug flags
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, `dy`, `dtheta`, 
     // `alpha`, `beta`, `x`, `y`, `h`) system states should be printed.
-    private static boolean PRINT_STATES = false; 
+    private static boolean PRINT_STATES = true; 
     // Whether PID tuning shuffleboard entries should be displayed.
     private static boolean DEBUG_PID = false;
     // Whether the turntable, hood, and flywheel references should be manually set through shuffleboard.
@@ -239,9 +242,11 @@ public class TurretSubsystem extends GRTSubsystem {
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Turret");
         shuffleboardTurntablePosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Turntable pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry());
-        shuffleboardTurntableVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Turntable vel", 0).getEntry());
-        shuffleboardFlywheelVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel vel", flywheelEncoder.getVelocity()).getEntry());
-        shuffleboardHoodPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Hood pos", 0).getEntry());
+        rEntry = new GRTNetworkTableEntry(shuffleboardTab.add("r", 0).getEntry());
+        thetaEntry = new GRTNetworkTableEntry(shuffleboardTab.add("theta", 0).getEntry());
+        // shuffleboardTurntableVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Turntable vel", 0).getEntry());
+        // shuffleboardFlywheelVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel vel", flywheelEncoder.getVelocity()).getEntry());
+        // shuffleboardHoodPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Hood pos", 0).getEntry());
         shuffleboardOffset = new GRTNetworkTableEntry(shuffleboardTab.add("Turntable Offset", 0).getEntry());
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
@@ -294,23 +299,9 @@ public class TurretSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         shuffleboardTurntablePosEntry.setValue(Math.toDegrees(turntableEncoder.getPosition()));
-        shuffleboardTurntableVeloEntry.setValue(turntableEncoder.getVelocity());
-        shuffleboardFlywheelVeloEntry.setValue(flywheelEncoder.getVelocity());
-        shuffleboardHoodPosEntry.setValue(Math.toDegrees(hood.getSelectedSensorPosition() / HOOD_RADIANS_TO_TICKS));
-
-        turntableOffset = Math.toRadians((double) shuffleboardOffset.getValue());
-
-        // If retracted, skip jetson logic and calculations
-        if (mode == TurretMode.RETRACTED) {
-            desiredTurntableRadians = Math.toRadians(180);
-            desiredHoodRadians = 0;
-            desiredFlywheelRPM = 0;
-
-            turntablePidController.setReference(desiredTurntableRadians, ControlType.kSmartMotion);
-            hood.set(ControlMode.Position, desiredHoodRadians);
-            flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
-            return;
-        }
+        // shuffleboardTurntableVeloEntry.setValue(turntableEncoder.getVelocity());
+        // shuffleboardFlywheelVeloEntry.setValue(flywheelEncoder.getVelocity());
+        // shuffleboardHoodPosEntry.setValue(Math.toDegrees(hood.getSelectedSensorPosition() / HOOD_RADIANS_TO_TICKS));
 
         // Check limit switches and reset encoders if detected
         // if (leftLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MIN_RADIANS);
@@ -327,11 +318,11 @@ public class TurretSubsystem extends GRTSubsystem {
         // If the hub is in vision range, use vision's `r` and `theta` as ground truth.
         // While the flywheel is running, use the manual system values instead to prevent camera issues while the flywheel shakes
         // the turntable.
-        if (jetson.turretVisionWorking() && !runFlywheel) {
+        if (jetson.turretVisionWorking() && !runFlywheel) { 
             r = jetson.getHubDistance();
             theta = jetson.getTurretTheta();
 
-            System.out.println("JETSON r: " + r + " theta: " + theta);
+            // System.out.println("JETSON r: " + r + " theta: " + theta);
         } else {
             // Otherwise, update our `r` and `theta` state system from the previous `r` and `theta` values
             // and the delta X and Y since our last position. We do this instead of using raw odometry coordinates
@@ -342,6 +333,21 @@ public class TurretSubsystem extends GRTSubsystem {
             // TODO: this assumes that the last r, theta we got is always 'clean' data.
             // we need to do filtering of some sort, probably on the jetson, to ensure this is true.
             manualUpdateRTheta(previousPosition, currentPosition);
+        }
+        
+        rEntry.setValue(this.r);
+        thetaEntry.setValue(this.theta);
+
+        // If retracted, skip jetson logic and calculations
+        if (mode == TurretMode.RETRACTED) {
+            desiredTurntableRadians = Math.toRadians(180);
+            desiredHoodRadians = 0;
+            desiredFlywheelRPM = 0;
+
+            turntablePidController.setReference(desiredTurntableRadians, ControlType.kSmartMotion);
+            hood.set(ControlMode.Position, desiredHoodRadians);
+            flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
+            return;
         }
 
         // If MANUAL_CONTROL is enabled, set the turntable reference from shuffleboard.
@@ -357,31 +363,7 @@ public class TurretSubsystem extends GRTSubsystem {
             newTurntableRadians + deltaTurntableRadians * TURNTABLE_THETA_FF, 
             TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
 
-        // Interpolate the hood angle and flywheel RPM.
-        // If rejecting, scale down flywheel speed to prevent scoring.
-        for (int i = 1; i < INTERPOLATION_TABLE.length; i++) {
-            double[] above = INTERPOLATION_TABLE[i];
-            double[] below = INTERPOLATION_TABLE[i - 1];
-
-            double rTop = above[0], flywheelTop = above[1], hoodAngleTop = above[2];
-            double rBottom = below[0], flywheelBottom = below[1], hoodAngleBottom = below[2];
-
-            // If the entry's distance is above the current distance, the current distance is between the entry 
-            // and the previous entry.
-            if (rTop > r) {
-                // Where x axis is distance d, y axis is flywheel RPM f, the top and bottom points are A and B, 
-                // and the interpolated point is C:
-                // m = (f_A - f_B) / (d_A - d_B)
-                // C = (d_B + (d_C - d_B), mx) = (d_C, md_C)
-                double flywheelSlope = (flywheelTop - flywheelBottom) / (rTop - rBottom);
-                desiredFlywheelRPM = flywheelBottom + flywheelSlope * (r - rBottom);
-                if (mode == TurretMode.REJECTING && !SKIP_REJECTION) desiredFlywheelRPM *= 0.5;
-
-                double hoodSlope = (hoodAngleTop - hoodAngleBottom) / (rTop - rBottom);
-                desiredHoodRadians = Math.toRadians(hoodAngleBottom + hoodSlope * (r - rBottom));
-                break;
-            }
-        }
+        interpolateFlywheelHoodRefs();
 
         if (PRINT_STATES)
             System.out.println("r: " + r + ", hood ref: " + Math.toDegrees(desiredHoodRadians) + ", flywheel ref: " + desiredFlywheelRPM);
@@ -449,6 +431,36 @@ public class TurretSubsystem extends GRTSubsystem {
     }
 
     /**
+     * Interpolate the hood angle and flywheel RPM from the hub distance and interpolation
+     * table. If rejecting, scale down flywheel speed to prevent scoring.
+     */
+    private void interpolateFlywheelHoodRefs() {
+        for (int i = 1; i < INTERPOLATION_TABLE.length; i++) {
+            double[] above = INTERPOLATION_TABLE[i];
+            double[] below = INTERPOLATION_TABLE[i - 1];
+
+            double rTop = above[0], flywheelTop = above[1], hoodAngleTop = above[2];
+            double rBottom = below[0], flywheelBottom = below[1], hoodAngleBottom = below[2];
+
+            // If the entry's distance is above the current distance, the current distance is between the entry 
+            // and the previous entry.
+            if (rTop > r) {
+                // Where x axis is distance d, y axis is flywheel RPM f, the top and bottom points are A and B, 
+                // and the interpolated point is C:
+                // m = (f_A - f_B) / (d_A - d_B)
+                // C = (d_B + (d_C - d_B), mx) = (d_C, md_C)
+                double flywheelSlope = (flywheelTop - flywheelBottom) / (rTop - rBottom);
+                desiredFlywheelRPM = flywheelBottom + flywheelSlope * (r - rBottom);
+                if (mode == TurretMode.REJECTING && !SKIP_REJECTION) desiredFlywheelRPM *= 0.5;
+
+                double hoodSlope = (hoodAngleTop - hoodAngleBottom) / (rTop - rBottom);
+                desiredHoodRadians = Math.toRadians(hoodAngleBottom + hoodSlope * (r - rBottom));
+                return;
+            }
+        }
+    }
+
+    /**
      * Set whether the turret should reject the current ball.
      * @param reject Whether to reject the ball.
      */
@@ -466,6 +478,22 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     public void setBallReady(boolean ballReady) {
         this.ballReady = ballReady;
+    }
+
+    /**
+     * Changes the distance offset of the `rtheta` system.
+     * @param offset The amount to change the offet by, in inches.
+     */
+    public void changeDistanceOffset(double offset) {
+        this.distanceOffset += offset;
+    }
+
+    /**
+     * Changes the turntable (angle) offset of the `rtheta` system.
+     * @param offset The amount to change the offset by, in radians.
+     */
+    public void changeTurntableOffset(double offset) {
+        this.turntableOffset += offset;
     }
 
     /**

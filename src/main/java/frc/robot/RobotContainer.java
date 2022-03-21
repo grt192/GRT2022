@@ -146,6 +146,15 @@ public class RobotContainer {
         tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
 
         intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, driveController));
+
+        turretSubsystem.setDefaultCommand(new RunCommand(() -> {
+            switch (driveController.getPOV()) {
+                case 0: turretSubsystem.changeDistanceOffset(1); break;
+                case 90: turretSubsystem.changeTurntableOffset(Math.toRadians(1)); break;
+                case 180: turretSubsystem.changeDistanceOffset(-1); break;
+                case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-1)); break;
+            }
+        }, turretSubsystem));
     }
 
     /**
