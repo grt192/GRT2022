@@ -1,5 +1,7 @@
 package frc.robot.commands.tank;
 
+import java.util.List;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -7,13 +9,59 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 
 import frc.robot.RobotContainer;
+import frc.robot.commands.intake.DeployIntakeCommand;
+import frc.robot.commands.intake.RaiseIntakeCommand;
+import frc.robot.commands.internals.ShootCommand;
+import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.internals.InternalSubsystem;
+import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
  * The superclass for all auton sequences, containing helper methods and shared constructor logic.
  */
-public class GRTAutonSequence extends SequentialCommandGroup {
-    public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose) {
+public abstract class GRTAutonSequence extends SequentialCommandGroup {
+    /**
+     * Creates a GRTAutonSequence from an initial and ball one pose. This is used for shared initialization logic
+     * between all auton paths, as well as one-ball sequences like the top and bottom paths. Pathfollows to the ball, 
+     * then shoots two balls.
+     * 
+     * @param robotContainer The RobotContainer instance, for calling `.setInitialPose()`.
+     * @param tankSubsystem The tank subsystem.
+     * @param internalSubsystem The internals subsystem.
+     * @param initialPose The initial pose of the sequence.
+     * @param ballOnePose The first ball pose of the sequence.
+     */
+    public GRTAutonSequence(RobotContainer robotContainer, TankSubsystem tankSubsystem, InternalSubsystem internalSubsystem, IntakeSubsystem intakeSubsystem, Pose2d initialPose, Pose2d ballOnePose) {
+        addRequirements(tankSubsystem, internalSubsystem, intakeSubsystem);
         //robotContainer.setInitialPose(initialPose);
+
+        addCommands(
+            new DeployIntakeCommand(intakeSubsystem),
+            new FollowPathCommand(tankSubsystem, initialPose, List.of(), ballOnePose),
+            new ShootCommand(internalSubsystem),
+            new ShootCommand(internalSubsystem)
+        );
+    }
+
+    /**
+     * Creates a GRTAutonSequence from an initial, ball one, and ball two pose. This is used for two-ball sequences, like
+     * the middle paths where we also drive to the terminal to pick up and shoot a second ball. Pathfollows to the ball,
+     * shoots two, then pathfollows to the second ball and shoots it.
+     * 
+     * @param robotContainer The RobotContainer instance, for calling `.setInitialPose()`.
+     * @param tankSubsystem The tank subsystem.
+     * @param internalSubsystem The internals subsystem.
+     * @param initialPose The initial pose of the sequence.
+     * @param ballOnePose The first ball pose of the sequence.
+     * @param ballTwoPose The second ball pose of the sequence.
+     */
+    public GRTAutonSequence(RobotContainer robotContainer, TankSubsystem tankSubsystem, InternalSubsystem internalSubsystem, IntakeSubsystem intakeSubsystem, Pose2d initialPose, Pose2d ballOnePose, Pose2d ballTwoPose) {
+        this(robotContainer, tankSubsystem, internalSubsystem, intakeSubsystem, initialPose, ballOnePose);
+
+        addCommands(
+            new FollowPathCommand(tankSubsystem, ballOnePose, List.of(), ballTwoPose),
+            new ShootCommand(internalSubsystem)
+        );
     }
 
     /**

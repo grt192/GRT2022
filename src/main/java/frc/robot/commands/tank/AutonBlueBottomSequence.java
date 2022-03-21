@@ -1,13 +1,11 @@
 package frc.robot.commands.tank;
 
-import java.util.List;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 
 import frc.robot.RobotContainer;
-import frc.robot.commands.internals.ShootCommand;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.internals.InternalSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
 
@@ -26,13 +24,7 @@ public class AutonBlueBottomSequence extends GRTAutonSequence {
         Rotation2d.fromDegrees(-66)); // TODO: are negative angles ok?
     private static final Pose2d ballOnePose = localizeBallCoordinate(LEFT_BOTTOM_BLUE, 260.251594482);
 
-    public AutonBlueBottomSequence(RobotContainer robotContainer, TankSubsystem tankSubsystem, InternalSubsystem internalSubsystem) {
-        super(robotContainer, initialPose);
-        addRequirements(tankSubsystem, internalSubsystem);
-        addCommands(
-            new FollowPathCommand(tankSubsystem, initialPose, List.of(), ballOnePose),
-            new ShootCommand(internalSubsystem),
-            new ShootCommand(internalSubsystem)
-        );
+    public AutonBlueBottomSequence(RobotContainer robotContainer, TankSubsystem tankSubsystem, InternalSubsystem internalSubsystem, IntakeSubsystem intakeSubsystem) {
+        super(robotContainer, tankSubsystem, internalSubsystem, intakeSubsystem, initialPose, ballOnePose);
     }
 }

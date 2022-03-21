@@ -1,13 +1,11 @@
 package frc.robot.commands.tank;
 
-import java.util.List;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 
 import frc.robot.RobotContainer;
-import frc.robot.commands.internals.ShootCommand;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.internals.InternalSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
 
@@ -29,15 +27,7 @@ public class AutonBlueMiddleSequence extends GRTAutonSequence {
     private static Pose2d ballOnePose = localizeBallCoordinate(LEFT_MID_BLUE, 215.248230);
     private static Pose2d ballTwoPose = localizeBallCoordinate(TERMINAL_BLUE, 225);
 
-    public AutonBlueMiddleSequence(RobotContainer robotContainer, TankSubsystem tankSubsystem, InternalSubsystem internalSubsystem) {
-        super(robotContainer, initialPose);
-        addRequirements(tankSubsystem, internalSubsystem);
-        addCommands(
-            new FollowPathCommand(tankSubsystem, initialPose, List.of(), ballOnePose),
-            new ShootCommand(internalSubsystem),
-            new ShootCommand(internalSubsystem),
-            new FollowPathCommand(tankSubsystem, ballOnePose, List.of(), ballTwoPose),
-            new ShootCommand(internalSubsystem)
-        );
+    public AutonBlueMiddleSequence(RobotContainer robotContainer, TankSubsystem tankSubsystem, InternalSubsystem internalSubsystem, IntakeSubsystem intakeSubsystem) {
+        super(robotContainer, tankSubsystem, internalSubsystem, intakeSubsystem, initialPose, ballOnePose, ballTwoPose);
     }
 }
