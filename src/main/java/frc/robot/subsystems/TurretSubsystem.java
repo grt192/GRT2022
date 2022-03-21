@@ -322,6 +322,10 @@ public class TurretSubsystem extends GRTSubsystem {
             r = jetson.getHubDistance();
             theta = jetson.getTurretTheta();
 
+            // Reset offsets to accomodate for rtheta system reset
+            turntableOffset = 0;
+            distanceOffset = 0;
+
             // System.out.println("JETSON r: " + r + " theta: " + theta);
         } else {
             // Otherwise, update our `r` and `theta` state system from the previous `r` and `theta` values
@@ -435,6 +439,8 @@ public class TurretSubsystem extends GRTSubsystem {
      * table. If rejecting, scale down flywheel speed to prevent scoring.
      */
     private void interpolateFlywheelHoodRefs() {
+        double hubDistance = r + distanceOffset;
+
         for (int i = 1; i < INTERPOLATION_TABLE.length; i++) {
             double[] above = INTERPOLATION_TABLE[i];
             double[] below = INTERPOLATION_TABLE[i - 1];
@@ -444,17 +450,17 @@ public class TurretSubsystem extends GRTSubsystem {
 
             // If the entry's distance is above the current distance, the current distance is between the entry 
             // and the previous entry.
-            if (rTop > r) {
+            if (rTop > hubDistance) {
                 // Where x axis is distance d, y axis is flywheel RPM f, the top and bottom points are A and B, 
                 // and the interpolated point is C:
                 // m = (f_A - f_B) / (d_A - d_B)
                 // C = (d_B + (d_C - d_B), mx) = (d_C, md_C)
                 double flywheelSlope = (flywheelTop - flywheelBottom) / (rTop - rBottom);
-                desiredFlywheelRPM = flywheelBottom + flywheelSlope * (r - rBottom);
+                desiredFlywheelRPM = flywheelBottom + flywheelSlope * (hubDistance - rBottom);
                 if (mode == TurretMode.REJECTING && !SKIP_REJECTION) desiredFlywheelRPM *= 0.5;
 
                 double hoodSlope = (hoodAngleTop - hoodAngleBottom) / (rTop - rBottom);
-                desiredHoodRadians = Math.toRadians(hoodAngleBottom + hoodSlope * (r - rBottom));
+                desiredHoodRadians = Math.toRadians(hoodAngleBottom + hoodSlope * (hubDistance - rBottom));
                 return;
             }
         }
@@ -466,7 +472,6 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     public void setReject(boolean reject) {
         // Don't do anything if the turret is retracted
-        // TODO: is this necessary? will internals still be executing periodic logic during climb?
         if (mode == TurretMode.RETRACTED) return;
         mode = reject ? TurretMode.REJECTING : TurretMode.SHOOTING;
     }
