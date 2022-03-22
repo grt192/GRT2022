@@ -196,6 +196,14 @@ public class InternalSubsystem extends GRTSubsystem {
     }
 
     /**
+     * Gets whether a shot has been requested.
+     * @return Whether a shot has been requested.
+     */
+    public boolean getShotRequested() {
+        return shotRequested;
+    }
+
+    /**
      * Normalizes a raw color from a color sensor to the closest stored color in colorMatcher using a tolerance of 0.8, 
      * returning `null` if no color was matched.
      * @param color The color to match.

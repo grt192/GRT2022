@@ -74,6 +74,33 @@ public class FollowPathCommand extends RamseteCommand {
     }
 
     /**
+     * Creates a FollowPathCommand from a given start point, list of waypoints, end point, and boolean representing whether
+     * the path should be reversed (if the robot should drive backwards through the trajectory).
+     * 
+     * @param tankSubsystem The tank subsystem.
+     * @param start The start point of the trajectory as a Pose2d.
+     * @param waypoints A list of waypoints the robot must pass through as a List<Translation2d>.
+     * @param end The end point of the trajectory as a Pose2d.
+     * @param reversed Whether the trajectory is reversed.
+     */
+    public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Translation2d> waypoints, Pose2d end, boolean reversed) {
+        this(
+            tankSubsystem,
+            // Target trajectory
+            TrajectoryGenerator.generateTrajectory(
+                start, waypoints, end, 
+                new TrajectoryConfig(MAX_VEL, MAX_ACCEL)
+                    .setReversed(reversed)
+                    .setKinematics(KINEMATICS)
+                    .addConstraint(new DifferentialDriveVoltageConstraint(
+                        new SimpleMotorFeedforward(Ks, Kv, Ka), 
+                        KINEMATICS, 
+                        10))
+            )
+        );
+    }
+
+    /**
      * Creates a FollowPathCommand from a given start point, list of waypoints, and end point.
      * 
      * @param tankSubsystem The tank subsystem.
@@ -82,18 +109,6 @@ public class FollowPathCommand extends RamseteCommand {
      * @param end The end point of the trajectory as a Pose2d.
      */
     public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Translation2d> waypoints, Pose2d end) {
-        this(
-            tankSubsystem,
-            // Target trajectory
-            TrajectoryGenerator.generateTrajectory(
-                start, waypoints, end, 
-                new TrajectoryConfig(MAX_VEL, MAX_ACCEL)
-                    .setKinematics(KINEMATICS)
-                    .addConstraint(new DifferentialDriveVoltageConstraint(
-                        new SimpleMotorFeedforward(Ks, Kv, Ka), 
-                        KINEMATICS, 
-                        10))
-            )
-        );
+        this(tankSubsystem, start, waypoints, end, false);
     }
 }
