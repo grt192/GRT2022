@@ -54,7 +54,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     public static final double DELAY_LIMIT_RESET = 0.3;
     private Double switchPressed = 0.0;
 
-    public boolean autoRaiseIntake = false;
+    public boolean autoRaiseIntake = true;
     private IntakePosition currentPosition = IntakePosition.DEPLOYED; // replace with IntakePosition.START in actual matches
 
     // Deploy position PID constants
@@ -138,21 +138,23 @@ public class IntakeSubsystem extends GRTSubsystem {
     public void periodic() {
         limitSwitchReset();
 
+        double power;
         // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
         if (!(internalSubsystem.getBallCount() < 2 && currentPosition == IntakePosition.DEPLOYED)) {
-            intake.set(0);
+            power = 0;
         } else {
             // Otherwise, use driver input if they're overriding and default to running intake automatically from vision
-            intake.set(driverOverride ? intakePower 
-                : jetson.ballDetected() ? 0.5 : 0);
+            power = driverOverride ? intakePower 
+                : jetson.ballDetected() ? 0.5 : 0;
         }
 
         if (autoRaiseIntake) {
-            currentPosition = intakePower > 0.1 ? IntakePosition.DEPLOYED : IntakePosition.RAISED;
+            currentPosition = power > 0.1 ? IntakePosition.DEPLOYED : IntakePosition.RAISED;
         }
 
+        intake.set(power);
         deploy.set(ControlMode.MotionMagic, currentPosition.value);
-        
+
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
         shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
     }

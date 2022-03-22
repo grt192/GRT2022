@@ -499,6 +499,11 @@ public class TurretSubsystem extends GRTSubsystem {
         this.turntableOffset += offset;
     }
 
+    public void resetOffsets() {
+        this.turntableOffset = 0;
+        this.distanceOffset = 0;
+    }
+
     /**
      * Gets the state of the flywheel (whether it is up to speed).
      * @return The state of the flywheel.
