@@ -5,9 +5,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 
 import frc.robot.RobotContainer;
-import frc.robot.subsystems.IntakeSubsystem;
-import frc.robot.subsystems.internals.InternalSubsystem;
-import frc.robot.subsystems.tank.TankSubsystem;
 
 import static frc.robot.Constants.BallCoordinates.*;
 
@@ -24,7 +21,7 @@ public class AutonBlueBottomSequence extends GRTAutonSequence {
         Rotation2d.fromDegrees(-66)); // TODO: are negative angles ok?
     private static final Pose2d ballOnePose = localizeBallCoordinate(LEFT_BOTTOM_BLUE, 260.251594482);
 
-    public AutonBlueBottomSequence(RobotContainer robotContainer, TankSubsystem tankSubsystem, InternalSubsystem internalSubsystem, IntakeSubsystem intakeSubsystem) {
-        super(robotContainer, tankSubsystem, internalSubsystem, intakeSubsystem, initialPose, ballOnePose);
+    public AutonBlueBottomSequence(RobotContainer robotContainer) {
+        super(robotContainer, initialPose, ballOnePose);
     }
 }

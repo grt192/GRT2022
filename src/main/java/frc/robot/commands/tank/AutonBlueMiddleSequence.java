@@ -5,9 +5,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 
 import frc.robot.RobotContainer;
-import frc.robot.subsystems.IntakeSubsystem;
-import frc.robot.subsystems.internals.InternalSubsystem;
-import frc.robot.subsystems.tank.TankSubsystem;
 
 import static frc.robot.Constants.BallCoordinates.*;
 
@@ -27,7 +24,7 @@ public class AutonBlueMiddleSequence extends GRTAutonSequence {
     private static Pose2d ballOnePose = localizeBallCoordinate(LEFT_MID_BLUE, 215.248230);
     private static Pose2d ballTwoPose = localizeBallCoordinate(TERMINAL_BLUE, 225);
 
-    public AutonBlueMiddleSequence(RobotContainer robotContainer, TankSubsystem tankSubsystem, InternalSubsystem internalSubsystem, IntakeSubsystem intakeSubsystem) {
-        super(robotContainer, tankSubsystem, internalSubsystem, intakeSubsystem, initialPose, ballOnePose, ballTwoPose);
+    public AutonBlueMiddleSequence(RobotContainer robotContainer) {
+        super(robotContainer, initialPose, ballOnePose, ballTwoPose);
     }
 }
