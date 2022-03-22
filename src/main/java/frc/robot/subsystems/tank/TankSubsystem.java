@@ -179,7 +179,7 @@ public class TankSubsystem extends GRTSubsystem {
         
         shuffleX.setValue(pose.getX());
         shuffleY.setValue(pose.getY());
-        shuffleHeading.setValue(pose.getRotation().getRadians());
+        shuffleHeading.setValue(Math.toDegrees(pose.getRotation().getRadians()));
         shuffleboardField.setRobotPose(pose);
     }
 
