@@ -18,6 +18,8 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.brownout.PowerController;
+import frc.robot.commands.intake.DeployIntakeCommand;
+import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.commands.intake.RunIntakeCommand;
 import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.FollowPathCommand;
@@ -37,11 +39,11 @@ import frc.robot.subsystems.tank.TankSubsystem;
  */
 public class RobotContainer {
     // Subsystems
-    public final TankSubsystem tankSubsystem;
-    public final TurretSubsystem turretSubsystem;
-    public final IntakeSubsystem intakeSubsystem;
-    public final InternalSubsystem internalSubsystem;
-    public final ClimbSubsystem climbSubsystem;
+    private final TankSubsystem tankSubsystem;
+    private final TurretSubsystem turretSubsystem;
+    private final IntakeSubsystem intakeSubsystem;
+    private final InternalSubsystem internalSubsystem;
+    private final ClimbSubsystem climbSubsystem;
 
     private final JetsonConnection jetson;
     private final PowerController powerController = null;
@@ -89,26 +91,27 @@ public class RobotContainer {
         );
         */
 
-        // Instantiate commands
-        // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
-        autonCommand = new FollowPathCommand(
-            tankSubsystem,
-            new Pose2d(),
-            List.of(
-                new Translation2d(1, 1),
-                new Translation2d(2, -1)
-            ),
-            new Pose2d(3, 0, new Rotation2d())
-        );
-
         // Configure the button bindings
         configureButtonBindings();
 
         // Set initial robot position
         // This is temporary; after shooter-testing is merged, each auton path should call this
         // in their constructor.
-        double hubDist = 138.0;
-        setInitialPosition(new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d()));
+        double hubDist = 0;
+        Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
+        setInitialPosition(initialPose);
+
+        // Instantiate commands
+        // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
+        autonCommand = new FollowPathCommand(
+            tankSubsystem,
+            initialPose,
+            List.of(
+                new Translation2d(1, 1),
+                new Translation2d(2, -1)
+            ),
+            new Pose2d(3, 0, new Rotation2d())
+        );
     }
 
     /**
@@ -116,13 +119,6 @@ public class RobotContainer {
      * created by instantiating a {@link GenericHID} or one of its subclasses
      * ({@link edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then
      * passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-     */
-    private void configureButtonBindings() {
-        controllerBindings();
-    }
-
-    /**
-     * TODO: finalize these, talk to drivers
      * 
      * Controller 1 (driver):
      * Joysticks -> car drive -- left Y -> foward, right X -> angular (tank)
@@ -134,9 +130,10 @@ public class RobotContainer {
      * A button -> request shot (internals)
      * X button -> start climb sequence (climb)
      */
-    private void controllerBindings() {
+    private void configureButtonBindings() {
         driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
-        //driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+        driveBButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
+        driveYButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
         driveXButton.whenPressed(new InstantCommand(() -> {turretSubsystem.toggleClimb();}));
 
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));

@@ -146,12 +146,11 @@ public class TurretSubsystem extends GRTSubsystem {
     // Shuffleboard
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardTurntablePosEntry;
-    private GRTNetworkTableEntry shuffleboardTurntableVeloEntry;
     private GRTNetworkTableEntry shuffleboardFlywheelVeloEntry;
     private GRTNetworkTableEntry shuffleboardHoodPosEntry;
     private final GRTNetworkTableEntry shuffleboardOffset;
-    private GRTNetworkTableEntry rEntry;
-    private GRTNetworkTableEntry thetaEntry;
+    private final GRTNetworkTableEntry rEntry;
+    private final GRTNetworkTableEntry thetaEntry;
 
     // Debug flags
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, `dy`, `dtheta`, 
@@ -299,7 +298,6 @@ public class TurretSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         shuffleboardTurntablePosEntry.setValue(Math.toDegrees(turntableEncoder.getPosition()));
-        // shuffleboardTurntableVeloEntry.setValue(turntableEncoder.getVelocity());
         // shuffleboardFlywheelVeloEntry.setValue(flywheelEncoder.getVelocity());
         // shuffleboardHoodPosEntry.setValue(Math.toDegrees(hood.getSelectedSensorPosition() / HOOD_RADIANS_TO_TICKS));
 
@@ -318,7 +316,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // If the hub is in vision range, use vision's `r` and `theta` as ground truth.
         // While the flywheel is running, use the manual system values instead to prevent camera issues while the flywheel shakes
         // the turntable.
-        if (jetson.turretVisionWorking() && !runFlywheel) { 
+        if (jetson.turretVisionWorking() && !runFlywheel) {
             r = jetson.getHubDistance();
             theta = jetson.getTurretTheta();
 
