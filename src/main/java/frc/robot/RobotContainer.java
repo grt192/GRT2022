@@ -37,11 +37,11 @@ import frc.robot.subsystems.tank.TankSubsystem;
  */
 public class RobotContainer {
     // Subsystems
-    private final TankSubsystem tankSubsystem;
+    public final TankSubsystem tankSubsystem;
     public final TurretSubsystem turretSubsystem;
-    private final IntakeSubsystem intakeSubsystem;
-    private final InternalSubsystem internalSubsystem;
-    private final ClimbSubsystem climbSubsystem;
+    public final IntakeSubsystem intakeSubsystem;
+    public final InternalSubsystem internalSubsystem;
+    public final ClimbSubsystem climbSubsystem;
 
     private final JetsonConnection jetson;
     private final PowerController powerController = null;
@@ -172,5 +172,21 @@ public class RobotContainer {
      */
     public PowerController getPowerController() {
         return powerController;
+    }
+
+    public TankSubsystem getTankSubsystem() {
+        return tankSubsystem;
+    }
+
+    public TurretSubsystem getTurretSubsystem() {
+        return turretSubsystem;
+    }
+
+    public IntakeSubsystem getIntakeSubsystem() {
+        return intakeSubsystem;
+    }
+
+    public InternalSubsystem getInternalSubsystem() {
+        return internalSubsystem;
     }
 }

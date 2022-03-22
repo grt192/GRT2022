@@ -137,8 +137,8 @@ public class TurretSubsystem extends GRTSubsystem {
     private double TURNTABLE_THETA_FF = 4; // TODO: tune
 
     private static final double HOOD_RADIANS_TO_TICKS = 243732.0 / Math.toRadians(35.8029900116);
-    private static final double HOOD_MIN_POS = 0.0;
-    private static final double HOOD_MAX_POS = Math.toRadians(36) * HOOD_RADIANS_TO_TICKS; // 243758
+    public static final double HOOD_MIN_POS = 0.0;
+    public static final double HOOD_MAX_POS = Math.toRadians(36) * HOOD_RADIANS_TO_TICKS; // 243758
 
     private static final double FLYWHEEL_GEAR_RATIO = 36.0 / 18.0;
 
@@ -573,6 +573,24 @@ public class TurretSubsystem extends GRTSubsystem {
         turntable.setSmartCurrentLimit(motorLimit);
         hood.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         flywheel.setSmartCurrentLimit(motorLimit);
+    }
+
+    /**
+     * Sets the velocity of the flywheel. Used exclusively during Test Mode.
+     * 
+     * @param vel desired flywheel velocity 
+     */
+    public void setFlywheelVel(double desiredVel) {
+        flywheelPidController.setReference(desiredVel, ControlType.kVelocity);
+    }
+    
+    /**
+     * Sets the position (in ticks) of the hood. Used exclusively during Test Mode.
+     * 
+     * @param vel desired position (in ticks) 
+     */
+    public void setHoodPos(double ticks) { 
+        hood.set(ControlMode.Position, ticks);
     }
 
     /**
