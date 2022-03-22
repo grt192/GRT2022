@@ -139,13 +139,13 @@ public class Robot extends TimedRobot {
 
         // Sweep turntable (sequence: left, center, right, center)
         double turretTimeDelta = 1.5;  // Seconds to rotate turret 180
-        turretSubsystem.turntableOffset = Math.toRadians(-180);
+        turretSubsystem.changeTurntableOffset(Math.toRadians(-180));
         Timer.delay(turretTimeDelta);
-        turretSubsystem.turntableOffset = Math.toRadians(0);
+        turretSubsystem.changeTurntableOffset(-Math.toRadians(-180));
         Timer.delay(turretTimeDelta);
-        turretSubsystem.turntableOffset = Math.toRadians(180);
+        turretSubsystem.changeTurntableOffset(Math.toRadians(180));
         Timer.delay(turretTimeDelta);
-        turretSubsystem.turntableOffset = Math.toRadians(0);
+        turretSubsystem.changeTurntableOffset(-Math.toRadians(180));
 
         // Run flywheel at a low speed 
         turretSubsystem.setFlywheelVel(1000);
