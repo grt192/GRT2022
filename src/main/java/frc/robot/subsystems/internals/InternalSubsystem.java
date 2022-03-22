@@ -31,7 +31,6 @@ public class InternalSubsystem extends GRTSubsystem {
     private final AnalogPotentiometer entrance;
     private final ColorSensorV3 storage;
     private final AnalogPotentiometer staging;
-    // private final AnalogPotentiometer exit;
 
     private final Color RED = new Color(0.437255859375, 0.394775390625, 0.16845703125);
     private final Color BLUE = new Color(0.170654296875, 0.4189453125, 0.41064453125);
@@ -39,35 +38,30 @@ public class InternalSubsystem extends GRTSubsystem {
     private final Color ALLIANCE_COLOR;
 
     private final ColorMatch colorMatcher;
-    private final Timer exitTimer;
+
     private final Timer entranceTimer;
+    private final Timer exitTimer;
     private final Timer storageTimer;
 
-    // Subsystem ball states
-    private int entranceStorageBallCount = 0;
-    private int storageStagingBallCount = 0;
-    private int stagingExitBallCount = 0;
-    private int totalBallCount = 0;
-
-    private boolean prevEntranceDetected = false;
-   // private boolean prevStorageDetected = false;
-   // private boolean prevStagingDetected = false;
+    private int ballCount = 0;
 
     private boolean shotRequested = false;
     private boolean rejecting = false;
     private boolean rejectingChecked = false;
 
-    private boolean driverOverride = false;
+    // Debug flags
+    // Whether to skip the turret tolerance check and fire immediately when the driver requests a shot.
+    private static boolean SKIP_TOLERANCE_CHECK = false;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
-        // TODO: measure this
-        super(50);
+        super(15);
 
         this.turretSubsystem = turretSubsystem;
 
         // Initialize bottom motor
         motorBottom = new WPI_TalonSRX(motorPortBottom);
         motorBottom.configFactoryDefault();
+        motorBottom.setInverted(true);
         motorBottom.setNeutralMode(NeutralMode.Brake);
 
         // Initialize top motor
@@ -80,7 +74,6 @@ public class InternalSubsystem extends GRTSubsystem {
         entrance = new AnalogPotentiometer(entranceIRPort);
         storage = new ColorSensorV3(I2C.Port.kMXP);
         staging = new AnalogPotentiometer(stagingIRPort);
-        // exit = new AnalogPotentiometer(exitIRPort);
 
         colorSensorThread = new ColorSensorThread(storage);
 
@@ -90,9 +83,9 @@ public class InternalSubsystem extends GRTSubsystem {
         colorMatcher.addColorMatch(EMPTY);
         colorMatcher.setConfidenceThreshold(0.8);
 
-        exitTimer = new Timer();
         entranceTimer = new Timer();
         storageTimer = new Timer();
+        exitTimer = new Timer();
 
         // Set alliance color from FMS
         switch (DriverStation.getAlliance()) {
@@ -100,57 +93,36 @@ public class InternalSubsystem extends GRTSubsystem {
             case Blue: ALLIANCE_COLOR = BLUE; break;
             default: ALLIANCE_COLOR = RED; break;
         }
-
-        // if we are in auton we start with 1 ball
-        if (DriverStation.isAutonomous()) {
-            totalBallCount = 1;
-        }
     }
 
     @Override
     public void periodic() {
-
-        boolean entranceDetected = entrance.get() >= 0.4;
-        if (!prevEntranceDetected && entranceDetected) totalBallCount++;
-        prevEntranceDetected = entranceDetected;
-
+        // Get states from IR and color sensors
+        boolean entranceDetected = entrance.get() >= 0.1;
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
         boolean storageDetected = isBall(storageColor);
+        boolean stagingDetected = staging.get() >= 0.2;
 
-        boolean stagingDetected = staging.get() >= 0.13;
-
-        // Testing prints, Y = ball detected, X = no ball
-        System.out.println("Entrance: " + (prevEntranceDetected ? "Y" : "X") + 
-                            ", Storage: " + (storageDetected ? "Y" : "X") + 
-                            ", Staging: " + (stagingDetected ? "Y" : "X"));
-
-
-        if (driverOverride) return;
+        // Set the ball count from staging and storage.
+        // This leaves a small window while a ball is rolling from the entrance to storage where the actual ball 
+        // count of the subsystem is larger than `ballCount`.
+        ballCount = (stagingDetected ? 1 : 0) + (storageDetected ? 1 : 0);
 
         // If there is a ball in the entrance, run the bottom motor.
-        //old condition: (entranceStorageBallCount > 0 && storageStagingBallCount == 0)
-        if (prevEntranceDetected && !storageDetected) {
-            // Spin the bottom motor on a timer
-            entranceTimer.start();
+        if (entranceDetected && !storageDetected) {
             motorBottom.set(0.3);
+            entranceTimer.start();
         }
-        // If 1.5 second has elapsed, stop motor
-        // TODO this may need more logic to make sure we actually get the ball in, 
-        // could use storage color sensor to detect if it got caught
-        if (entranceTimer.hasElapsed(1.5)) {
+
+        // If 5 seconds have elapsed or the ball has progressed past entrance, stop the bottom motor
+        if ((storageDetected || entranceTimer.hasElapsed(5)) && entranceTimer.get() > 0) {
+            motorBottom.set(0);
             entranceTimer.stop();
             entranceTimer.reset();
-            motorBottom.set(0);
-
-            prevEntranceDetected = false;
-            //entranceStorageBallCount--;
-            //storageStagingBallCount++;
-            System.out.println("ball moved from entrance to storage");
         }
-        
+
         // If there is a ball between storage and staging and staging is empty, run the top and bottom motors
-        //old condition: (storageStagingBallCount > 0 && stagingExitBallCount == 0)
-         if (storageDetected && !stagingDetected && !shotRequested) {
+        if (storageDetected && !stagingDetected && !shotRequested) {
             // Spin the bottom and top motors on a timer
             storageTimer.start();
             motorTop.set(0.5);
@@ -161,61 +133,41 @@ public class InternalSubsystem extends GRTSubsystem {
                 rejectingChecked = true;
             }
         }
-         // If 0.5 seconds have elapsed, stop the motors
-         if (storageTimer.hasElapsed(0.5)) {
+
+        // If 0.5 seconds have elapsed, stop the motors
+        if (storageTimer.hasElapsed(0.5)) {
             storageTimer.stop();
             storageTimer.reset();
             motorTop.set(0);
             motorBottom.set(0);
-
-            //storageStagingBallCount--;
-            //stagingExitBallCount++;
-            System.out.println("ball moved from storage to staging");
         }
 
         // If there is a ball in staging, we don't want to push it into turret, especially if there is a shot going
-        if (stagingDetected) {
-            motorTop.set(0);
-        }
+        if (stagingDetected) motorTop.set(0);
 
-        if (turretSubsystem != null) {
-            // If a shot was requested and the turret is ready, load a ball into the turret.
-            // If rejecting, the turret can be in a semi-aligned state; otherwise, require it to be fully lined up.
-            turretSubsystem.setReject(rejecting);
-            if (shotRequested /* && turretSubsystem.getState() == TurretSubsystem.ModuleState.HIGH_TOLERANCE
-                 || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.LOW_TOLERANCE */) {
-                // Spin the top motor on a timer
-               
-                    exitTimer.start();
-                    motorTop.set(0.5);
-    
-                    // If 1.5 seconds have elapsed, mark the shot as finished
-                    if (exitTimer.hasElapsed(1)) {
-                        exitTimer.stop();
-                        exitTimer.reset();
-                        motorTop.set(0);
-    
-                        // Reset states
-                        shotRequested = false;
-                        rejectingChecked = false;
-                        //stagingExitBallCount--;
-                        totalBallCount--;
-                        System.out.println("ball exited turret");
-                    }  
+        // If a shot was requested and the turret is ready, load a ball into the turret.
+        turretSubsystem.setReject(rejecting);
+        if (shotRequested && (SKIP_TOLERANCE_CHECK 
+            || turretSubsystem.getState() == TurretSubsystem.ModuleState.HIGH_TOLERANCE
+            || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.LOW_TOLERANCE)
+        ) {
+            // Spin the top motor on a timer
+            exitTimer.start();
+            motorTop.set(0.5);
+
+            // If 0.5 seconds have elapsed, mark the shot as finished
+            if (exitTimer.hasElapsed(0.5)) {
+                exitTimer.stop();
+                exitTimer.reset();
+                motorTop.set(0);
+
+                // Reset states
+                shotRequested = false;
+                rejectingChecked = false;
             }
         }
 
-        entranceStorageBallCount = prevEntranceDetected ? 1 : 0;
-        storageStagingBallCount = storageDetected ? 1 : 0;
-        stagingExitBallCount = stagingDetected ? 1 : 0;
-
-        // This is really just a different version of our other ball/no ball print so 
-        //it's not *really* needed unless we want to implement ball-counting, though in that 
-        //case we just change that to this.
-        System.out.println("Entrance: " + entranceStorageBallCount + 
-                            " Storage: " + storageStagingBallCount +
-                            " Staging: " + stagingExitBallCount);
-
+        turretSubsystem.setBallReady(ballCount > 0);
     }
 
     /**
@@ -240,7 +192,7 @@ public class InternalSubsystem extends GRTSubsystem {
      * @return The current ball count.
      */
     public int getBallCount() {
-        return entranceStorageBallCount + storageStagingBallCount + stagingExitBallCount;
+        return ballCount;
     }
 
     /**
@@ -292,9 +244,5 @@ public class InternalSubsystem extends GRTSubsystem {
 
         motorBottom.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         motorTop.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
-    }
-
-    public void setDriverOverride(boolean override) {
-        this.driverOverride = override;
     }
 }

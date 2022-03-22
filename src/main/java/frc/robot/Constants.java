@@ -34,6 +34,9 @@ public final class Constants {
         public static final int turntablePort = 17;
         public static final int hoodPort = 16;
         public static final int flywheelPort = 15;
+
+        public static final int lLimitSwitchPort = 4;
+        public static final int rLimitSwitchPort = 5;
     }
 
     public static final class InternalConstants {
@@ -44,20 +47,20 @@ public final class Constants {
 
         public static final int entranceIRPort = 0;
         public static final int stagingIRPort = 1;
-        public static final int exitIRPort = 3;
     }
 
     public static final class IntakeConstants {
         public static final int intakePort = 12;
         public static final int deploymentPort = 11;
+        public static final int limitSwitchPort = 3;
     }
 
     public static final class ClimbConstants {
-        public static final int sixMotorPort = 0;
-        public static final int sixBrakePort = 1;
+        public static final int sixMotorPort = 3;
+        public static final int sixBrakePort = 2;
 
-        public static final int tenMotorPort = 3;
-        public static final int tenBrakePort = 2;
+        public static final int tenMotorPort = 1;
+        public static final int tenBrakePort = 0;
 
         public static final int tenLeftSolenoidPort = 18;
         public static final int tenRightSolenoidPort = 18;
@@ -69,7 +72,7 @@ public final class Constants {
     public static final class JetsonConstants {
         public static final int turretCameraPort = 1181;
         public static final int intakeCameraPort = 1182;
-        public static final int jetsonPort = 1337;
+        public static final int jetsonPort = 5800;
         public static final String jetsonIP = "10.1.92.94";
     }
 

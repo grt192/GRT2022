@@ -1,31 +1,38 @@
 package frc.robot.subsystems;
 
-import static frc.robot.Constants.IntakeConstants.deploymentPort;
-import static frc.robot.Constants.IntakeConstants.intakePort;
-
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.networktables.EntryListenerFlags;
+import edu.wpi.first.networktables.EntryNotification;
+import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
+import frc.robot.commands.intake.DeployIntakeCommand;
+import frc.robot.commands.intake.RaiseIntakeCommand;
+import frc.robot.jetson.JetsonConnection;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
 import frc.robot.subsystems.internals.InternalSubsystem;
+
+import static frc.robot.Constants.IntakeConstants.*;
 
 public class IntakeSubsystem extends GRTSubsystem {
     /**
      * An enum representing the position of the intake, with `IntakePosition.value`
-     * representing the
-     * counterclockwise angle from straight upwards. In degrees.
+     * representing the counterclockwise angle from straight upwards.
      */
     public enum IntakePosition {
-        RAISED(0), DEPLOYED(200000);
+        START(0), RAISED(17214), DEPLOYED(486209);
 
         public final double value;
 
@@ -35,35 +42,44 @@ public class IntakeSubsystem extends GRTSubsystem {
     }
 
     private final InternalSubsystem internalSubsystem;
-    // private final JetsonConnection jetson;
+    private final JetsonConnection jetson;
 
     private final CANSparkMax intake;
     private final WPI_TalonSRX deploy;
-
-    private IntakePosition currentPosition = IntakePosition.DEPLOYED;
+    private final DigitalInput limitSwitch;
 
     private double intakePower = 0;
+    private boolean driverOverride = false;
+
+    public static final double DELAY_LIMIT_RESET = 0.3;
+    private Double switchPressed = 0.0;
+
+    public boolean autoRaiseIntake = false;
+    private IntakePosition currentPosition = IntakePosition.DEPLOYED; // replace with IntakePosition.START in actual matches
 
     // Deploy position PID constants
-    private static final double kP = 0.125;
+    private static final double kP = 0.1;
     private static final double kI = 0;
     private static final double kD = 0;
+    private static final double kFF = 0.016;
+    private static final double cruiseVel = 20000;
+    private static final double accel = 40000;
+    private static final int sCurveStrength = 3;
 
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardDeployPosition;
-    // private final NetworkTableEntry shuffleboardPEntry = null;
-    // private final NetworkTableEntry shuffleboardIEntry = null;
-    // private final NetworkTableEntry shuffleboardDEntry = null;
+    private final GRTNetworkTableEntry shuffleboardVeloEntry;
 
-    // TODO: measure this
-    // private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
+    // Debug flags
+    // Whether PID tuning shuffleboard entries should be displayed
+    private static boolean DEBUG_PID = false; 
 
-    public IntakeSubsystem(InternalSubsystem internalSubsystem /* , JetsonConnection jetson */) {
+    public IntakeSubsystem(InternalSubsystem internalSubsystem, JetsonConnection jetson) {
         // TODO: measure this
         super(50);
 
         this.internalSubsystem = internalSubsystem;
-        // this.jetson = jetson;
+        this.jetson = jetson;
 
         // Initialize the intake (roller) motor
         intake = new CANSparkMax(intakePort, MotorType.kBrushless);
@@ -72,61 +88,93 @@ public class IntakeSubsystem extends GRTSubsystem {
         // Initialize the deploy (intake position) motor
         deploy = new WPI_TalonSRX(deploymentPort);
         deploy.configFactoryDefault();
+        deploy.setInverted(true);
         deploy.setNeutralMode(NeutralMode.Brake);
 
         deploy.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-        deploy.setSelectedSensorPosition(0);
-        deploy.setSensorPhase(false);
+        deploy.setSelectedSensorPosition(IntakePosition.START.value);
+        deploy.setSensorPhase(true);
         deploy.config_kP(0, kP);
         deploy.config_kI(0, kI);
         deploy.config_kD(0, kD);
+        deploy.config_kF(0, kFF);
+        deploy.configMotionCruiseVelocity(cruiseVel);
+        deploy.configMotionAcceleration(accel);
+        deploy.configMotionSCurveStrength(sCurveStrength);
 
-        // Soft limit deploy between RAISED and DEPLOYED
-        /*
-        deploy.configForwardSoftLimitEnable(true);
+        // Soft limit deploy to the START position. The soft limit in the other direction is not
+        // needed because of the limit switch and hard stop.
         deploy.configReverseSoftLimitEnable(true);
-        deploy.configForwardSoftLimitThreshold(IntakePosition.RAISED.value);
-        deploy.configReverseSoftLimitThreshold(IntakePosition.DEPLOYED.value);
-        */
+        deploy.configReverseSoftLimitThreshold(IntakePosition.START.value);
+
+        limitSwitch = new DigitalInput(limitSwitchPort);
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Intake");
-        // shuffleboardPEntry = shuffleboardTab.add("kP", kP).getEntry();
-        // shuffleboardIEntry = shuffleboardTab.add("kI", kI).getEntry();
-        // shuffleboardDEntry = shuffleboardTab.add("kD", kD).getEntry();
+        shuffleboardVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("velo", deploy.getSelectedSensorVelocity()).getEntry());
+        shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy position", 0).getEntry());
 
-        shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy Position", 0).getEntry());
+        // If DEBUG_PID is set, allow for PID tuning on shuffleboard
+        if (DEBUG_PID) {
+            shuffleboardTab.add("kP", kP).getEntry()
+                .addListener(this::setDeployP, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("kI", kI).getEntry()
+                .addListener(this::setDeployI, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("kD", kD).getEntry()
+                .addListener(this::setDeployD, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("kFF", kFF).getEntry()
+                .addListener(this::setDeployFF, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Cruise Vel", cruiseVel).getEntry()
+                .addListener(this::setDeployCruiseVel, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Accel", accel).getEntry()
+                .addListener(this::setDeployAccel, EntryListenerFlags.kUpdate);
+        }
 
-        // shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
-        // shuffleboardTab.add("Deploy", new DeployIntakeCommand(this));
+        shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
+        shuffleboardTab.add("Deploy", new DeployIntakeCommand(this));
     }
 
     @Override
     public void periodic() {
-        // Get PID constants from Shuffleboard for testing
-        // deploy.config_kP(0, shuffleboardPEntry.getDouble(kP));
-        // deploy.config_kI(0, shuffleboardIEntry.getDouble(kI));
-        // deploy.config_kD(0, shuffleboardDEntry.getDouble(kD));
+        limitSwitchReset();
+
+        // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
+        if (!(internalSubsystem.getBallCount() < 2 && currentPosition == IntakePosition.DEPLOYED)) {
+            intake.set(0);
+        } else {
+            // Otherwise, use driver input if they're overriding and default to running intake automatically from vision
+            intake.set(driverOverride ? intakePower 
+                : jetson.ballDetected() ? 0.5 : 0);
+        }
+
+        if (autoRaiseIntake) {
+            currentPosition = intakePower > 0.1 ? IntakePosition.DEPLOYED : IntakePosition.RAISED;
+        }
+
+        deploy.set(ControlMode.MotionMagic, currentPosition.value);
         
-
-        // If the jetson detects a ball or the driver is running the intake, the intake
-        // is deployed,
-        // and there are less than 2 balls in internals, run the intake motor
-        // TODO: how should we work in the jetson ball detection code with variable
-        // intake speeds from the driver?
-        // Also, if running the intake in reverse is an option, how should internals
-        // ball count be worked into this?
-        boolean readyToIntake = /* internalSubsystem.getBallCount() < 2 && */
-                currentPosition == IntakePosition.DEPLOYED;
-
-        intake.set(readyToIntake ? intakePower : 0);
-
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
+        shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
+    }
+
+    private void limitSwitchReset() {
+        // Check limit switch and reset encoder if detected
+        // If the limit switch returns `false`, it's being pressed and the encoder should be reset
+        if (!limitSwitch.get()) {
+            if (switchPressed == null) {
+                switchPressed = Timer.getFPGATimestamp();
+            }
+        } else {
+            switchPressed = null;
+        }
+
+        if (switchPressed != null && Timer.getFPGATimestamp() > switchPressed + DELAY_LIMIT_RESET) {
+            deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);
+        }
     }
 
     /**
      * Temp testing function to supply raw power to the deploy motor.
-     * 
      * @param power The percent power to supply.
      */
     public void setDeployPower(double power) {
@@ -135,7 +183,6 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Sets the power of the intake rollers.
-     * 
      * @param intakePower The power (in percent output) to run the motors at.
      */
     public void setIntakePower(double intakePower) {
@@ -144,12 +191,18 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Sets the position of the intake mechanism.
-     * 
      * @param position The position to set the intake to.
      */
     public void setPosition(IntakePosition position) {
         currentPosition = position;
-        deploy.set(ControlMode.Position, position.value /* * DEGREES_TO_ENCODER_TICKS */);
+    }
+
+    /**
+     * Sets whether the driver is overriding the intake's automatic run procedure.
+     * @param override Whether to use driver input as power.
+     */
+    public void setDriverOverride(boolean override) {
+        driverOverride = override;
     }
 
     @Override
@@ -163,5 +216,33 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         deploy.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         intake.setSmartCurrentLimit(motorLimit);
+    }
+
+    /**
+     * Intake PID tuning NetworkTable callbacks.
+     * @param change The `EntryNotification` representing the NetworkTable entry change.
+     */
+    private void setDeployP(EntryNotification change) {
+        deploy.config_kP(0, change.value.getDouble());
+    }
+
+    private void setDeployI(EntryNotification change) {
+        deploy.config_kI(0, change.value.getDouble());
+    }
+
+    private void setDeployD(EntryNotification change) {
+        deploy.config_kD(0, change.value.getDouble());
+    }
+
+    private void setDeployFF(EntryNotification change) {
+        deploy.config_kF(0, change.value.getDouble());
+    }
+
+    private void setDeployCruiseVel(EntryNotification change) {
+        deploy.configMotionCruiseVelocity(change.value.getDouble());
+    }
+
+    private void setDeployAccel(EntryNotification change) {
+        deploy.configMotionAcceleration(change.value.getDouble());
     }
 }
