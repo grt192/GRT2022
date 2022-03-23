@@ -55,7 +55,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     private Double switchPressed = 0.0;
 
     public boolean autoDeployIntake = true;
-    private IntakePosition targetPosition = IntakePosition.START; // replace with IntakePosition.START in actual matches
+    private IntakePosition targetPosition = IntakePosition.START;
 
     // Deploy position PID constants
     private static final double kP = 0.1;
@@ -112,23 +112,23 @@ public class IntakeSubsystem extends GRTSubsystem {
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Intake");
         shuffleboardVeloEntry = new GRTNetworkTableEntry(
-                shuffleboardTab.add("velo", deploy.getSelectedSensorVelocity()).getEntry());
+            shuffleboardTab.add("velo", deploy.getSelectedSensorVelocity()).getEntry());
         shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy position", 0).getEntry());
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
             shuffleboardTab.add("kP", kP).getEntry()
-                    .addListener(this::setDeployP, EntryListenerFlags.kUpdate);
+                .addListener(this::setDeployP, EntryListenerFlags.kUpdate);
             shuffleboardTab.add("kI", kI).getEntry()
-                    .addListener(this::setDeployI, EntryListenerFlags.kUpdate);
+                .addListener(this::setDeployI, EntryListenerFlags.kUpdate);
             shuffleboardTab.add("kD", kD).getEntry()
-                    .addListener(this::setDeployD, EntryListenerFlags.kUpdate);
+                .addListener(this::setDeployD, EntryListenerFlags.kUpdate);
             shuffleboardTab.add("kFF", kFF).getEntry()
-                    .addListener(this::setDeployFF, EntryListenerFlags.kUpdate);
+                .addListener(this::setDeployFF, EntryListenerFlags.kUpdate);
             shuffleboardTab.add("Cruise Vel", cruiseVel).getEntry()
-                    .addListener(this::setDeployCruiseVel, EntryListenerFlags.kUpdate);
+                .addListener(this::setDeployCruiseVel, EntryListenerFlags.kUpdate);
             shuffleboardTab.add("Accel", accel).getEntry()
-                    .addListener(this::setDeployAccel, EntryListenerFlags.kUpdate);
+                .addListener(this::setDeployAccel, EntryListenerFlags.kUpdate);
         }
 
         shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
@@ -164,33 +164,17 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     private void limitSwitchReset() {
         // Check limit switch and reset encoder if detected
-        // If the limit switch returns `false`, it's being pressed and the encoder
-        // should be reset
-        if (!limitSwitch.get()) {
-            if (switchPressed == null) {
-                switchPressed = Timer.getFPGATimestamp();
-            }
-        } else {
-            switchPressed = null;
-        }
+        // If the limit switch returns `false`, it's being pressed and the encoder should be reset
+        switchPressed = !limitSwitch.get() && switchPressed == null
+            ? Timer.getFPGATimestamp()
+            : null;
 
-        if (switchPressed != null && Timer.getFPGATimestamp() > switchPressed + DELAY_LIMIT_RESET) {
+        if (switchPressed != null && Timer.getFPGATimestamp() > switchPressed + DELAY_LIMIT_RESET)
             deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);
-        }
-    }
-
-    /**
-     * Temp testing function to supply raw power to the deploy motor.
-     * 
-     * @param power The percent power to supply.
-     */
-    public void setDeployPower(double power) {
-        deploy.set(power);
     }
 
     /**
      * Sets the power of the intake rollers.
-     * 
      * @param intakePower The power (in percent output) to run the motors at.
      */
     public void setIntakePower(double intakePower) {
@@ -199,7 +183,6 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Sets the position of the intake mechanism.
-     * 
      * @param position The position to set the intake to.
      */
     public void setPosition(IntakePosition position) {
@@ -208,7 +191,6 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Sets whether the driver is overriding the intake's automatic run procedure.
-     * 
      * @param override Whether to use driver input as power.
      */
     public void setDriverOverride(boolean override) {
@@ -230,9 +212,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Intake PID tuning NetworkTable callbacks.
-     * 
-     * @param change The `EntryNotification` representing the NetworkTable entry
-     *               change.
+     * @param change The `EntryNotification` representing the NetworkTable entry change.
      */
     private void setDeployP(EntryNotification change) {
         deploy.config_kP(0, change.value.getDouble());
