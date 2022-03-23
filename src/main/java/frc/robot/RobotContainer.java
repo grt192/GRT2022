@@ -97,7 +97,7 @@ public class RobotContainer {
         // Set initial robot position
         // This is temporary; after shooter-testing is merged, each auton path should call this
         // in their constructor.
-        double hubDist = 0;
+        double hubDist = 162;
         Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
         setInitialPosition(initialPose);
 
@@ -142,7 +142,7 @@ public class RobotContainer {
         Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
         tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
 
-        intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, driveController));
+        intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, mechController));
 
         turretSubsystem.setDefaultCommand(new RunCommand(() -> {
             switch (mechController.getPOV()) {

@@ -140,13 +140,16 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         double power;
         // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
-        if (!(internalSubsystem.getBallCount() < 2 && currentPosition == IntakePosition.DEPLOYED)) {
+        if (internalSubsystem.getBallCount() > 2) {
+            System.out.println("ball: " + internalSubsystem.getBallCount() + " deployed : " + (currentPosition != IntakePosition.DEPLOYED));
             power = 0;
         } else {
             // Otherwise, use driver input if they're overriding and default to running intake automatically from vision
             power = driverOverride ? intakePower 
                 : jetson.ballDetected() ? 0.5 : 0;
         }
+
+        System.out.println("Power: " + power);
 
         if (autoRaiseIntake) {
             currentPosition = power > 0.1 ? IntakePosition.DEPLOYED : IntakePosition.RAISED;

@@ -155,7 +155,7 @@ public class TurretSubsystem extends GRTSubsystem {
     // Debug flags
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, `dy`, `dtheta`, 
     // `alpha`, `beta`, `x`, `y`, `h`) system states should be printed.
-    private static boolean PRINT_STATES = true; 
+    private static boolean PRINT_STATES = false; 
     // Whether PID tuning shuffleboard entries should be displayed.
     private static boolean DEBUG_PID = false;
     // Whether the turntable, hood, and flywheel references should be manually set through shuffleboard.
@@ -336,7 +336,9 @@ public class TurretSubsystem extends GRTSubsystem {
             // we need to do filtering of some sort, probably on the jetson, to ensure this is true.
             manualUpdateRTheta(previousPosition, currentPosition);
         }
-        
+
+        previousPosition = currentPosition;
+
         rEntry.setValue(this.r);
         thetaEntry.setValue(this.theta);
 
@@ -381,8 +383,6 @@ public class TurretSubsystem extends GRTSubsystem {
             hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
             flywheelPidController.setReference(runFlywheel ? desiredFlywheelRPM : 0, ControlType.kVelocity);
         }
-
-        previousPosition = currentPosition;
         desiredTurntableRadians = newTurntableRadians;
     }
 
@@ -423,6 +423,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
         if (PRINT_STATES) System.out.println(
             "dx: " + dx + " dy: " + dy + " dtheta: " + dTheta
+            + "\npose: " + currentPosition + " last: " + lastPosition 
             + "\nh: " + h + " alpha: " + alpha + " beta: " + beta
             + "\nx: " + x + " y: " + y
             + "\nr: " + r + ", theta: " + Math.toDegrees(theta)
