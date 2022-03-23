@@ -54,8 +54,8 @@ public class IntakeSubsystem extends GRTSubsystem {
     public static final double DELAY_LIMIT_RESET = 0.3;
     private Double switchPressed = 0.0;
 
-    public boolean autoRaiseIntake = true;
-    private IntakePosition currentPosition = IntakePosition.DEPLOYED; // replace with IntakePosition.START in actual matches
+    public boolean autoDeployIntake = true;
+    private IntakePosition targetPosition = IntakePosition.START; // replace with IntakePosition.START in actual matches
 
     // Deploy position PID constants
     private static final double kP = 0.1;
@@ -72,7 +72,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     // Debug flags
     // Whether PID tuning shuffleboard entries should be displayed
-    private static boolean DEBUG_PID = false; 
+    private static boolean DEBUG_PID = false;
 
     public IntakeSubsystem(InternalSubsystem internalSubsystem, JetsonConnection jetson) {
         // TODO: measure this
@@ -111,23 +111,24 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Intake");
-        shuffleboardVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("velo", deploy.getSelectedSensorVelocity()).getEntry());
+        shuffleboardVeloEntry = new GRTNetworkTableEntry(
+                shuffleboardTab.add("velo", deploy.getSelectedSensorVelocity()).getEntry());
         shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy position", 0).getEntry());
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
             shuffleboardTab.add("kP", kP).getEntry()
-                .addListener(this::setDeployP, EntryListenerFlags.kUpdate);
+                    .addListener(this::setDeployP, EntryListenerFlags.kUpdate);
             shuffleboardTab.add("kI", kI).getEntry()
-                .addListener(this::setDeployI, EntryListenerFlags.kUpdate);
+                    .addListener(this::setDeployI, EntryListenerFlags.kUpdate);
             shuffleboardTab.add("kD", kD).getEntry()
-                .addListener(this::setDeployD, EntryListenerFlags.kUpdate);
+                    .addListener(this::setDeployD, EntryListenerFlags.kUpdate);
             shuffleboardTab.add("kFF", kFF).getEntry()
-                .addListener(this::setDeployFF, EntryListenerFlags.kUpdate);
+                    .addListener(this::setDeployFF, EntryListenerFlags.kUpdate);
             shuffleboardTab.add("Cruise Vel", cruiseVel).getEntry()
-                .addListener(this::setDeployCruiseVel, EntryListenerFlags.kUpdate);
+                    .addListener(this::setDeployCruiseVel, EntryListenerFlags.kUpdate);
             shuffleboardTab.add("Accel", accel).getEntry()
-                .addListener(this::setDeployAccel, EntryListenerFlags.kUpdate);
+                    .addListener(this::setDeployAccel, EntryListenerFlags.kUpdate);
         }
 
         shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
@@ -139,24 +140,23 @@ public class IntakeSubsystem extends GRTSubsystem {
         limitSwitchReset();
 
         double power;
-        // If the ball count is greater than 2 or if the current position is not deployed, do not run intake
+        // If the ball count is greater than 2, don't run intake
         if (internalSubsystem.getBallCount() > 2) {
-            System.out.println("ball: " + internalSubsystem.getBallCount() + " deployed : " + (currentPosition != IntakePosition.DEPLOYED));
             power = 0;
         } else {
-            // Otherwise, use driver input if they're overriding and default to running intake automatically from vision
-            power = driverOverride ? intakePower 
-                : jetson.ballDetected() ? 0.5 : 0;
-        }
-
-        System.out.println("Power: " + power);
-
-        if (autoRaiseIntake) {
-            currentPosition = power > 0.1 ? IntakePosition.DEPLOYED : IntakePosition.RAISED;
+            // Otherwise, use driver input if they're overriding and default to running
+            // intake automatically from vision
+            power = driverOverride ? intakePower
+                    : jetson.ballDetected() ? 0.5 : 0;
         }
 
         intake.set(power);
-        deploy.set(ControlMode.MotionMagic, currentPosition.value);
+
+        if (autoDeployIntake && power > 0.1) {
+            deploy.set(ControlMode.MotionMagic, IntakePosition.DEPLOYED.value);
+        } else {
+            deploy.set(ControlMode.MotionMagic, targetPosition.value);
+        }
 
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
         shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
@@ -164,7 +164,8 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     private void limitSwitchReset() {
         // Check limit switch and reset encoder if detected
-        // If the limit switch returns `false`, it's being pressed and the encoder should be reset
+        // If the limit switch returns `false`, it's being pressed and the encoder
+        // should be reset
         if (!limitSwitch.get()) {
             if (switchPressed == null) {
                 switchPressed = Timer.getFPGATimestamp();
@@ -180,6 +181,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Temp testing function to supply raw power to the deploy motor.
+     * 
      * @param power The percent power to supply.
      */
     public void setDeployPower(double power) {
@@ -188,6 +190,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Sets the power of the intake rollers.
+     * 
      * @param intakePower The power (in percent output) to run the motors at.
      */
     public void setIntakePower(double intakePower) {
@@ -196,14 +199,16 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Sets the position of the intake mechanism.
+     * 
      * @param position The position to set the intake to.
      */
     public void setPosition(IntakePosition position) {
-        currentPosition = position;
+        targetPosition = position;
     }
 
     /**
      * Sets whether the driver is overriding the intake's automatic run procedure.
+     * 
      * @param override Whether to use driver input as power.
      */
     public void setDriverOverride(boolean override) {
@@ -225,7 +230,9 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     /**
      * Intake PID tuning NetworkTable callbacks.
-     * @param change The `EntryNotification` representing the NetworkTable entry change.
+     * 
+     * @param change The `EntryNotification` representing the NetworkTable entry
+     *               change.
      */
     private void setDeployP(EntryNotification change) {
         deploy.config_kP(0, change.value.getDouble());

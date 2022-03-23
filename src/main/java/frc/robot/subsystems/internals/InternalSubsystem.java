@@ -138,6 +138,7 @@ public class InternalSubsystem extends GRTSubsystem {
         if (storageTimer.hasElapsed(0.5)) {
             storageTimer.stop();
             storageTimer.reset();
+            
             motorTop.set(0);
             motorBottom.set(0);
         }
