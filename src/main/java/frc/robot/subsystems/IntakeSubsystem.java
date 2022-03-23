@@ -54,7 +54,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     public static final double DELAY_LIMIT_RESET = 0.3;
     private Double switchPressed = 0.0;
 
-    public boolean autoDeployIntake = true;
+    public boolean autoDeployIntake = false;
     private IntakePosition targetPosition = IntakePosition.START;
 
     // Deploy position PID constants
@@ -72,7 +72,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     // Debug flags
     // Whether PID tuning shuffleboard entries should be displayed
-    private static boolean DEBUG_PID = false;
+    private static boolean DEBUG_PID = true;
 
     public IntakeSubsystem(InternalSubsystem internalSubsystem, JetsonConnection jetson) {
         // TODO: measure this
@@ -165,9 +165,9 @@ public class IntakeSubsystem extends GRTSubsystem {
     private void limitSwitchReset() {
         // Check limit switch and reset encoder if detected
         // If the limit switch returns `false`, it's being pressed and the encoder should be reset
-        switchPressed = !limitSwitch.get() && switchPressed == null
-            ? Timer.getFPGATimestamp()
-            : null;
+        if (!limitSwitch.get())
+            if (switchPressed == null) switchPressed = Timer.getFPGATimestamp();
+        else switchPressed = null;
 
         if (switchPressed != null && Timer.getFPGATimestamp() > switchPressed + DELAY_LIMIT_RESET)
             deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);

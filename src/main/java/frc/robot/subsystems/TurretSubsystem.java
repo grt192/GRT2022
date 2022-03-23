@@ -342,7 +342,7 @@ public class TurretSubsystem extends GRTSubsystem {
         rEntry.setValue(this.r);
         thetaEntry.setValue(this.theta);
 
-        // If retracted, skip jetson logic and calculations
+        // If retracted, skip interpolation calculations
         if (mode == TurretMode.RETRACTED) {
             desiredTurntableRadians = Math.toRadians(180);
             desiredHoodRadians = 0;
@@ -351,39 +351,38 @@ public class TurretSubsystem extends GRTSubsystem {
             turntablePidController.setReference(desiredTurntableRadians, ControlType.kSmartMotion);
             hood.set(ControlMode.Position, desiredHoodRadians);
             flywheelPidController.setReference(desiredFlywheelRPM, ControlType.kVelocity);
-            return;
-        }
-
-        // If MANUAL_CONTROL is enabled, set the turntable reference from shuffleboard.
-        // Otherwise, use the theta given by `rtheta`.
-        // TODO: threshold for wrapping to prevent excessive swing-between
-        double newTurntableRadians = MANUAL_CONTROL 
-            ? (Math.toRadians(turntableRefPos) - currentPosition.getRotation().getRadians()) % (2 * Math.PI)
-            : angleWrap(Math.PI - theta + turntableOffset);
-
-        // Apply feedforward and constrain within max and min angle
-        double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
-        double turntableReference = Math.min(Math.max(
-            newTurntableRadians + deltaTurntableRadians * TURNTABLE_THETA_FF, 
-            TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
-
-        interpolateFlywheelHoodRefs();
-
-        if (PRINT_STATES)
-            System.out.println("r: " + r + ", hood ref: " + Math.toDegrees(desiredHoodRadians) + ", flywheel ref: " + desiredFlywheelRPM);
-
-        turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
-
-        // If MANUAL_CONTROL is enabled, set the references from shuffleboard
-        if (MANUAL_CONTROL) {
-            hood.set(ControlMode.Position, Math.toRadians(hoodRefPos) * HOOD_RADIANS_TO_TICKS);
-            flywheelPidController.setReference(flywheelRefVel, ControlType.kVelocity);
         } else {
-            // Otherwise, use the interpolated values from hub distance
-            hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
-            flywheelPidController.setReference(runFlywheel ? desiredFlywheelRPM : 0, ControlType.kVelocity);
+            // If MANUAL_CONTROL is enabled, set the turntable reference from shuffleboard.
+            // Otherwise, use the theta given by `rtheta`.
+            // TODO: threshold for wrapping to prevent excessive swing-between
+            double newTurntableRadians = MANUAL_CONTROL 
+                ? (Math.toRadians(turntableRefPos) - currentPosition.getRotation().getRadians()) % (2 * Math.PI)
+                : angleWrap(Math.PI - theta + turntableOffset);
+
+            // Apply feedforward and constrain within max and min angle
+            double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
+            double turntableReference = Math.min(Math.max(
+                newTurntableRadians + deltaTurntableRadians * TURNTABLE_THETA_FF, 
+                TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
+
+            interpolateFlywheelHoodRefs();
+
+            if (PRINT_STATES)
+                System.out.println("r: " + r + ", hood ref: " + Math.toDegrees(desiredHoodRadians) + ", flywheel ref: " + desiredFlywheelRPM);
+
+            turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
+
+            // If MANUAL_CONTROL is enabled, set the references from shuffleboard
+            if (MANUAL_CONTROL) {
+                hood.set(ControlMode.Position, Math.toRadians(hoodRefPos) * HOOD_RADIANS_TO_TICKS);
+                flywheelPidController.setReference(flywheelRefVel, ControlType.kVelocity);
+            } else {
+                // Otherwise, use the interpolated values from hub distance
+                hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
+                flywheelPidController.setReference(runFlywheel ? desiredFlywheelRPM : 0, ControlType.kVelocity);
+            }
+            desiredTurntableRadians = newTurntableRadians;
         }
-        desiredTurntableRadians = newTurntableRadians;
     }
 
     /**
