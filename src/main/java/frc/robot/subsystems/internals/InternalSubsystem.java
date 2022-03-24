@@ -48,10 +48,7 @@ public class InternalSubsystem extends GRTSubsystem {
     private boolean shotRequested = false;
     private boolean rejecting = false;
     private boolean rejectingChecked = false;
-
-    // Debug flags
-    // Whether to skip the turret tolerance check and fire immediately when the driver requests a shot.
-    private static boolean SKIP_TOLERANCE_CHECK = false;
+    private boolean skipToleranceCheck = false;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         super(15);
@@ -148,7 +145,7 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // If a shot was requested and the turret is ready, load a ball into the turret.
         turretSubsystem.setReject(rejecting);
-        if (shotRequested && (SKIP_TOLERANCE_CHECK 
+        if (shotRequested && (skipToleranceCheck 
             || turretSubsystem.getState() == TurretSubsystem.ModuleState.HIGH_TOLERANCE
             || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.LOW_TOLERANCE)
         ) {
@@ -165,6 +162,7 @@ public class InternalSubsystem extends GRTSubsystem {
                 // Reset states
                 shotRequested = false;
                 rejectingChecked = false;
+                skipToleranceCheck = false;
             }
         }
 
@@ -183,9 +181,12 @@ public class InternalSubsystem extends GRTSubsystem {
     /**
      * Request that a ball be loaded and shot.
      * The ball will *actually* be shot when the turret is aimed and ready.
+     * Calling this while a shot is already requested will tell internals
+     * to force a shot by skiping the tolerance check.
      */
     public void requestShot() {
-        this.shotRequested = true;
+        if (shotRequested) skipToleranceCheck = true;
+        shotRequested = true;
     }
 
     /**

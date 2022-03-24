@@ -102,17 +102,7 @@ public class RobotContainer {
         Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
         setInitialPosition(initialPose);
 
-        // Instantiate commands
-        // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
-        // autonCommand = new FollowPathCommand(
-        //     tankSubsystem,
-        //     initialPose,
-        //     List.of(
-        //         new Translation2d(1, 1),
-        //         new Translation2d(2, -1)
-        //     ),
-        //     new Pose2d(3, 0, new Rotation2d())
-        // );
+        // Instantiate auton command
         autonCommand = new AutonRedBottomSequence(this);
     }
 
@@ -170,7 +160,7 @@ public class RobotContainer {
         // Push up to extend, down to retract; brakes are automatically set when manual control 
         // is supplied.
         climbSubsystem.setDefaultCommand(new RunCommand(() -> {
-            double pow = driveController.getLeftY();
+            double pow = mechController.getRightY();
             climbSubsystem.setSixPower(pow);
             climbSubsystem.setSixBrake(pow == 0);
         }, climbSubsystem));
