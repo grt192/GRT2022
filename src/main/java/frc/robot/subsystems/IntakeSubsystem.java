@@ -51,10 +51,12 @@ public class IntakeSubsystem extends GRTSubsystem {
     private double intakePower = 0;
     private boolean driverOverride = false;
 
-    public static final double DELAY_LIMIT_RESET = 0.3;
+    private static final double DELAY_LIMIT_RESET = 0.3;
     private Double switchPressed = 0.0;
 
-    public boolean autoDeployIntake = false;
+    private boolean skipInternalsCheck = false;
+
+    private boolean autoDeployIntake = false;
     private IntakePosition targetPosition = IntakePosition.START;
 
     // Deploy position PID constants
@@ -115,6 +117,9 @@ public class IntakeSubsystem extends GRTSubsystem {
             shuffleboardTab.add("velo", deploy.getSelectedSensorVelocity()).getEntry());
         shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy position", 0).getEntry());
 
+        shuffleboardTab.add("Skip internals check", skipInternalsCheck).getEntry()
+            .addListener(this::setSkipInternalsCheck, EntryListenerFlags.kUpdate);
+
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
             shuffleboardTab.add("kP", kP).getEntry()
@@ -139,32 +144,34 @@ public class IntakeSubsystem extends GRTSubsystem {
     public void periodic() {
         limitSwitchReset();
 
+        // If the ball count is greater than 2, don't run intake.
+        // Skip this check if disabled on shuffleboard.
         double power;
-        // If the ball count is greater than 2, don't run intake
-        if (internalSubsystem.getBallCount() > 2) {
+        if (internalSubsystem.getBallCount() > 2 && !skipInternalsCheck) {
             power = 0;
         } else {
             // Otherwise, use driver input if they're overriding and default to running
-            // intake automatically from vision
-            power = driverOverride ? intakePower
-                    : jetson.ballDetected() ? 0.5 : 0;
+            // intake automatically from vision.
+            power = driverOverride ? intakePower 
+                : jetson.ballDetected() ? 0.5 : 0;
         }
 
         intake.set(power);
-
-        if (autoDeployIntake && power > 0.1) {
-            deploy.set(ControlMode.MotionMagic, IntakePosition.DEPLOYED.value);
-        } else {
-            deploy.set(ControlMode.MotionMagic, targetPosition.value);
-        }
+        deploy.set(ControlMode.MotionMagic, autoDeployIntake && power > 0.1
+            ? IntakePosition.DEPLOYED.value
+            : targetPosition.value);
 
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
         shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
     }
 
+    /**
+     * Check the limit switch for whether the intake is down and reset the encoder on a delay
+     * to prevent uneven tilting on one side.
+     */
     private void limitSwitchReset() {
-        // Check limit switch and reset encoder if detected
-        // If the limit switch returns `false`, it's being pressed and the encoder should be reset
+        // Check limit switch and reset encoder if detected.
+        // If the limit switch returns `false`, it's being pressed and the encoder should be reset.
         if (!limitSwitch.get()) {
             if (switchPressed == null) switchPressed = Timer.getFPGATimestamp();
         } else {
@@ -191,12 +198,13 @@ public class IntakeSubsystem extends GRTSubsystem {
         targetPosition = position;
     }
 
+    /**
+     * Toggles the position of the intake between DEPLOYED and RAISED.
+     */
     public void togglePosition() {
-        if (this.targetPosition == IntakePosition.DEPLOYED) {
-            this.targetPosition = IntakePosition.RAISED;
-        } else {
-            this.targetPosition = IntakePosition.DEPLOYED;
-        }
+        this.targetPosition = this.targetPosition == IntakePosition.DEPLOYED
+            ? IntakePosition.RAISED
+            : IntakePosition.DEPLOYED;
     }
 
     /**
@@ -246,5 +254,9 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     private void setDeployAccel(EntryNotification change) {
         deploy.configMotionAcceleration(change.value.getDouble());
+    }
+
+    private void setSkipInternalsCheck(EntryNotification change) {
+        skipInternalsCheck = change.value.getBoolean();
     }
 }

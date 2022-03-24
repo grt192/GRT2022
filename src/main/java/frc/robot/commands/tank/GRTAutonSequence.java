@@ -78,8 +78,8 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
      * @return The Pose2d to path follow to.
      */
     protected static Pose2d localizeBallCoordinate(Translation2d ball, double angleOfApproach) {
-        // Intake length + robot length / 2
-        double h = 11.734 + 34 / 2;
+        // Robot length / 2
+        double h = 34 / 2;
 
         double rads = Math.toRadians(angleOfApproach);
         double dx = Units.inchesToMeters(h * Math.cos(rads));
