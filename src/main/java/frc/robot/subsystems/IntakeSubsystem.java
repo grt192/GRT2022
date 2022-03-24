@@ -165,9 +165,11 @@ public class IntakeSubsystem extends GRTSubsystem {
     private void limitSwitchReset() {
         // Check limit switch and reset encoder if detected
         // If the limit switch returns `false`, it's being pressed and the encoder should be reset
-        if (!limitSwitch.get())
+        if (!limitSwitch.get()) {
             if (switchPressed == null) switchPressed = Timer.getFPGATimestamp();
-        else switchPressed = null;
+        } else {
+            switchPressed = null;
+        }
 
         if (switchPressed != null && Timer.getFPGATimestamp() > switchPressed + DELAY_LIMIT_RESET)
             deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);

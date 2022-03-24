@@ -131,17 +131,18 @@ public class TurretSubsystem extends GRTSubsystem {
     private double r;
     private Pose2d previousPosition;
 
-    private boolean frozen = false;
-    private double frozenR;
-    private double frozenTheta;
-
     // Motor state variables
     private double desiredFlywheelRPM;
     private double desiredTurntableRadians;
     private double desiredHoodRadians;
 
-    private boolean ballReady = false;
+    private boolean frozen = false;
+    private double frozenR;
+    private double frozenTheta;
 
+    private boolean jetsonDisabled = false;
+
+    private boolean ballReady = false;
     private TurretMode mode = TurretMode.RETRACTED;
 
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
@@ -158,9 +159,8 @@ public class TurretSubsystem extends GRTSubsystem {
     // Shuffleboard
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardTurntablePosEntry;
-    private GRTNetworkTableEntry shuffleboardFlywheelVeloEntry;
-    private GRTNetworkTableEntry shuffleboardHoodPosEntry;
-    private final GRTNetworkTableEntry shuffleboardOffset;
+    private final GRTNetworkTableEntry shuffleboardFlywheelVeloEntry = null;
+    private final GRTNetworkTableEntry shuffleboardHoodPosEntry = null;
     private final GRTNetworkTableEntry rEntry;
     private final GRTNetworkTableEntry thetaEntry;
 
@@ -255,12 +255,14 @@ public class TurretSubsystem extends GRTSubsystem {
         shuffleboardTab = Shuffleboard.getTab("Turret");
         shuffleboardTurntablePosEntry = new GRTNetworkTableEntry(
             shuffleboardTab.add("Turntable pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry());
-        rEntry = new GRTNetworkTableEntry(shuffleboardTab.add("r", 0).getEntry());
-        thetaEntry = new GRTNetworkTableEntry(shuffleboardTab.add("theta", 0).getEntry());
         // shuffleboardTurntableVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Turntable vel", 0).getEntry());
         // shuffleboardFlywheelVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel vel", flywheelEncoder.getVelocity()).getEntry());
         // shuffleboardHoodPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Hood pos", 0).getEntry());
-        shuffleboardOffset = new GRTNetworkTableEntry(shuffleboardTab.add("Turntable Offset", 0).getEntry());
+        rEntry = new GRTNetworkTableEntry(shuffleboardTab.add("r", 0).getEntry());
+        thetaEntry = new GRTNetworkTableEntry(shuffleboardTab.add("theta", 0).getEntry());
+
+        shuffleboardTab.add("Jetson disabled", jetsonDisabled).getEntry()
+            .addListener(this::setDisableJetson, EntryListenerFlags.kUpdate);
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
@@ -330,7 +332,8 @@ public class TurretSubsystem extends GRTSubsystem {
         // If the hub is in vision range, use vision's `r` and `theta` as ground truth.
         // While the flywheel is running, use the manual system values instead to
         // prevent camera issues while the flywheel shakes the turntable.
-        if (jetson.turretVisionWorking() && !runFlywheel) {
+        // If the jetson has been disabled on shuffleboard, use `rtheta` instead.
+        if (jetson.turretVisionWorking() && !runFlywheel && !jetsonDisabled) {
             r = jetson.getHubDistance();
             theta = jetson.getTurretTheta();
 
@@ -736,5 +739,9 @@ public class TurretSubsystem extends GRTSubsystem {
 
     private void setHoodD(EntryNotification change) {
         hood.config_kD(0, change.value.getDouble());
+    }
+
+    private void setDisableJetson(EntryNotification change) {
+        jetsonDisabled = change.value.getBoolean();
     }
 }
