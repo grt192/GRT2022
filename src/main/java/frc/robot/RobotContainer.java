@@ -67,6 +67,10 @@ public class RobotContainer {
     // Commands
     private final Command autonCommand;
 
+    // Debug flags
+    // Whether to run an auton path or skip auton and set starting position manually.
+    private static final boolean SKIP_AUTON = true;
+
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
@@ -95,15 +99,19 @@ public class RobotContainer {
         // Configure the button bindings
         configureButtonBindings();
 
-        // Set initial robot position
-        // This is temporary; after shooter-testing is merged, each auton path should call this
-        // in their constructor.
-        double hubDist = 162;
-        Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
-        setInitialPosition(initialPose);
+        // Instantiate auton command.
+        // If skipping autonomous, run an empty command in auton and set initial position
+        // from a manual hub distance. This assumes we are facing directly away from the hub
+        // at 0 degrees with a distance of `hubDist` between the robot and the hub.
+        if (SKIP_AUTON) {
+            double hubDist = 70;
+            Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
+            setInitialPosition(initialPose);
 
-        // Instantiate auton command
-        autonCommand = new AutonRedBottomSequence(this);
+            autonCommand = new InstantCommand();
+        } else {
+            autonCommand = new AutonRedBottomSequence(this);
+        }
     }
 
     /**
