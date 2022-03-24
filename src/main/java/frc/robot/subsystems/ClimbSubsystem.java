@@ -165,20 +165,21 @@ public class ClimbSubsystem extends GRTSubsystem {
         }
     }
 
-    @Override
-    public void periodic() {
-        // Get PID constants from Shuffleboard for testing
-        // sixPidController.setP(shuffleboardSixPEntry.getDouble(sixP));
-        // sixPidController.setP(shuffleboardSixIEntry.getDouble(sixI));
-        // sixPidController.setP(shuffleboardSixDEntry.getDouble(sixD));
+    /**
+     * Manually sets the six winch power.
+     * @param pow The power to set.
+     */
+    public void setSixPower(double pow) {
+        six.set(pow);
+    }
 
-        // tenPidController.setP(shuffleboardTenPEntry.getDouble(tenP));
-        // tenPidController.setP(shuffleboardTenIEntry.getDouble(tenI));
-        // tenPidController.setP(shuffleboardTenDEntry.getDouble(tenD));
-
-        // fifteenMain.config_kP(0, shuffleboardFifteenPEntry.getDouble(fifteenP));
-        // fifteenMain.config_kI(0, shuffleboardFifteenIEntry.getDouble(fifteenI));
-        // fifteenMain.config_kD(0, shuffleboardFifteenDEntry.getDouble(fifteenD));
+    /**
+     * Manually sets the six brake status. When the brake is disengaged, 
+     * the solenoid is powered (retracted).
+     * @param brake Whether to engage the brake.
+     */
+    public void setSixBrake(boolean brake) {
+        sixBrake.set(brake ? 0 : 1);
     }
 
     /**

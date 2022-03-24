@@ -141,15 +141,19 @@ public class RobotContainer {
         mechXButton.whenPressed(new InstantCommand(turretSubsystem::resetOffsets));
         mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
 
-        Runnable tank = () -> {
+        // Car drive with the left Y axis controlling y power and the right X axis controlling angular
+        tankSubsystem.setDefaultCommand(new RunCommand(() -> {
             // double turn_stick = driveController.getRightX();
             double turn = driveController.getRightX() * 0.75;
             tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), turn);
-        };
-        tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
+        }, tankSubsystem));
 
+        // Driver-override intake command
         intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, mechController));
 
+        // Set turret offsets from mech controller POV input:
+        // Top/bottom to increase/decrease hub distance offset,
+        // right/left to increase/decrease theta offset.
         turretSubsystem.setDefaultCommand(new RunCommand(() -> {
             switch (mechController.getPOV()) {
                 case 0: turretSubsystem.changeDistanceOffset(1); break;
@@ -158,11 +162,16 @@ public class RobotContainer {
                 case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-1)); break;
                 default: break;
             }
-
-            if (mechController.getXButton()) {
-                turretSubsystem.resetOffsets();
-            }
         }, turretSubsystem));
+
+        // Manual climb control with the right mech joystick:
+        // Push up to extend, down to retract; brakes are automatically set when manual control 
+        // is supplied.
+        climbSubsystem.setDefaultCommand(new RunCommand(() -> {
+            double pow = driveController.getLeftY();
+            climbSubsystem.setSixPower(pow);
+            climbSubsystem.setSixBrake(pow == 0);
+        }, climbSubsystem));
     }
 
     /**
