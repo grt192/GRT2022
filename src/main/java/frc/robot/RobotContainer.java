@@ -22,6 +22,7 @@ import frc.robot.commands.intake.DeployIntakeCommand;
 import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.commands.intake.RunIntakeCommand;
 import frc.robot.commands.internals.RequestShotCommand;
+import frc.robot.commands.tank.AutonRedBottomSequence;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.subsystems.ClimbSubsystem;
@@ -103,15 +104,16 @@ public class RobotContainer {
 
         // Instantiate commands
         // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
-        autonCommand = new FollowPathCommand(
-            tankSubsystem,
-            initialPose,
-            List.of(
-                new Translation2d(1, 1),
-                new Translation2d(2, -1)
-            ),
-            new Pose2d(3, 0, new Rotation2d())
-        );
+        // autonCommand = new FollowPathCommand(
+        //     tankSubsystem,
+        //     initialPose,
+        //     List.of(
+        //         new Translation2d(1, 1),
+        //         new Translation2d(2, -1)
+        //     ),
+        //     new Pose2d(3, 0, new Rotation2d())
+        // );
+        autonCommand = new AutonRedBottomSequence(this);
     }
 
     /**
@@ -156,10 +158,10 @@ public class RobotContainer {
         // right/left to increase/decrease theta offset.
         turretSubsystem.setDefaultCommand(new RunCommand(() -> {
             switch (mechController.getPOV()) {
-                case 0: turretSubsystem.changeDistanceOffset(1); break;
-                case 90: turretSubsystem.changeTurntableOffset(Math.toRadians(1)); break;
-                case 180: turretSubsystem.changeDistanceOffset(-1); break;
-                case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-1)); break;
+                case 0: turretSubsystem.changeDistanceOffset(2); break;
+                case 90: turretSubsystem.changeTurntableOffset(Math.toRadians(2)); break;
+                case 180: turretSubsystem.changeDistanceOffset(-2); break;
+                case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-2)); break;
                 default: break;
             }
         }, turretSubsystem));

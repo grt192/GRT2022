@@ -143,7 +143,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private boolean jetsonDisabled = false;
 
     private boolean ballReady = false;
-    private TurretMode mode = TurretMode.RETRACTED;
+    private TurretMode mode = TurretMode.SHOOTING;
 
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
     private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(47);
@@ -163,6 +163,8 @@ public class TurretSubsystem extends GRTSubsystem {
     private final GRTNetworkTableEntry shuffleboardHoodPosEntry = null;
     private final GRTNetworkTableEntry rEntry;
     private final GRTNetworkTableEntry thetaEntry;
+    private final GRTNetworkTableEntry turnOffsetEntry;
+    private final GRTNetworkTableEntry distOffsetEntry;
 
     // Debug flags
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, 
@@ -260,6 +262,8 @@ public class TurretSubsystem extends GRTSubsystem {
         // shuffleboardHoodPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Hood pos", 0).getEntry());
         rEntry = new GRTNetworkTableEntry(shuffleboardTab.add("r", 0).getEntry());
         thetaEntry = new GRTNetworkTableEntry(shuffleboardTab.add("theta", 0).getEntry());
+        distOffsetEntry = new GRTNetworkTableEntry(shuffleboardTab.add("dist offset", 0).getEntry());
+        turnOffsetEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable offset", 0).getEntry());
 
         shuffleboardTab.add("Jetson disabled", jetsonDisabled).getEntry()
             .addListener(this::setDisableJetson, EntryListenerFlags.kUpdate);
@@ -392,6 +396,9 @@ public class TurretSubsystem extends GRTSubsystem {
             hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
             flywheelPidController.setReference(runFlywheel ? desiredFlywheelRPM : 0, ControlType.kVelocity);
         }
+
+        distOffsetEntry.setValue(distanceOffset);
+        turnOffsetEntry.setValue(turntableOffset);
     }
 
     /**

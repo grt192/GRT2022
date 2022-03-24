@@ -32,7 +32,7 @@ public class IntakeSubsystem extends GRTSubsystem {
      * representing the counterclockwise angle from straight upwards.
      */
     public enum IntakePosition {
-        START(0), RAISED(17214), DEPLOYED(486209);
+        START(0), RAISED(17214), DEPLOYED(488209);
 
         public final double value;
 
@@ -51,7 +51,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     private double intakePower = 0;
     private boolean driverOverride = false;
 
-    private static final double DELAY_LIMIT_RESET = 0.3;
+    private static final double DELAY_LIMIT_RESET = 0.2;
     private Double switchPressed = 0.0;
 
     private boolean skipInternalsCheck = false;
@@ -157,12 +157,36 @@ public class IntakeSubsystem extends GRTSubsystem {
         }
 
         intake.set(power);
+        // moveDeployTo(autoDeployIntake && power > 0.1
+        // ? IntakePosition.DEPLOYED.value
+        // : targetPosition.value);
         deploy.set(ControlMode.MotionMagic, autoDeployIntake && power > 0.1
             ? IntakePosition.DEPLOYED.value
             : targetPosition.value);
 
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
         shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
+    }
+
+    private void moveDeployTo(double targPos) {
+        double currentPos = deploy.getSelectedSensorPosition();
+
+        System.out.println("current: " + currentPos + " targ: " + targPos);
+        if (Math.abs(targPos - currentPos) < 2000) {
+            deploy.set(0);
+        } else if (targPos > currentPos) { // going down
+            if (currentPos < 1500) {
+                deploy.set(0.5);
+            } else {
+                deploy.set(0.2);
+            }
+        } else { // going up
+            if (currentPos < 1500) {
+                deploy.set(-0.05);
+            } else {
+                deploy.set(-0.5);
+            }
+        }
     }
 
     /**
