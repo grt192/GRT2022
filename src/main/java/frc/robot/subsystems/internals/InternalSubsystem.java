@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj.util.Color;
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.subsystems.TurretSubsystem;
+import frc.robot.subsystems.TurretSubsystem.ModuleState;
 
 import static frc.robot.Constants.InternalConstants.*;
 
@@ -145,9 +146,10 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // If a shot was requested and the turret is ready, load a ball into the turret.
         turretSubsystem.setReject(rejecting);
+        ModuleState turretState = turretSubsystem.getState();
         if (shotRequested && (skipToleranceCheck 
-            || turretSubsystem.getState() == TurretSubsystem.ModuleState.HIGH_TOLERANCE
-            || rejecting && turretSubsystem.getState() == TurretSubsystem.ModuleState.LOW_TOLERANCE)
+            || turretState == TurretSubsystem.ModuleState.HIGH_TOLERANCE
+            || rejecting && turretState == TurretSubsystem.ModuleState.LOW_TOLERANCE)
         ) {
             // Spin the top motor on a timer
             exitTimer.start();

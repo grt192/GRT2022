@@ -170,13 +170,15 @@ public class TurretSubsystem extends GRTSubsystem {
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, 
     // `dy`, `dtheta`, `alpha`, `beta`, `x`, `y`, `h`) system states should be printed.
     private static boolean PRINT_STATES = false;
+    // Whether current system tolerances (flywheel, hood, turntable) should be printed.
+    private static boolean PRINT_TOLERANCES = false;
     // Whether PID tuning shuffleboard entries should be displayed.
     private static boolean DEBUG_PID = false;
     // Whether rtheta logic should be skipped and the turntable, hood, and flywheel references 
     // should be manually set through shuffleboard.
     private static boolean MANUAL_CONTROL = false;
     // Whether the turret should fire at full speed regardless of rejection logic.
-    private static boolean SKIP_REJECTION = false;
+    private static boolean SKIP_REJECTION = true;
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
@@ -567,7 +569,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // Thesholding in units of encoder ticks
         // TODO: test thresholding values
         double diffTicks = Math.abs(hood.getSelectedSensorPosition() - desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
-        return diffTicks < Math.toRadians(0.5) * HOOD_RADIANS_TO_TICKS ? ModuleState.HIGH_TOLERANCE
+        return diffTicks < Math.toRadians(8) * HOOD_RADIANS_TO_TICKS ? ModuleState.HIGH_TOLERANCE
             : diffTicks < Math.toRadians(10) * HOOD_RADIANS_TO_TICKS ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
@@ -582,6 +584,12 @@ public class TurretSubsystem extends GRTSubsystem {
         ModuleState flywheelState = flywheelReady();
         ModuleState turntableState = turntableAligned();
         ModuleState hoodState = hoodReady();
+
+        if (PRINT_TOLERANCES) System.out.println(
+            "flywheel state: " + (flywheelState == ModuleState.UNALIGNED ? "UNALIGNED" : flywheelState == ModuleState.LOW_TOLERANCE ? "LOW_TOLERANCE" : "HIGH_TOLERANCE")
+            + "\nturntable state: " + (turntableState == ModuleState.UNALIGNED ? "UNALIGNED" : turntableState == ModuleState.LOW_TOLERANCE ? "LOW_TOLERANCE" : "HIGH_TOLERANCE")
+            + "\nhood state: " + (hoodState == ModuleState.UNALIGNED ? "UNALIGNED" : hoodState == ModuleState.LOW_TOLERANCE ? "LOW_TOLERANCE" : "HIGH_TOLERANCE")
+        );
 
         // TODO: is there a better way to implement this?
         return flywheelState == ModuleState.UNALIGNED || turntableState == ModuleState.UNALIGNED || hoodState == ModuleState.UNALIGNED ? ModuleState.UNALIGNED

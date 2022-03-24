@@ -58,7 +58,7 @@ public class ClimbSubsystem extends GRTSubsystem {
     private static final double maxAccel = 300;
 
     private static final double SIX_MIN_POS = 0;
-    private static final double SIX_MAX_POS = 100; // TODO: measure
+    private static final double SIX_MAX_POS = 500; // TODO: measure
     private static final double SIX_RETRACTED_POS = 50;
 
     // Ten point arm position PID constants
@@ -85,6 +85,7 @@ public class ClimbSubsystem extends GRTSubsystem {
         six = new CANSparkMax(sixMotorPort, MotorType.kBrushless);
         six.restoreFactoryDefaults();
         six.setIdleMode(IdleMode.kBrake);
+        six.setInverted(true);
 
         six.setSoftLimit(SoftLimitDirection.kForward, (float) SIX_MAX_POS);
         six.setSoftLimit(SoftLimitDirection.kReverse, (float) SIX_MIN_POS);
@@ -171,6 +172,7 @@ public class ClimbSubsystem extends GRTSubsystem {
      */
     public void setSixPower(double pow) {
         six.set(pow);
+        System.out.println(sixEncoder.getPosition());
     }
 
     /**

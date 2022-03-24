@@ -22,6 +22,7 @@ import frc.robot.commands.intake.DeployIntakeCommand;
 import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.commands.intake.RunIntakeCommand;
 import frc.robot.commands.internals.RequestShotCommand;
+import frc.robot.commands.tank.AutonBlueTopSequence;
 import frc.robot.commands.tank.AutonRedBottomSequence;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
@@ -139,12 +140,13 @@ public class RobotContainer {
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechBButton.whenPressed(new InstantCommand(intakeSubsystem::togglePosition));
         mechXButton.whenPressed(new InstantCommand(turretSubsystem::resetOffsets));
-        mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
+        //mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
+        mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
 
         // Car drive with the left Y axis controlling y power and the right X axis controlling angular
         tankSubsystem.setDefaultCommand(new RunCommand(() -> {
             // double turn_stick = driveController.getRightX();
-            double turn = driveController.getRightX() * 0.75;
+            double turn = driveController.getRightX() * 0.7;
             tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), turn);
         }, tankSubsystem));
 
@@ -168,7 +170,7 @@ public class RobotContainer {
         // Push up to extend, down to retract; brakes are automatically set when manual control 
         // is supplied.
         climbSubsystem.setDefaultCommand(new RunCommand(() -> {
-            double pow = mechController.getRightY();
+            double pow = -mechController.getRightY();
             climbSubsystem.setSixPower(pow);
             climbSubsystem.setSixBrake(pow == 0);
         }, climbSubsystem));
