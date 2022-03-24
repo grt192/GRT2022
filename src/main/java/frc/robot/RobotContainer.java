@@ -131,15 +131,21 @@ public class RobotContainer {
      * X button -> start climb sequence (climb)
      */
     private void configureButtonBindings() {
-        driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
-        driveBButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
-        driveYButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
-        driveXButton.whenPressed(new InstantCommand(() -> {turretSubsystem.toggleClimb();}));
+        // driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
+        // driveBButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
+        // driveYButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+        driveXButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
 
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
-        mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));
+        mechBButton.whenPressed(new InstantCommand(intakeSubsystem::togglePosition));
+        mechXButton.whenPressed(new InstantCommand(turretSubsystem::resetOffsets));
+        mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
 
-        Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
+        Runnable tank = () -> {
+            // double turn_stick = driveController.getRightX();
+            double turn = driveController.getRightX() * 0.75;
+            tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), turn);
+        };
         tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
 
         intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, mechController));

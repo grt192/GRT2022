@@ -189,6 +189,14 @@ public class IntakeSubsystem extends GRTSubsystem {
         targetPosition = position;
     }
 
+    public void togglePosition() {
+        if (this.targetPosition == IntakePosition.DEPLOYED) {
+            this.targetPosition = IntakePosition.RAISED;
+        } else {
+            this.targetPosition = IntakePosition.DEPLOYED;
+        }
+    }
+
     /**
      * Sets whether the driver is overriding the intake's automatic run procedure.
      * @param override Whether to use driver input as power.
