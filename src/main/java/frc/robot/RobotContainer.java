@@ -146,7 +146,8 @@ public class RobotContainer {
         mechBButton.whenPressed(new InstantCommand(intakeSubsystem::togglePosition));
         mechXButton.whenPressed(new InstantCommand(turretSubsystem::resetOffsets));
         //mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
-        mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
+        // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
+        mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleLow));
 
         // Car drive with the left Y axis controlling y power and the right X axis controlling angular
         tankSubsystem.setDefaultCommand(new RunCommand(() -> {

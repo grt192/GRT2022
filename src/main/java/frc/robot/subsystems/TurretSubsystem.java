@@ -45,7 +45,7 @@ public class TurretSubsystem extends GRTSubsystem {
      * TODO: split SHOOTING into UPPER and LOWER modes?
      */
     public enum TurretMode {
-        SHOOTING, REJECTING, RETRACTED
+        SHOOTING, REJECTING, RETRACTED, LOW_HUB
     }
 
     /**
@@ -269,6 +269,8 @@ public class TurretSubsystem extends GRTSubsystem {
 
         shuffleboardTab.add("Jetson disabled", jetsonDisabled).getEntry()
             .addListener(this::setDisableJetson, EntryListenerFlags.kUpdate);
+        shuffleboardTab.add("Freeze turret", false).getEntry()
+            .addListener(this::setFreeze, EntryListenerFlags.kUpdate);
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
@@ -371,6 +373,12 @@ public class TurretSubsystem extends GRTSubsystem {
         } else {
             // If frozen, interpolate flywheel and hood references from the frozen hub distance value
             interpolateFlywheelHoodRefs(this.frozen ? this.frozenR : this.r);
+
+            // TODO tune
+            if (this.mode == TurretMode.LOW_HUB) {
+                desiredFlywheelRPM = 2000;
+                desiredHoodRadians = HOOD_MAX_POS / HOOD_RADIANS_TO_TICKS;
+            }
 
             // If MANUAL_CONTROL is enabled, set the turntable reference from shuffleboard.
             // Otherwise, use the theta given by `rtheta`.
@@ -596,6 +604,10 @@ public class TurretSubsystem extends GRTSubsystem {
             : ModuleState.HIGH_TOLERANCE;
     }
 
+    public TurretMode currentMode() {
+        return this.mode;
+    }
+
     /**
      * Contrains an angle between [center - pi, center + pi]. Defaults to [0, 2pi]. 
      * @param angle  The angle to wrap.
@@ -624,6 +636,14 @@ public class TurretSubsystem extends GRTSubsystem {
             mode = TurretMode.RETRACTED;
             resetOffsets();
             setFreeze(false);
+        }
+    }
+
+    public void toggleLow() {
+        if (mode == TurretMode.SHOOTING) {
+            this.mode = TurretMode.LOW_HUB;
+        } else {
+            this.mode = TurretMode.SHOOTING;
         }
     }
 
@@ -757,5 +777,9 @@ public class TurretSubsystem extends GRTSubsystem {
 
     private void setDisableJetson(EntryNotification change) {
         jetsonDisabled = change.value.getBoolean();
+    }
+
+    private void setFreeze(EntryNotification change) {
+        this.setFreeze(change.value.getBoolean());
     }
 }

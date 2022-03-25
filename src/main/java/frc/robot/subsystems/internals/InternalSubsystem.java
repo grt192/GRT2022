@@ -18,6 +18,7 @@ import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.TurretSubsystem.ModuleState;
+import frc.robot.subsystems.TurretSubsystem.TurretMode;
 
 import static frc.robot.Constants.InternalConstants.*;
 
@@ -149,7 +150,7 @@ public class InternalSubsystem extends GRTSubsystem {
         ModuleState turretState = turretSubsystem.getState();
         if (shotRequested && (skipToleranceCheck 
             || turretState == TurretSubsystem.ModuleState.HIGH_TOLERANCE
-            || (rejecting && turretState == TurretSubsystem.ModuleState.LOW_TOLERANCE))
+            || ((rejecting || turretSubsystem.currentMode() == TurretMode.LOW_HUB) && turretState == TurretSubsystem.ModuleState.LOW_TOLERANCE))
         ) {
             // Spin the top motor on a timer
             exitTimer.start();
