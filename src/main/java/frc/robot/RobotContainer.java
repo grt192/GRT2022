@@ -159,9 +159,18 @@ public class RobotContainer {
 
         // Car drive with the left Y axis controlling y power and the right X axis controlling angular
         tankSubsystem.setDefaultCommand(new RunCommand(() -> {
+            boolean slowMode = driveController.getRightBumper() || mechController.getRightBumper();
+
             // double turn_stick = driveController.getRightX();
-            double turn = driveController.getRightX() * 0.7;
-            tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), turn);
+            double yPow = -driveController.getLeftY();
+            double turnPow = driveController.getRightX() * 0.7;
+
+            if (slowMode) {
+                yPow *= 0.3;
+                turnPow *= 0.3;
+            }
+
+            tankSubsystem.setCarDrivePowers(yPow, turnPow);
         }, tankSubsystem));
 
         // Driver-override intake command

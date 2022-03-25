@@ -155,21 +155,21 @@ public class InternalSubsystem extends GRTSubsystem {
             // Spin the top motor on a timer
             exitTimer.start();
             motorTop.set(0.5);
-
-            // If 0.5 seconds have elapsed, mark the shot as finished
-            if (exitTimer.hasElapsed(0.5)) {
-                exitTimer.stop();
-                exitTimer.reset();
-                motorTop.set(0);
-
-                // Reset states
-                shotRequested = false;
-                rejectingChecked = false;
-                skipToleranceCheck = false;
-            }
         }
 
-        turretSubsystem.setBallReady(ballCount > 0);
+        // If 0.5 seconds have elapsed, mark the shot as finished
+        if (exitTimer.hasElapsed(0.5)) {
+            exitTimer.stop();
+            exitTimer.reset();
+            motorTop.set(0);
+
+            // Reset states
+            shotRequested = false;
+            rejectingChecked = false;
+            skipToleranceCheck = false;
+        }
+
+        turretSubsystem.setBallReady(ballCount > 0 || shotRequested);
     }
 
     /**
