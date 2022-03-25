@@ -10,6 +10,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.EntryNotification;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -22,8 +23,12 @@ import frc.robot.commands.intake.DeployIntakeCommand;
 import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.commands.intake.RunIntakeCommand;
 import frc.robot.commands.internals.RequestShotCommand;
+import frc.robot.commands.tank.AutonBlueBottomSequence;
+import frc.robot.commands.tank.AutonBlueMiddleSequence;
 import frc.robot.commands.tank.AutonBlueTopSequence;
 import frc.robot.commands.tank.AutonRedBottomSequence;
+import frc.robot.commands.tank.AutonRedMiddleSequence;
+import frc.robot.commands.tank.AutonRedTopSequence;
 import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.subsystems.ClimbSubsystem;
@@ -66,7 +71,7 @@ public class RobotContainer {
         mechYButton = new JoystickButton(mechController, XboxController.Button.kY.value);
 
     // Commands
-    private final Command autonCommand;
+    private Command autonCommand;
 
     // Debug flags
     // Whether to run an auton path or skip auton and set starting position manually.
@@ -174,6 +179,21 @@ public class RobotContainer {
             climbSubsystem.setSixPower(pow);
             climbSubsystem.setSixBrake(pow == 0);
         }, climbSubsystem));
+    }
+
+    /**
+     * Sets the selected auton command from the shuffleboard integer value.
+     * @param change The EntryNotification representing a shuffleboard value change.
+     */
+    private void setAutonCommand(EntryNotification change) {
+        switch ((int) change.value.getDouble()) {
+            case 1: autonCommand = new AutonRedTopSequence(this); break;
+            case 2: autonCommand = new AutonRedMiddleSequence(this); break;
+            case 3: autonCommand = new AutonRedBottomSequence(this); break;
+            case 4: autonCommand = new AutonBlueTopSequence(this); break;
+            case 5: autonCommand = new AutonBlueMiddleSequence(this); break;
+            case 6: autonCommand = new AutonBlueBottomSequence(this); break;
+        }
     }
 
     /**

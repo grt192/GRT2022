@@ -142,6 +142,8 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
+        // TOOD: fix intake again
+        /*
         limitSwitchReset();
 
         // If the ball count is greater than 2, don't run intake.
@@ -166,6 +168,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
         shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
+        */
     }
 
     private void moveDeployTo(double targPos) {

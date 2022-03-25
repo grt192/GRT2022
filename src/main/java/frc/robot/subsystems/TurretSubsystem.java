@@ -539,8 +539,8 @@ public class TurretSubsystem extends GRTSubsystem {
         // Thresholding in units of RPM
         // TODO: test thresholding values
         double diffRPM = Math.abs(flywheelEncoder.getVelocity() - desiredFlywheelRPM);
-        return diffRPM < 10 ? ModuleState.HIGH_TOLERANCE
-            : diffRPM < 20 ? ModuleState.LOW_TOLERANCE
+        return diffRPM < 17 ? ModuleState.HIGH_TOLERANCE
+            : diffRPM < 50 ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
 
@@ -549,14 +549,13 @@ public class TurretSubsystem extends GRTSubsystem {
      * @return The state of the turntable.
      */
     private ModuleState turntableAligned() {
-        // If the calculated theta is in the blind spot, return UNALIGNED
-        if (desiredTurntableRadians < TURNTABLE_MIN_RADIANS || desiredTurntableRadians > TURNTABLE_MAX_RADIANS)
-            return ModuleState.UNALIGNED;
+        // if the setpoint is only slightly outside the range then we can still consider ourselves aligned
+        // therefore there's no need to check if the setpoint is in our blind zone
 
         // Thresholding in units of radians
         // TODO: test values
-        double diffRads = Math.abs(turntableEncoder.getPosition() - desiredTurntableRadians);
-        return diffRads < Math.toRadians(0.5) ? ModuleState.HIGH_TOLERANCE
+        double diffRads = Math.abs(angleWrap(turntableEncoder.getPosition() - desiredTurntableRadians));
+        return diffRads < Math.toRadians(2.5) ? ModuleState.HIGH_TOLERANCE
             : diffRads < Math.toRadians(10) ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
@@ -568,7 +567,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private ModuleState hoodReady() {
         // Thesholding in units of encoder ticks
         // TODO: test thresholding values
-        double diffTicks = Math.abs(hood.getSelectedSensorPosition() - desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
+        double diffTicks = Math.abs(hood.getSelectedSensorPosition() - (desiredHoodRadians * HOOD_RADIANS_TO_TICKS));
         return diffTicks < Math.toRadians(8) * HOOD_RADIANS_TO_TICKS ? ModuleState.HIGH_TOLERANCE
             : diffTicks < Math.toRadians(10) * HOOD_RADIANS_TO_TICKS ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
@@ -639,7 +638,7 @@ public class TurretSubsystem extends GRTSubsystem {
     }
 
     public void toggleFreeze() {
-        this.setFreeze(!this.frozen);
+        setFreeze(!this.frozen);
     }
 
     public void setFreeze(boolean frozen) {
