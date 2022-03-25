@@ -26,8 +26,8 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
 
     /**
      * Creates a GRTAutonSequence from an initial and ball one pose. This is used for shared initialization logic
-     * between all auton paths, as well as one-ball sequences like the top and bottom paths. Pathfollows to the ball, 
-     * then shoots two balls.
+     * between all auton paths, as well as one-ball sequences like the top and bottom paths. Drives to the ball, 
+     * then shoots twice.
      * 
      * @param robotContainer The RobotContainer instance, for calling `.setInitialPose()`.
      * @param initialPose The initial pose of the sequence.
@@ -50,21 +50,47 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
     }
 
     /**
+     * Creates a GRTAutonSequence from an initial, ball one, back, and final pose. This is used for the red top and 
+     * blue bottom paths, where we may not taxi if we just drive to the ball; the wall is too close. Drives to
+     * the ball, shoots twice, then drives in reverse through the back waypoint to the final (taxi) pose.
+     * 
+     * @param robotContainer The RobotContainer instance, for calling `.setInitialPose()`.
+     * @param initialPose The initial pose of the sequence.
+     * @param ballOnePose The first ball pose of the sequence.
+     * @param finalPose The ending pose of the sequence.
+     */
+    public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose, Pose2d ballOnePose, Pose2d finalPose, boolean finalReversed) {
+        this(robotContainer, initialPose, ballOnePose);
+
+        addCommands(
+            new RaiseIntakeCommand(intakeSubsystem),
+            new FollowPathCommand(tankSubsystem, ballOnePose, List.of(), finalPose, finalReversed)
+        );
+    }
+
+    public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose, Pose2d ballOnePose, Pose2d finalPose) {
+        this(robotContainer, initialPose, ballOnePose, finalPose, false);
+    }
+
+    /**
      * Creates a GRTAutonSequence from an initial, ball one, and ball two pose. This is used for two-ball sequences, like
-     * the middle paths where we also drive to the terminal to pick up and shoot a second ball. Pathfollows to the ball,
-     * shoots two, then pathfollows to the second ball and shoots it.
+     * the middle paths where we also drive to the terminal to pick up and shoot a second ball. Drives to the ball,
+     * shoots twice, drives to the second ball and shoots it, then drives to the final pose in reverse.
      * 
      * @param robotContainer The RobotContainer instance, for calling `.setInitialPose()`.
      * @param initialPose The initial pose of the sequence.
      * @param ballOnePose The first ball pose of the sequence.
      * @param ballTwoPose The second ball pose of the sequence.
+     * @param finalPose The ending pose of the sequence.
      */
-    public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose, Pose2d ballOnePose, Pose2d ballTwoPose) {
+    public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose, Pose2d ballOnePose, Pose2d ballTwoPose, Pose2d finalPose) {
         this(robotContainer, initialPose, ballOnePose);
 
         addCommands(
             new FollowPathCommand(tankSubsystem, ballOnePose, List.of(), ballTwoPose),
-            new ShootCommand(internalSubsystem)
+            new ShootCommand(internalSubsystem),
+            new RaiseIntakeCommand(intakeSubsystem),
+            new FollowPathCommand(tankSubsystem, ballTwoPose, List.of(), finalPose, true)
         );
     }
 
