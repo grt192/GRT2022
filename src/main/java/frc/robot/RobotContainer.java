@@ -197,6 +197,14 @@ public class RobotContainer {
             climbSubsystem.setSixPower(pow);
             climbSubsystem.setSixBrake(pow == 0);
         }, climbSubsystem));
+
+
+        /*
+        driveAButton.whenPressed(new InstantCommand(() -> climbSubsystem.toggleSixBrake()));
+        climbSubsystem.setDefaultCommand(new RunCommand(() -> {
+            climbSubsystem.setSixPower(mechController.getLeftY());
+        }, climbSubsystem));
+        */
     }
 
     /**
