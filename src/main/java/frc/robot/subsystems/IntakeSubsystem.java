@@ -32,7 +32,7 @@ public class IntakeSubsystem extends GRTSubsystem {
      * representing the counterclockwise angle from straight upwards.
      */
     public enum IntakePosition {
-        START(0), RAISED(17214), DEPLOYED(488209);
+        START(0), RAISED(44000), DEPLOYED(718724);
 
         public final double value;
 
@@ -106,7 +106,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         // Soft limit deploy to the START position. The soft limit in the other direction is not
         // needed because of the limit switch and hard stop.
-        deploy.configReverseSoftLimitEnable(true);
+        deploy.configReverseSoftLimitEnable(false);
         deploy.configReverseSoftLimitThreshold(IntakePosition.START.value);
 
         limitSwitch = new DigitalInput(limitSwitchPort);
@@ -143,7 +143,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // TOOD: fix intake again
-        /*
+        // 
         limitSwitchReset();
 
         // If the ball count is greater than 2, don't run intake.
@@ -159,35 +159,37 @@ public class IntakeSubsystem extends GRTSubsystem {
         }
 
         intake.set(power);
-        // moveDeployTo(autoDeployIntake && power > 0.1
-        // ? IntakePosition.DEPLOYED.value
-        // : targetPosition.value);
+        moveDeployTo(autoDeployIntake && power > 0.1
+            ? IntakePosition.DEPLOYED.value
+            : targetPosition.value);
+        /*
         deploy.set(ControlMode.MotionMagic, autoDeployIntake && power > 0.1
             ? IntakePosition.DEPLOYED.value
             : targetPosition.value);
+        */
 
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
         shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
-        */
+        
     }
 
     private void moveDeployTo(double targPos) {
         double currentPos = deploy.getSelectedSensorPosition();
 
-        System.out.println("current: " + currentPos + " targ: " + targPos);
+        //System.out.println("current: " + currentPos + " targ: " + targPos);
         if (Math.abs(targPos - currentPos) < 2000) {
             deploy.set(0);
-        } else if (targPos > currentPos) { // going down
-            if (currentPos < 1500) {
-                deploy.set(0.5);
+        } else if (targPos > currentPos || targPos == IntakePosition.DEPLOYED.value) { // going down
+            if (currentPos < 50000) {
+                deploy.set(0.55);
             } else {
-                deploy.set(0.2);
+                deploy.set(0.25);
             }
         } else { // going up
-            if (currentPos < 1500) {
-                deploy.set(-0.05);
+            if (currentPos < 50000) {
+                deploy.set(-0.1);
             } else {
-                deploy.set(-0.5);
+                deploy.set(-0.6);
             }
         }
     }

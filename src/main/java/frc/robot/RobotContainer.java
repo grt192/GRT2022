@@ -32,6 +32,7 @@ import frc.robot.commands.tank.AutonRedBottomSequence;
 import frc.robot.commands.tank.AutonRedMiddleSequence;
 import frc.robot.commands.tank.AutonRedTopSequence;
 import frc.robot.commands.tank.FollowPathCommand;
+import frc.robot.commands.tank.PlebAutonSequence;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
@@ -70,6 +71,7 @@ public class RobotContainer {
         mechAButton = new JoystickButton(mechController, XboxController.Button.kA.value),
         mechBButton = new JoystickButton(mechController, XboxController.Button.kB.value),
         mechXButton = new JoystickButton(mechController, XboxController.Button.kX.value),
+        mechRBumper = new JoystickButton(mechController, XboxController.Button.kRightBumper.value),
         mechYButton = new JoystickButton(mechController, XboxController.Button.kY.value);
 
     // Commands
@@ -77,7 +79,7 @@ public class RobotContainer {
 
     // Debug flags
     // Whether to run an auton path or skip auton and set starting position manually.
-    private static final boolean SKIP_AUTON = true;
+    private static final boolean SKIP_AUTON = false;
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -122,9 +124,9 @@ public class RobotContainer {
             // 1, 2, 3 -> red top, middle, bottom
             // 4, 5, 6 -> blue top, middle, bottom
             // TODO: does this need to be combined with kNew?
-            int autonSequence = 3;
+            int autonSequence = 7;
             Shuffleboard.getTab("Drivetrain").add("Auton sequence", autonSequence).getEntry()
-                .addListener(this::setAutonCommand, EntryListenerFlags.kImmediate | EntryListenerFlags.kUpdate);
+                .addListener(this::setAutonCommand, EntryListenerFlags.kImmediate | EntryListenerFlags.kUpdate | EntryListenerFlags.kNew);
         }
     }
 
@@ -156,6 +158,10 @@ public class RobotContainer {
         //mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
         // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
         mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleLow));
+        mechRBumper.whenPressed(new InstantCommand(() -> {
+            turretSubsystem.setR(140);
+        }));
+        
 
         // Car drive with the left Y axis controlling y power and the right X axis controlling angular
         tankSubsystem.setDefaultCommand(new RunCommand(() -> {
@@ -181,10 +187,10 @@ public class RobotContainer {
         // right/left to increase/decrease theta offset.
         turretSubsystem.setDefaultCommand(new RunCommand(() -> {
             switch (mechController.getPOV()) {
-                case 0: turretSubsystem.changeDistanceOffset(2); break;
-                case 90: turretSubsystem.changeTurntableOffset(Math.toRadians(2)); break;
-                case 180: turretSubsystem.changeDistanceOffset(-2); break;
-                case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-2)); break;
+                case 0: turretSubsystem.changeDistanceOffset(3); break;
+                case 90: turretSubsystem.changeTurntableOffset(Math.toRadians(3)); break;
+                case 180: turretSubsystem.changeDistanceOffset(-3); break;
+                case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-3)); break;
                 default: break;
             }
         }, turretSubsystem));
@@ -197,14 +203,6 @@ public class RobotContainer {
             climbSubsystem.setSixPower(pow);
             climbSubsystem.setSixBrake(pow == 0);
         }, climbSubsystem));
-
-
-        /*
-        driveAButton.whenPressed(new InstantCommand(() -> climbSubsystem.toggleSixBrake()));
-        climbSubsystem.setDefaultCommand(new RunCommand(() -> {
-            climbSubsystem.setSixPower(mechController.getLeftY());
-        }, climbSubsystem));
-        */
     }
 
     /**
@@ -219,6 +217,7 @@ public class RobotContainer {
             case 4: autonCommand = new AutonBlueTopSequence(this); break;
             case 5: autonCommand = new AutonBlueMiddleSequence(this); break;
             case 6: autonCommand = new AutonBlueBottomSequence(this); break;
+            case 7: autonCommand = new PlebAutonSequence(this); break;
         }
     }
 
@@ -263,4 +262,5 @@ public class RobotContainer {
     public InternalSubsystem getInternalSubsystem() {
         return internalSubsystem;
     }
+
 }

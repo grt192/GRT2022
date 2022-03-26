@@ -129,7 +129,7 @@ public class TurretSubsystem extends GRTSubsystem {
     // System state variables
     private double theta;
     private double r;
-    private Pose2d previousPosition;
+    private Pose2d previousPosition = new Pose2d();
 
     // Motor state variables
     private double desiredFlywheelRPM;
@@ -159,12 +159,11 @@ public class TurretSubsystem extends GRTSubsystem {
     // Shuffleboard
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardTurntablePosEntry;
-    private final GRTNetworkTableEntry shuffleboardFlywheelVeloEntry = null;
-    private final GRTNetworkTableEntry shuffleboardHoodPosEntry = null;
-    private final GRTNetworkTableEntry rEntry;
-    private final GRTNetworkTableEntry thetaEntry;
-    private final GRTNetworkTableEntry turnOffsetEntry;
-    private final GRTNetworkTableEntry distOffsetEntry;
+    private final GRTNetworkTableEntry shuffleboardFlywheelVeloEntry;
+    private final GRTNetworkTableEntry shuffleboardHoodPosEntry;
+    private final GRTNetworkTableEntry rEntry, thetaEntry;
+    private final GRTNetworkTableEntry turnOffsetEntry, distOffsetEntry;
+    private final GRTNetworkTableEntry flyReady, turnReady, hoodReady;
 
     // Debug flags
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, 
@@ -178,7 +177,7 @@ public class TurretSubsystem extends GRTSubsystem {
     // should be manually set through shuffleboard.
     private static boolean MANUAL_CONTROL = false;
     // Whether the turret should fire at full speed regardless of rejection logic.
-    private static boolean SKIP_REJECTION = true;
+    private static boolean SKIP_REJECTION = false;
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
@@ -260,17 +259,21 @@ public class TurretSubsystem extends GRTSubsystem {
         shuffleboardTurntablePosEntry = new GRTNetworkTableEntry(
             shuffleboardTab.add("Turntable pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry());
         // shuffleboardTurntableVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Turntable vel", 0).getEntry());
-        // shuffleboardFlywheelVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel vel", flywheelEncoder.getVelocity()).getEntry());
-        // shuffleboardHoodPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Hood pos", 0).getEntry());
+        shuffleboardFlywheelVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel vel", flywheelEncoder.getVelocity()).getEntry());
+        shuffleboardHoodPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Hood pos", 0).getEntry());
         rEntry = new GRTNetworkTableEntry(shuffleboardTab.add("r", 0).getEntry());
         thetaEntry = new GRTNetworkTableEntry(shuffleboardTab.add("theta", 0).getEntry());
         distOffsetEntry = new GRTNetworkTableEntry(shuffleboardTab.add("dist offset", 0).getEntry());
         turnOffsetEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable offset", 0).getEntry());
 
+        flyReady = new GRTNetworkTableEntry(shuffleboardTab.add("fly ready", false).getEntry());
+        turnReady = new GRTNetworkTableEntry(shuffleboardTab.add("turn ready", false).getEntry());
+        hoodReady = new GRTNetworkTableEntry(shuffleboardTab.add("hood ready", false).getEntry());
+
         shuffleboardTab.add("Jetson disabled", jetsonDisabled).getEntry()
             .addListener(this::setDisableJetson, EntryListenerFlags.kUpdate);
-        shuffleboardTab.add("Freeze turret", false).getEntry()
-            .addListener(this::setFreeze, EntryListenerFlags.kUpdate);
+        // shuffleboardTab.add("Freeze turret", false).getEntry()
+        //     .addListener(this::setFreeze, EntryListenerFlags.kUpdate);
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
@@ -322,8 +325,8 @@ public class TurretSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         shuffleboardTurntablePosEntry.setValue(Math.toDegrees(turntableEncoder.getPosition()));
-        // shuffleboardFlywheelVeloEntry.setValue(flywheelEncoder.getVelocity());
-        // shuffleboardHoodPosEntry.setValue(Math.toDegrees(hood.getSelectedSensorPosition() / HOOD_RADIANS_TO_TICKS));
+        shuffleboardFlywheelVeloEntry.setValue(flywheelEncoder.getVelocity());
+        shuffleboardHoodPosEntry.setValue(Math.toDegrees(hood.getSelectedSensorPosition() / HOOD_RADIANS_TO_TICKS));
 
         // Check limit switches and reset encoders if detected
         // if (leftLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MIN_RADIANS);
@@ -331,7 +334,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
         // boolean runFlywheel = !tankSubsystem.isMoving() && ballReady;
-        boolean runFlywheel = ballReady;
+        boolean runFlywheel = true;
 
         // Set turntable lazy tracking if a ball isn't ready
         double pow = !ballReady ? 0.25 : 0.5;
@@ -376,8 +379,8 @@ public class TurretSubsystem extends GRTSubsystem {
 
             // TODO tune
             if (this.mode == TurretMode.LOW_HUB) {
-                desiredFlywheelRPM = 2000;
-                desiredHoodRadians = HOOD_MAX_POS / HOOD_RADIANS_TO_TICKS;
+                desiredFlywheelRPM = 3500;
+                desiredHoodRadians = Math.toRadians(21) * HOOD_RADIANS_TO_TICKS;
             }
 
             // If MANUAL_CONTROL is enabled, set the turntable reference from shuffleboard.
@@ -546,9 +549,11 @@ public class TurretSubsystem extends GRTSubsystem {
     private ModuleState flywheelReady() {
         // Thresholding in units of RPM
         // TODO: test thresholding values
-        double diffRPM = Math.abs(flywheelEncoder.getVelocity() - desiredFlywheelRPM);
-        return diffRPM < 17 ? ModuleState.HIGH_TOLERANCE
-            : diffRPM < 50 ? ModuleState.LOW_TOLERANCE
+        double diffRPM = Math.abs(flywheelEncoder.getVelocity() 
+            - (MANUAL_CONTROL ? flywheelRefVel : desiredFlywheelRPM));
+
+        return diffRPM < 75 ? ModuleState.HIGH_TOLERANCE
+            : diffRPM < 150 ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
 
@@ -562,7 +567,8 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // Thresholding in units of radians
         // TODO: test values
-        double diffRads = Math.abs(angleWrap(turntableEncoder.getPosition() - desiredTurntableRadians));
+        double diffRads = Math.abs(angleWrap(turntableEncoder.getPosition() 
+            - (MANUAL_CONTROL ? Math.toRadians(turntableRefPos) : desiredTurntableRadians)));
         return diffRads < Math.toRadians(2.5) ? ModuleState.HIGH_TOLERANCE
             : diffRads < Math.toRadians(10) ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
@@ -575,7 +581,8 @@ public class TurretSubsystem extends GRTSubsystem {
     private ModuleState hoodReady() {
         // Thesholding in units of encoder ticks
         // TODO: test thresholding values
-        double diffTicks = Math.abs(hood.getSelectedSensorPosition() - (desiredHoodRadians * HOOD_RADIANS_TO_TICKS));
+        double diffTicks = Math.abs(hood.getSelectedSensorPosition() 
+            - ((MANUAL_CONTROL ? hoodRefPos : desiredHoodRadians) * HOOD_RADIANS_TO_TICKS));
         return diffTicks < Math.toRadians(8) * HOOD_RADIANS_TO_TICKS ? ModuleState.HIGH_TOLERANCE
             : diffTicks < Math.toRadians(10) * HOOD_RADIANS_TO_TICKS ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
@@ -591,6 +598,10 @@ public class TurretSubsystem extends GRTSubsystem {
         ModuleState flywheelState = flywheelReady();
         ModuleState turntableState = turntableAligned();
         ModuleState hoodState = hoodReady();
+
+        flyReady.setValue(flywheelState == ModuleState.HIGH_TOLERANCE);
+        turnReady.setValue(turntableState == ModuleState.HIGH_TOLERANCE);
+        hoodReady.setValue(hoodState == ModuleState.HIGH_TOLERANCE);
 
         if (PRINT_TOLERANCES) System.out.println(
             "flywheel state: " + (flywheelState == ModuleState.UNALIGNED ? "UNALIGNED" : flywheelState == ModuleState.LOW_TOLERANCE ? "LOW_TOLERANCE" : "HIGH_TOLERANCE")
@@ -699,6 +710,14 @@ public class TurretSubsystem extends GRTSubsystem {
         hood.set(ControlMode.Position, ticks);
     }
 
+    public double getTurntablePosition() {
+        return turntableEncoder.getPosition();
+    }
+
+    public void setR(double r) {
+        this.r = r;
+    }
+    
     /**
      * Turret PID tuning NetworkTable callbacks.
      * @param change The `EntryNotification` representing the NetworkTable entry change.

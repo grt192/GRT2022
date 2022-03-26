@@ -70,6 +70,7 @@ public class ClimbSubsystem extends GRTSubsystem {
     private boolean sixBrakeEngaged = false;
     private boolean lastRetracted = false;
     private boolean retractToExtend = false;
+    private boolean brakeLastEngaged = true;
     private Timer brakeSwitch;
 
     // Fifteen point arm position PID constants
@@ -94,10 +95,12 @@ public class ClimbSubsystem extends GRTSubsystem {
         six.setInverted(true);
         brakeSwitch = new Timer();
 
+        lastRetracted = true;
+
         six.setSoftLimit(SoftLimitDirection.kForward, (float) SIX_MAX_POS);
         six.setSoftLimit(SoftLimitDirection.kReverse, (float) SIX_MIN_POS);
         //six.enableSoftLimit(SoftLimitDirection.kForward, true);
-        six.enableSoftLimit(SoftLimitDirection.kReverse, true);
+        //six.enableSoftLimit(SoftLimitDirection.kReverse, true);
 
         sixEncoder = six.getEncoder();
         sixEncoder.setPosition(0);
@@ -178,50 +181,43 @@ public class ClimbSubsystem extends GRTSubsystem {
      * @param pow The power to set.
      */
     public void setSixPower(double pow) {
-       double power = pow;
+      /*
+        double power = pow;
         if (power > 0) {
             lastRetracted = true;
         }
         six.set(pow);
-        System.out.println(sixEncoder.getPosition());
-        
-        /*
+        */
 
         double power = pow;
-        //if (sixBrakeEngaged && pow > 0) {
-        //    power = 0;
-        //}
-        if (power > 0) {
+        if (power < 0) {
             lastRetracted = true;
         }
         
-        if (lastRetracted && sixBrakeEngaged && (power < 0)) {
+       if (lastRetracted && brakeLastEngaged && (power > 0)) {
             System.out.println();
             brakeSwitch.start();
             lastRetracted = false;
-            power = 0.1;
+            power = -0.07;
             retractToExtend = true;
         } else if (retractToExtend) {
-            power = 0.1;
+            power = -0.07;
         }
 
         //stop retracting and start extending
-        if (retractToExtend && brakeSwitch.hasElapsed(0.2)) {
-            System.out.println();
+        if (retractToExtend && brakeSwitch.hasElapsed(0.3)) {
             sixBrake.set(1);
             sixBrakeEngaged = false;
+            brakeLastEngaged = false;
             retractToExtend = false;
             brakeSwitch.stop();
             brakeSwitch.reset();
         }
-
-
+        
         // set power and brake mode
         six.set(power);
         // brake engaged -> not powered, disengaged -> powered
         sixBrake.set(sixBrakeEngaged ? 0 : 1);
-
-        */
 
     }
 
@@ -231,7 +227,10 @@ public class ClimbSubsystem extends GRTSubsystem {
      * @param brake Whether to engage the brake.
      */
     public void setSixBrake(boolean brake) {
-        sixBrake.set(brake ? 0 : 1);
+        sixBrakeEngaged = brake;
+        if (brake) {
+            brakeLastEngaged = true;
+        }
        // sixBrakeEngaged = !sixBrakeEngaged;
     }
 

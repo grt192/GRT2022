@@ -9,6 +9,7 @@ import com.revrobotics.RelativeEncoder;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -249,5 +250,11 @@ public class TankSubsystem extends GRTSubsystem {
 
         leftMain.setSmartCurrentLimit(motorLimit);
         rightMain.setSmartCurrentLimit(motorLimit);
+    }
+
+    public double distance(Translation2d other) {
+        Pose2d curr = getRobotPosition();
+
+        return Math.hypot(curr.getX() - other.getX(), curr.getY() - other.getY());
     }
 }

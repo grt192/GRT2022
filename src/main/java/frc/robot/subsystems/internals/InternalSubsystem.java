@@ -169,7 +169,7 @@ public class InternalSubsystem extends GRTSubsystem {
             skipToleranceCheck = false;
         }
 
-        turretSubsystem.setBallReady(ballCount > 0 || shotRequested);
+        turretSubsystem.setBallReady(ballCount > 0);
     }
 
     /**
@@ -249,5 +249,9 @@ public class InternalSubsystem extends GRTSubsystem {
 
         motorBottom.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         motorTop.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
+    }
+
+    public boolean isShotRequested() {
+        return this.shotRequested;
     }
 }

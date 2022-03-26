@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.HttpCamera;
 
 import static frc.robot.Constants.JetsonConstants.*;
@@ -15,6 +16,10 @@ public class JetsonConnection {
     private final JetsonConnectionRunnable runnable;
 
     public JetsonConnection() {
+        // Start turret HTTP stream
+        HttpCamera turretCam = createCamera("10.1.92.94", 5801);
+        CameraServer.startAutomaticCapture(turretCam);
+
         runnable = new JetsonConnectionRunnable();
         Thread thread = new Thread(runnable);
         thread.setDaemon(true);
@@ -54,6 +59,15 @@ public class JetsonConnection {
         return runnable.ballDetected(); 
     } 
 
+    /**
+     * Creates an MJPEG camera over the Jetson connection.
+     * @param port The port to connect to.
+     * @return The camera object.
+     */
+    private HttpCamera createCamera(String name, int port) {
+        return new HttpCamera(name + " - Port " + port, "http://" + jetsonIP + ":" + port + "/?action=stream");
+    }
+    
     class JetsonConnectionRunnable implements Runnable {
         private Socket socket;
         private BufferedReader stdIn;
@@ -193,13 +207,5 @@ public class JetsonConnection {
             return ballDetected; 
         }
 
-        /**
-         * Creates an MJPEG camera over the Jetson connection.
-         * @param port The port to connect to.
-         * @return The camera object.
-         */
-        private HttpCamera createCamera(String name, int port) {
-            return new HttpCamera(name + " - Port " + port, "http://" + jetsonIP + ":" + port + "/?action=stream");
-        }
     }
 }
