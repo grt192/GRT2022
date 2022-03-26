@@ -45,6 +45,9 @@ public class InternalSubsystem extends GRTSubsystem {
     private final Timer exitTimer;
     private final Timer storageTimer;
 
+    private boolean entranceStorageBall = false;
+    private boolean storageStagingBall = false;
+    private boolean stagingExitBall = false;
     private int ballCount = 0;
 
     private boolean shotRequested = false;
@@ -102,15 +105,18 @@ public class InternalSubsystem extends GRTSubsystem {
         boolean storageDetected = isBall(storageColor);
         boolean stagingDetected = staging.get() >= 0.2;
 
-        // Set the ball count from staging and storage.
-        // This leaves a small window while a ball is rolling from the entrance to storage where the actual ball 
-        // count of the subsystem is larger than `ballCount`.
-        ballCount = (stagingDetected ? 1 : 0) + (storageDetected ? 1 : 0);
+        // Set the ball count from staging, storage, and the transition state booleans.
+        ballCount = (entranceStorageBall ? 1 : 0)
+            + (storageDetected ? 1 : 0)
+            + (storageStagingBall ? 1 : 0)
+            + (stagingDetected ? 1 : 0) 
+            + (stagingExitBall ? 1 : 0);
 
         // If there is a ball in the entrance, run the bottom motor.
         if (entranceDetected && !storageDetected) {
             motorBottom.set(0.3);
             entranceTimer.start();
+            entranceStorageBall = true;
         }
 
         // If 5 seconds have elapsed or the ball has progressed past entrance, stop the bottom motor
@@ -118,6 +124,7 @@ public class InternalSubsystem extends GRTSubsystem {
             motorBottom.set(0);
             entranceTimer.stop();
             entranceTimer.reset();
+            entranceStorageBall = false;
         }
 
         // If there is a ball between storage and staging and staging is empty, run the top and bottom motors
@@ -126,6 +133,7 @@ public class InternalSubsystem extends GRTSubsystem {
             storageTimer.start();
             motorTop.set(0.5);
             motorBottom.set(0.3);
+            storageStagingBall = true;
 
             if (!rejectingChecked) {
                 rejecting = storageColor != ALLIANCE_COLOR;
@@ -133,17 +141,24 @@ public class InternalSubsystem extends GRTSubsystem {
             }
         }
 
-        // If 0.5 seconds have elapsed, stop the motors
-        if (storageTimer.hasElapsed(0.5)) {
+        // If 0.5 seconds have elapsed or staging has detected the ball, stop the motors
+        if (storageTimer.hasElapsed(0.5) || stagingDetected) {
+            motorTop.set(0);
+            if (storageTimer.hasElapsed(0.5)) motorBottom.set(0);
             storageTimer.stop();
             storageTimer.reset();
-            
-            motorTop.set(0);
-            motorBottom.set(0);
+            storageStagingBall = false;
         }
 
         // If there is a ball in staging, we don't want to push it into turret, especially if there is a shot going
-        if (stagingDetected) motorTop.set(0);
+        // I'm leaving this as a failsafe in case I screwed something up. Uncomment this code
+        // and delete the `|| stagingDetected` in the above condition if something breaks.
+        /*
+        if (stagingDetected) {
+            motorTop.set(0);
+            storageStagingBall = false;
+        }
+        */
 
         // If a shot was requested and the turret is ready, load a ball into the turret.
         turretSubsystem.setReject(rejecting);
@@ -155,6 +170,7 @@ public class InternalSubsystem extends GRTSubsystem {
             // Spin the top motor on a timer
             exitTimer.start();
             motorTop.set(0.5);
+            stagingExitBall = true;
         }
 
         // If 0.5 seconds have elapsed, mark the shot as finished
@@ -167,6 +183,7 @@ public class InternalSubsystem extends GRTSubsystem {
             shotRequested = false;
             rejectingChecked = false;
             skipToleranceCheck = false;
+            stagingExitBall = false;
         }
 
         turretSubsystem.setBallReady(ballCount > 0);
