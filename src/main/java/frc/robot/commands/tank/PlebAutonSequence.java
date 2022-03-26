@@ -66,7 +66,8 @@ public class PlebAutonSequence extends CommandBase {
 
         if (internalSubsystem.isShotRequested() == false) {
             if (distDone || timeDone) this.complete = true;
-        } else if (autonTimer.hasElapsed(4)) {
+            internalSubsystem.requestShot();
+        } else if (autonTimer.hasElapsed(6)) {
             internalSubsystem.requestShot();
         }
     }

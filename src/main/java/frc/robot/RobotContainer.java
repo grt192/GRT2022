@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.brownout.PowerController;
@@ -71,8 +72,9 @@ public class RobotContainer {
         mechAButton = new JoystickButton(mechController, XboxController.Button.kA.value),
         mechBButton = new JoystickButton(mechController, XboxController.Button.kB.value),
         mechXButton = new JoystickButton(mechController, XboxController.Button.kX.value),
-        mechRBumper = new JoystickButton(mechController, XboxController.Button.kRightBumper.value),
-        mechYButton = new JoystickButton(mechController, XboxController.Button.kY.value);
+        mechYButton = new JoystickButton(mechController, XboxController.Button.kY.value),
+        mechLBumper = new JoystickButton(mechController, XboxController.Button.kLeftBumper.value),
+        mechRBumper = new JoystickButton(mechController, XboxController.Button.kRightBumper.value);
 
     // Commands
     private Command autonCommand;
@@ -123,7 +125,8 @@ public class RobotContainer {
             // Set the auton command from the shuffleboard int.
             // 1, 2, 3 -> red top, middle, bottom
             // 4, 5, 6 -> blue top, middle, bottom
-            // TODO: does this need to be combined with kNew?
+            // 7 -> pleb auton sequence
+            // 8 -> instantcommand (skip auton)
             int autonSequence = 7;
             Shuffleboard.getTab("Drivetrain").add("Auton sequence", autonSequence).getEntry()
                 .addListener(this::setAutonCommand, EntryListenerFlags.kImmediate | EntryListenerFlags.kUpdate | EntryListenerFlags.kNew);
@@ -158,10 +161,14 @@ public class RobotContainer {
         //mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
         // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
         mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleLow));
+        mechLBumper.toggleWhenPressed(new StartEndCommand(
+            () -> turretSubsystem.setDriverOverrideFlywheel(true),
+            () -> turretSubsystem.setDriverOverrideFlywheel(false), 
+            turretSubsystem
+        ));
         mechRBumper.whenPressed(new InstantCommand(() -> {
             turretSubsystem.setR(140);
         }));
-        
 
         // Car drive with the left Y axis controlling y power and the right X axis controlling angular
         tankSubsystem.setDefaultCommand(new RunCommand(() -> {
@@ -218,6 +225,7 @@ public class RobotContainer {
             case 5: autonCommand = new AutonBlueMiddleSequence(this); break;
             case 6: autonCommand = new AutonBlueBottomSequence(this); break;
             case 7: autonCommand = new PlebAutonSequence(this); break;
+            case 8: autonCommand = new InstantCommand(); break;
         }
     }
 

@@ -58,7 +58,6 @@ public class TurretSubsystem extends GRTSubsystem {
      * turret is almost ready.
      * If a module is UNALIGNED, it is not ready; it will require more than a second
      * to get it to READY status.
-     * For turntable, this includes being in the blind spot.
      */
     public enum ModuleState {
         HIGH_TOLERANCE, LOW_TOLERANCE, UNALIGNED
@@ -108,13 +107,10 @@ public class TurretSubsystem extends GRTSubsystem {
     private double distanceOffset = 0;
 
     // The interpolation table from shooter testing.
-    // Every entry can be thought of as a tuple representing [hub distance (in),
-    // flywheel speed (RPM), hood angle (degs)];
-    // for any given hub distance, the desired flywheel speed and hood angle can be
-    // linearly interpolated
+    // Every entry can be thought of as a tuple representing [hub distance (in), flywheel speed (RPM), hood angle (degs)];
+    // for any given hub distance, the desired flywheel speed and hood angle can be linearly interpolated
     // from the immediately higher and lower points.
-    // IMPORTANT: entries are assumed to be in order by hub distance. Without this
-    // assumption the array would have to be
+    // IMPORTANT: entries are assumed to be in order by hub distance. Without this assumption the array would have to be
     // sorted before interpolation.
     private static final double[][] INTERPOLATION_TABLE = {
         { 69, 5000, 7 },
@@ -141,6 +137,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private double frozenTheta;
 
     private boolean jetsonDisabled = false;
+    private boolean driverOverrideFlywheel = false;
 
     private boolean ballReady = false;
     private TurretMode mode = TurretMode.SHOOTING;
@@ -333,8 +330,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // if (rightLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MAX_RADIANS);
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
-        // boolean runFlywheel = !tankSubsystem.isMoving() && ballReady;
-        boolean runFlywheel = true;
+        boolean runFlywheel = (/* !tankSubsystem.isMoving() && */ ballReady) || driverOverrideFlywheel;
 
         // Set turntable lazy tracking if a ball isn't ready
         double pow = !ballReady ? 0.25 : 0.5;
@@ -570,14 +566,11 @@ public class TurretSubsystem extends GRTSubsystem {
      * @return The state of the turntable.
      */
     private ModuleState turntableAligned() {
-        // if the setpoint is only slightly outside the range then we can still consider ourselves aligned
-        // therefore there's no need to check if the setpoint is in our blind zone
-
         // Thresholding in units of radians
         // TODO: test values
         double diffRads = Math.abs(angleWrap(turntableEncoder.getPosition() 
             - (MANUAL_CONTROL ? Math.toRadians(turntableRefPos) : desiredTurntableRadians)));
-        return diffRads < Math.toRadians(2.5) ? ModuleState.HIGH_TOLERANCE
+        return diffRads < Math.toRadians(5) ? ModuleState.HIGH_TOLERANCE
             : diffRads < Math.toRadians(10) ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
@@ -725,7 +718,11 @@ public class TurretSubsystem extends GRTSubsystem {
     public void setR(double r) {
         this.r = r;
     }
-    
+
+    public void setDriverOverrideFlywheel(boolean override) {
+        this.driverOverrideFlywheel = override;
+    }
+
     /**
      * Turret PID tuning NetworkTable callbacks.
      * @param change The `EntryNotification` representing the NetworkTable entry change.
