@@ -3,53 +3,71 @@ package frc.robot.commands.tank;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.RobotContainer;
+import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.IntakeSubsystem.IntakePosition;
+import frc.robot.subsystems.internals.InternalSubsystem;
+import frc.robot.subsystems.tank.TankSubsystem;
 
 public class PlebAutonSequence extends CommandBase {
-    private static final double IN_TO_M = 0.0254;
-    Translation2d start = new Translation2d(87 * IN_TO_M, 0);
     private final RobotContainer container;
+    private final TankSubsystem tankSubsystem;
+    private final TurretSubsystem turretSubsystem;
+    private final IntakeSubsystem intakeSubsystem;
+    private final InternalSubsystem internalSubsystem;
 
-    private double startTime;
+    private Translation2d start = new Translation2d(Units.inchesToMeters(87), 0);
+
+    private final Timer autonTimer = new Timer();
     private boolean complete = false;
 
     public PlebAutonSequence(RobotContainer robotContainer) {
         this.container = robotContainer;
+        this.tankSubsystem = robotContainer.getTankSubsystem();
+        this.turretSubsystem = robotContainer.getTurretSubsystem();
+        this.intakeSubsystem = robotContainer.getIntakeSubsystem();
+        this.internalSubsystem = robotContainer.getInternalSubsystem();
 
-        addRequirements(robotContainer.getTankSubsystem(), robotContainer.getInternalSubsystem(),
-                robotContainer.getTurretSubsystem(), robotContainer.getIntakeSubsystem());
+        addRequirements(
+            tankSubsystem, 
+            internalSubsystem,
+            turretSubsystem, 
+            intakeSubsystem
+        );
     }
 
     @Override
     public void initialize() {
-        double turnPos = container.getTurretSubsystem().getTurntablePosition();
-
+        double turnPos = turretSubsystem.getTurntablePosition();
         container.setInitialPosition(new Pose2d(start, new Rotation2d(Math.PI - turnPos)));
 
-        container.getIntakeSubsystem().setDriverOverride(true);
-        container.getIntakeSubsystem().setIntakePower(1);
-        container.getIntakeSubsystem().setPosition(IntakePosition.DEPLOYED);
+        autonTimer.start();
 
-        this.startTime = Timer.getFPGATimestamp();
+        /*
+        intakeSubsystem.setDriverOverride(true);
+        intakeSubsystem.setIntakePower(1);
+        intakeSubsystem.setPosition(IntakePosition.DEPLOYED);
+        */
     }
 
     @Override
     public void execute() {
-        boolean distDone = container.getTankSubsystem().distance(start) > (55 * IN_TO_M);
-        boolean timeDone = (Timer.getFPGATimestamp() - startTime >= 8);
+        boolean distDone = tankSubsystem.distance(start) > Units.inchesToMeters(55);
+        boolean timeDone = autonTimer.hasElapsed(8);
         if (!distDone && !timeDone) {
-            container.getTankSubsystem().setCarDrivePowers(0.4, 0);
+            tankSubsystem.setCarDrivePowers(0.4, 0);
         } else {
-            container.getTankSubsystem().setCarDrivePowers(0, 0);
+            tankSubsystem.setCarDrivePowers(0, 0);
         }
 
-        container.getInternalSubsystem().requestShot();
-
-        if ((distDone || timeDone) && container.getInternalSubsystem().isShotRequested() == false) {
-            this.complete = true;
+        if (internalSubsystem.isShotRequested() == false) {
+            if (distDone || timeDone) this.complete = true;
+        } else if (autonTimer.hasElapsed(4)) {
+            internalSubsystem.requestShot();
         }
     }
 
