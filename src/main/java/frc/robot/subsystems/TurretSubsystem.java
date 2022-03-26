@@ -377,12 +377,6 @@ public class TurretSubsystem extends GRTSubsystem {
             // If frozen, interpolate flywheel and hood references from the frozen hub distance value
             interpolateFlywheelHoodRefs(this.frozen ? this.frozenR : this.r);
 
-            // TODO tune
-            if (this.mode == TurretMode.LOW_HUB) {
-                desiredFlywheelRPM = 3500;
-                desiredHoodRadians = Math.toRadians(21) * HOOD_RADIANS_TO_TICKS;
-            }
-
             // If MANUAL_CONTROL is enabled, set the turntable reference from shuffleboard.
             // Otherwise, use the theta given by `rtheta`.
             // TODO: threshold for wrapping to prevent excessive swing-between
@@ -395,6 +389,13 @@ public class TurretSubsystem extends GRTSubsystem {
             double turntableReference = Math.min(Math.max(
                 newTurntableRadians + deltaTurntableRadians * TURNTABLE_THETA_FF,
                 TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
+
+                // TODO tune
+                if (this.mode == TurretMode.LOW_HUB) {
+                    desiredFlywheelRPM = 3500;
+                    desiredHoodRadians = Math.toRadians(21) * HOOD_RADIANS_TO_TICKS;
+                    turntableReference = Math.toRadians(180);
+                }
 
             turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
             desiredTurntableRadians = newTurntableRadians;
