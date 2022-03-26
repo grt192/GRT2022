@@ -467,7 +467,10 @@ public class TurretSubsystem extends GRTSubsystem {
      * table. If rejecting, scale down flywheel speed to prevent scoring.
      */
     private void interpolateFlywheelHoodRefs(double r) {
-        double hubDistance = r + distanceOffset;
+        // Apply offset and clamp between minimum and maximum hub distance entries
+        // TODO: clamp slightly below min and above max?
+        double hubDistance = Math.min(Math.max(r + distanceOffset, 
+            INTERPOLATION_TABLE[0][0]), INTERPOLATION_TABLE[INTERPOLATION_TABLE.length - 1][0]);
 
         for (int i = 1; i < INTERPOLATION_TABLE.length; i++) {
             double[] above = INTERPOLATION_TABLE[i];
