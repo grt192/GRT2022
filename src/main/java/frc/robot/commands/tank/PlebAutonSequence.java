@@ -23,6 +23,9 @@ public class PlebAutonSequence extends CommandBase {
     private Translation2d start = new Translation2d(Units.inchesToMeters(87), 0);
 
     private final Timer autonTimer = new Timer();
+    private final Timer forceTimer = new Timer();
+
+    private int shotsRequested = 0;
     private boolean complete = false;
 
     public PlebAutonSequence(RobotContainer robotContainer) {
@@ -42,38 +45,57 @@ public class PlebAutonSequence extends CommandBase {
 
     @Override
     public void initialize() {
+        // Set initial position assuming we are 0in on the y axis, 87in on the x axis,
+        // with theta equal to the current turntable position.
         double turnPos = turretSubsystem.getTurntablePosition();
         container.setInitialPosition(new Pose2d(start, new Rotation2d(Math.PI - turnPos)));
 
         autonTimer.start();
+        forceTimer.start();
 
-        /*
         intakeSubsystem.setDriverOverride(true);
         intakeSubsystem.setIntakePower(1);
         intakeSubsystem.setPosition(IntakePosition.DEPLOYED);
-        */
     }
 
     @Override
     public void execute() {
-        boolean distDone = tankSubsystem.distance(start) > Units.inchesToMeters(55);
-        boolean timeDone = autonTimer.hasElapsed(8);
-        if (!distDone && !timeDone) {
-            tankSubsystem.setCarDrivePowers(0.4, 0);
-        } else {
-            tankSubsystem.setCarDrivePowers(0, 0);
+        // We are done driving if: we are beyond 55 inches of our starting position,
+        // or 8 seconds have passed.
+        boolean doneDriving = tankSubsystem.distance(start) > Units.inchesToMeters(55) 
+            || autonTimer.hasElapsed(8);
+
+        // If we're not done driving the set distance or time, drive forwards at 0.4 power
+        tankSubsystem.setCarDrivePowers(!doneDriving ? 0.4 : 0, 0);
+
+        // This runs once immediately and after every successful shot.
+        // If we're not requesting a shot, request one and reset the force timer.
+        // End the command after shooting twice.
+        if (!internalSubsystem.getShotRequested()) {
+            if (doneDriving && shotsRequested == 2) this.complete = true;
+            forceTimer.reset();
+            internalSubsystem.requestShot();
+            shotsRequested++;
         }
 
-        if (internalSubsystem.isShotRequested() == false) {
-            if (distDone || timeDone) this.complete = true;
+        // Force a shot if we haven't shot in 6 seconds
+        if (forceTimer.hasElapsed(6)) {
             internalSubsystem.requestShot();
-        } else if (autonTimer.hasElapsed(6)) {
-            internalSubsystem.requestShot();
+            forceTimer.reset();
         }
     }
 
     @Override
     public boolean isFinished() {
         return complete;
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        // Reset all timers when done
+        autonTimer.stop();
+        autonTimer.reset();
+        forceTimer.stop();
+        forceTimer.reset();
     }
 }

@@ -161,11 +161,14 @@ public class InternalSubsystem extends GRTSubsystem {
         */
 
         // If a shot was requested and the turret is ready, load a ball into the turret.
+        // For high goal shots, require that the turret be in high tolerance alignment.
+        // Otherwise, if we're rejecting or going into the low goal, low tolerance
+        // alignment is fine.
         turretSubsystem.setReject(rejecting);
         ModuleState turretState = turretSubsystem.getState();
         if (shotRequested && (skipToleranceCheck 
-            || turretState == TurretSubsystem.ModuleState.HIGH_TOLERANCE
-            || ((rejecting || turretSubsystem.currentMode() == TurretMode.LOW_HUB) && turretState == TurretSubsystem.ModuleState.LOW_TOLERANCE))
+            || turretState == ModuleState.HIGH_TOLERANCE
+            || ((rejecting || turretSubsystem.getMode() == TurretMode.LOW_HUB) && turretState == ModuleState.LOW_TOLERANCE))
         ) {
             // Spin the top motor on a timer
             exitTimer.start();
@@ -266,9 +269,5 @@ public class InternalSubsystem extends GRTSubsystem {
 
         motorBottom.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
         motorTop.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
-    }
-
-    public boolean isShotRequested() {
-        return this.shotRequested;
     }
 }

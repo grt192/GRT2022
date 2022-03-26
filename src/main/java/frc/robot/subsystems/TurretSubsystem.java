@@ -172,7 +172,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private static boolean DEBUG_PID = false;
     // Whether rtheta logic should be skipped and the turntable, hood, and flywheel references 
     // should be manually set through shuffleboard.
-    private static boolean MANUAL_CONTROL = false;
+    private static boolean MANUAL_CONTROL = true;
     // Whether the turret should fire at full speed regardless of rejection logic.
     private static boolean SKIP_REJECTION = false;
 
@@ -524,7 +524,7 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     public void changeDistanceOffset(double offset) {
         // Clamp offset between (max - min) and -(max - min) to grant full range
-        // of motion without going over
+        // of motion without overshooting
         double range = INTERPOLATION_TABLE[INTERPOLATION_TABLE.length - 1][0] 
             - INTERPOLATION_TABLE[0][0];
         this.distanceOffset = Math.min(Math.max(distanceOffset + offset, -range), range);
@@ -616,7 +616,11 @@ public class TurretSubsystem extends GRTSubsystem {
             : ModuleState.HIGH_TOLERANCE;
     }
 
-    public TurretMode currentMode() {
+    /**
+     * Gets the current mode the turret is in.
+     * @return The mode of the turret.
+     */
+    public TurretMode getMode() {
         return this.mode;
     }
 

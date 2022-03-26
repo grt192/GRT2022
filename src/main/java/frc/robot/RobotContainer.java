@@ -126,7 +126,7 @@ public class RobotContainer {
             // 1, 2, 3 -> red top, middle, bottom
             // 4, 5, 6 -> blue top, middle, bottom
             // 7 -> pleb auton sequence
-            // 8 -> instantcommand (skip auton)
+            // 8 -> InstantCommand (skip auton)
             int autonSequence = 7;
             Shuffleboard.getTab("Drivetrain").add("Auton sequence", autonSequence).getEntry()
                 .addListener(this::setAutonCommand, EntryListenerFlags.kImmediate | EntryListenerFlags.kUpdate | EntryListenerFlags.kNew);
@@ -158,7 +158,7 @@ public class RobotContainer {
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechBButton.whenPressed(new InstantCommand(intakeSubsystem::togglePosition));
         mechXButton.whenPressed(new InstantCommand(turretSubsystem::resetOffsets));
-        //mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
+        // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
         // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
         mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleLow));
         mechLBumper.toggleWhenPressed(new StartEndCommand(
@@ -255,20 +255,35 @@ public class RobotContainer {
         return powerController;
     }
 
+    /**
+     * Gets the robot's TankSubsystem instance.
+     * @return The TankSubsystem instance.
+     */
     public TankSubsystem getTankSubsystem() {
         return tankSubsystem;
     }
 
+    /**
+     * Gets the robot's TurretSubsystem instance.
+     * @return The TurretSubsystem instance.
+     */
     public TurretSubsystem getTurretSubsystem() {
         return turretSubsystem;
     }
 
+    /**
+     * Gets the robot's IntakeSubsystem instance.
+     * @return The IntakeSubsystem instance.
+     */
     public IntakeSubsystem getIntakeSubsystem() {
         return intakeSubsystem;
     }
 
+    /**
+     * Gets the robot's InternalSubsystem instance.
+     * @return The InternalSubsystem instance.
+     */
     public InternalSubsystem getInternalSubsystem() {
         return internalSubsystem;
     }
-
 }
