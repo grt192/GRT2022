@@ -42,8 +42,9 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
         robotContainer.setInitialPosition(initialPose);
 
         addCommands(
-            new DeployIntakeCommand(intakeSubsystem),
-            new FollowPathCommand(tankSubsystem, initialPose, List.of(), ballOnePose),
+            new DeployIntakeCommand(intakeSubsystem), // TODO: actually supply power to intake and rely on autodeploy
+            new FollowPathCommand(tankSubsystem, initialPose, List.of(), ballOnePose)
+                .withTimeout(5),
             new ShootCommand(internalSubsystem),
             new ShootCommand(internalSubsystem)
         );
@@ -65,6 +66,7 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
         addCommands(
             new RaiseIntakeCommand(intakeSubsystem),
             new FollowPathCommand(tankSubsystem, ballOnePose, List.of(), finalPose, finalReversed)
+                .withTimeout(5)
         );
     }
 
@@ -87,10 +89,12 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
         this(robotContainer, initialPose, ballOnePose);
 
         addCommands(
-            new FollowPathCommand(tankSubsystem, ballOnePose, List.of(), ballTwoPose),
+            new FollowPathCommand(tankSubsystem, ballOnePose, List.of(), ballTwoPose)
+                .withTimeout(5),
             new ShootCommand(internalSubsystem),
             new RaiseIntakeCommand(intakeSubsystem),
             new FollowPathCommand(tankSubsystem, ballTwoPose, List.of(), finalPose, true)
+                .withTimeout(5)
         );
     }
 
