@@ -12,10 +12,13 @@ import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.util.Color;
 
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
+import frc.robot.shuffleboard.GRTNetworkTableEntry;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.TurretSubsystem.ModuleState;
 import frc.robot.subsystems.TurretSubsystem.TurretMode;
@@ -54,6 +57,10 @@ public class InternalSubsystem extends GRTSubsystem {
     private boolean rejecting = false;
     private boolean rejectingChecked = false;
     private boolean skipToleranceCheck = false;
+
+    // Shuffleboard
+    private final ShuffleboardTab shuffleboardTab;
+    private final GRTNetworkTableEntry ballCountEntry;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         super(15);
@@ -95,6 +102,10 @@ public class InternalSubsystem extends GRTSubsystem {
             case Blue: ALLIANCE_COLOR = BLUE; break;
             default: ALLIANCE_COLOR = RED; break;
         }
+
+        // Shuffleboard
+        shuffleboardTab = Shuffleboard.getTab("Internals");
+        ballCountEntry = GRTNetworkTableEntry.from(shuffleboardTab, "Ball count", ballCount);
     }
 
     @Override
@@ -111,6 +122,7 @@ public class InternalSubsystem extends GRTSubsystem {
             + (storageStagingBall ? 1 : 0)
             + (stagingDetected ? 1 : 0) 
             + (stagingExitBall ? 1 : 0);
+        ballCountEntry.setValue(ballCount);
 
         // If there is a ball in the entrance, run the bottom motor.
         if (entranceDetected && !storageDetected) {

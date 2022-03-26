@@ -68,6 +68,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     private static final double accel = 40000;
     private static final int sCurveStrength = 3;
 
+    // Shuffleboard
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardDeployPosition;
     private final GRTNetworkTableEntry shuffleboardVeloEntry;
@@ -113,9 +114,10 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Intake");
-        shuffleboardVeloEntry = new GRTNetworkTableEntry(
-            shuffleboardTab.add("velo", deploy.getSelectedSensorVelocity()).getEntry());
-        shuffleboardDeployPosition = new GRTNetworkTableEntry(shuffleboardTab.add("Deploy position", 0).getEntry());
+        shuffleboardVeloEntry = 
+            GRTNetworkTableEntry.from(shuffleboardTab, "velo", deploy.getSelectedSensorVelocity());
+        shuffleboardDeployPosition = 
+            GRTNetworkTableEntry.from(shuffleboardTab, "Deploy position", 0);
 
         shuffleboardTab.add("Skip internals check", skipInternalsCheck).getEntry()
             .addListener(this::setSkipInternalsCheck, EntryListenerFlags.kUpdate);

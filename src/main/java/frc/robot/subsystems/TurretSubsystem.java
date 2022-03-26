@@ -253,19 +253,21 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Turret");
-        shuffleboardTurntablePosEntry = new GRTNetworkTableEntry(
-            shuffleboardTab.add("Turntable pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry());
-        // shuffleboardTurntableVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Turntable vel", 0).getEntry());
-        shuffleboardFlywheelVeloEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Flywheel vel", flywheelEncoder.getVelocity()).getEntry());
-        shuffleboardHoodPosEntry = new GRTNetworkTableEntry(shuffleboardTab.add("Hood pos", 0).getEntry());
-        rEntry = new GRTNetworkTableEntry(shuffleboardTab.add("r", 0).getEntry());
-        thetaEntry = new GRTNetworkTableEntry(shuffleboardTab.add("theta", 0).getEntry());
-        distOffsetEntry = new GRTNetworkTableEntry(shuffleboardTab.add("dist offset", 0).getEntry());
-        turnOffsetEntry = new GRTNetworkTableEntry(shuffleboardTab.add("turntable offset", 0).getEntry());
+        shuffleboardTurntablePosEntry = 
+            GRTNetworkTableEntry.from(shuffleboardTab, "Turntable pos", Math.toDegrees(turntableEncoder.getPosition()));
+        shuffleboardFlywheelVeloEntry = 
+            GRTNetworkTableEntry.from(shuffleboardTab, "Flywheel vel", flywheelEncoder.getVelocity());
+        shuffleboardHoodPosEntry = 
+            GRTNetworkTableEntry.from(shuffleboardTab, "Hood pos", 0);
 
-        flyReady = new GRTNetworkTableEntry(shuffleboardTab.add("fly ready", false).getEntry());
-        turnReady = new GRTNetworkTableEntry(shuffleboardTab.add("turn ready", false).getEntry());
-        hoodReady = new GRTNetworkTableEntry(shuffleboardTab.add("hood ready", false).getEntry());
+        rEntry = GRTNetworkTableEntry.from(shuffleboardTab, "r", 0);
+        thetaEntry = GRTNetworkTableEntry.from(shuffleboardTab, "theta", 0);
+        distOffsetEntry = GRTNetworkTableEntry.from(shuffleboardTab, "dist offset", 0);
+        turnOffsetEntry = GRTNetworkTableEntry.from(shuffleboardTab, "turntable offset", 0);
+
+        flyReady = GRTNetworkTableEntry.from(shuffleboardTab, "fly ready", false);
+        turnReady = GRTNetworkTableEntry.from(shuffleboardTab, "turn ready", false);
+        hoodReady = GRTNetworkTableEntry.from(shuffleboardTab, "hood ready", false);
 
         shuffleboardTab.add("Jetson disabled", jetsonDisabled).getEntry()
             .addListener(this::setDisableJetson, EntryListenerFlags.kUpdate);
