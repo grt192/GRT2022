@@ -390,12 +390,12 @@ public class TurretSubsystem extends GRTSubsystem {
                 newTurntableRadians + deltaTurntableRadians * TURNTABLE_THETA_FF,
                 TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
 
-                // TODO tune
-                if (this.mode == TurretMode.LOW_HUB) {
-                    desiredFlywheelRPM = 3500;
-                    desiredHoodRadians = Math.toRadians(21) * HOOD_RADIANS_TO_TICKS;
-                    turntableReference = Math.toRadians(180);
-                }
+            // TODO tune
+            if (this.mode == TurretMode.LOW_HUB) {
+                desiredFlywheelRPM = 3500;
+                desiredHoodRadians = Math.toRadians(21) * HOOD_RADIANS_TO_TICKS;
+                turntableReference = Math.toRadians(180);
+            }
 
             turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
             desiredTurntableRadians = newTurntableRadians;
@@ -527,7 +527,11 @@ public class TurretSubsystem extends GRTSubsystem {
      * @param offset The amount to change the offet by, in inches.
      */
     public void changeDistanceOffset(double offset) {
-        this.distanceOffset += offset;
+        // Clamp offset between (max - min) and -(max - min) to grant full range
+        // of motion without going over
+        double range = INTERPOLATION_TABLE[INTERPOLATION_TABLE.length - 1][0] 
+            - INTERPOLATION_TABLE[0][0];
+        this.distanceOffset = Math.min(Math.max(distanceOffset + offset, -range), range);
     }
 
     /**
