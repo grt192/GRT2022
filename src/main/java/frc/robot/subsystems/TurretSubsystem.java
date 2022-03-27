@@ -16,15 +16,13 @@ import com.revrobotics.SparkMaxPIDController;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.EntryListenerFlags;
 import edu.wpi.first.networktables.EntryNotification;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
+import frc.robot.shuffleboard.GRTShuffleboardTab;
 import frc.robot.subsystems.tank.TankSubsystem;
 
 import static frc.robot.Constants.TurretConstants.*;
@@ -154,7 +152,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double FLYWHEEL_GEAR_RATIO = 36.0 / 18.0;
 
     // Shuffleboard
-    private final ShuffleboardTab shuffleboardTab;
+    private final GRTShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardTurntablePosEntry;
     private final GRTNetworkTableEntry shuffleboardFlywheelVeloEntry;
     private final GRTNetworkTableEntry shuffleboardHoodPosEntry;
@@ -252,72 +250,55 @@ public class TurretSubsystem extends GRTSubsystem {
         // rightLimitSwitch = new DigitalInput(rLimitSwitchPort);
 
         // Initialize Shuffleboard entries
-        shuffleboardTab = Shuffleboard.getTab("Turret");
+        shuffleboardTab = new GRTShuffleboardTab("Turret");;
         shuffleboardTurntablePosEntry = 
-            GRTNetworkTableEntry.from(shuffleboardTab, "Turntable pos", Math.toDegrees(turntableEncoder.getPosition()));
+            shuffleboardTab.addEntry("Turntable pos", Math.toDegrees(turntableEncoder.getPosition()));
         shuffleboardFlywheelVeloEntry = 
-            GRTNetworkTableEntry.from(shuffleboardTab, "Flywheel vel", flywheelEncoder.getVelocity());
+            shuffleboardTab.addEntry("Flywheel vel", flywheelEncoder.getVelocity());
         shuffleboardHoodPosEntry = 
-            GRTNetworkTableEntry.from(shuffleboardTab, "Hood pos", 0);
+            shuffleboardTab.addEntry("Hood pos", 0);
 
-        rEntry = GRTNetworkTableEntry.from(shuffleboardTab, "r", 0);
-        thetaEntry = GRTNetworkTableEntry.from(shuffleboardTab, "theta", 0);
-        distOffsetEntry = GRTNetworkTableEntry.from(shuffleboardTab, "dist offset", 0);
-        turnOffsetEntry = GRTNetworkTableEntry.from(shuffleboardTab, "turntable offset", 0);
+        rEntry = shuffleboardTab.addEntry("r", 0);
+        thetaEntry = shuffleboardTab.addEntry("theta", 0);
+        distOffsetEntry = shuffleboardTab.addEntry("dist offset", 0);
+        turnOffsetEntry = shuffleboardTab.addEntry("turntable offset", 0);
 
-        flyReady = GRTNetworkTableEntry.from(shuffleboardTab, "fly ready", false);
-        turnReady = GRTNetworkTableEntry.from(shuffleboardTab, "turn ready", false);
-        hoodReady = GRTNetworkTableEntry.from(shuffleboardTab, "hood ready", false);
+        flyReady = shuffleboardTab.addEntry("fly ready", false);
+        turnReady = shuffleboardTab.addEntry("turn ready", false);
+        hoodReady = shuffleboardTab.addEntry("hood ready", false);
 
-        shuffleboardTab.add("Jetson disabled", jetsonDisabled).getEntry()
-            .addListener(this::setDisableJetson, EntryListenerFlags.kUpdate);
-        // shuffleboardTab.add("Freeze turret", false).getEntry()
-        //     .addListener(this::setFreeze, EntryListenerFlags.kUpdate);
+        shuffleboardTab.addListener("Jetson disabled", jetsonDisabled, this::setDisableJetson);
+        // shuffleboardTab.addListener("Freeze turret", frozen, this::setFreeze);
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
-            shuffleboardTab.add("Turntable kP", turntableP).getEntry()
-                .addListener(this::setTurntableP, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Turntable kI", turntableI).getEntry()
-                .addListener(this::setTurntableI, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Turntable kD", turntableD).getEntry()
-                .addListener(this::setTurntableD, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Turntable kFF", turntableFF).getEntry()
-                .addListener(this::setTurntableFF, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Turntable maxVel", maxVel).getEntry()
-                .addListener(this::setTurntableMaxVel, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Turntable minVel", maxAccel).getEntry()
-                .addListener(this::setTurnMinVel, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Turntable maxAcc", maxAccel).getEntry()
-                .addListener(this::setTurntableMaxAcc, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Turntable theta FF", TURNTABLE_THETA_FF).getEntry()
-                .addListener(this::setTurntableThetaFF, EntryListenerFlags.kUpdate);
+            shuffleboardTab
+                .addListener("Turntable kP", turntableP, this::setTurntableP)
+                .addListener("Turntable kI", turntableI, this::setTurntableI)
+                .addListener("Turntable kD", turntableD, this::setTurntableD)
+                .addListener("Turntable kFF", turntableFF, this::setTurntableFF)
+                .addListener("Turntable maxVel", maxVel, this::setTurntableMaxVel)
+                .addListener("Turntable maxAcc", maxAccel, this::setTurntableMaxAcc)
+                .addListener("Turntable theta FF", TURNTABLE_THETA_FF, this::setTurntableThetaFF);
+            
+            shuffleboardTab
+                .addListener("Flywheel kP", flywheelP, this::setFlywheelP)
+                .addListener("Flywheel kI", flywheelI, this::setFlywheelI)
+                .addListener("Flywheel kD", flywheelD, this::setFlywheelD)
+                .addListener("Flywheel kFF", flywheelFF, this::setFlywheelFF);
 
-            shuffleboardTab.add("Flywheel kP", flywheelP).getEntry()
-                .addListener(this::setFlywheelP, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Flywheel kI", flywheelI).getEntry()
-                .addListener(this::setFlywheelI, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Flywheel kD", flywheelD).getEntry()
-                .addListener(this::setFlywheelD, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Flywheel kFF", flywheelFF).getEntry()
-                .addListener(this::setFlywheelFF, EntryListenerFlags.kUpdate);
-
-            shuffleboardTab.add("Hood kP", hoodP).getEntry()
-                .addListener(this::setHoodP, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Hood kI", hoodI).getEntry()
-                .addListener(this::setHoodI, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Hood kD", hoodD).getEntry()
-                .addListener(this::setHoodD, EntryListenerFlags.kUpdate);
+            shuffleboardTab
+                .addListener("Hood kP", hoodP, this::setHoodP)
+                .addListener("Hood kI", hoodI, this::setHoodI)
+                .addListener("Hood kD", hoodD, this::setHoodD);
         }
 
         // If MANUAL_CONTROL is enabled, allow for reference setting on shuffleboard
         if (MANUAL_CONTROL) {
-            shuffleboardTab.add("Turntable ref pos", Math.toDegrees(turntableEncoder.getPosition())).getEntry()
-                .addListener(this::setTurntableRefPos, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Flywheel ref vel", flywheelRefVel).getEntry()
-                .addListener(this::setFlywheelRefVel, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Hood ref degs", hoodRefPos).getEntry()
-                .addListener(this::setHoodRefPos, EntryListenerFlags.kUpdate);
+            shuffleboardTab
+                .addListener("Turntable ref pos", Math.toDegrees(turntableEncoder.getPosition()), this::setTurntableRefPos)
+                .addListener("Flywheel ref vel", flywheelRefVel, this::setFlywheelRefVel)
+                .addListener("Hood ref degs", hoodRefPos, this::setHoodRefPos);
         }
     }
 
