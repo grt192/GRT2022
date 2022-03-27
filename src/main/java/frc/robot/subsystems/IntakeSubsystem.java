@@ -32,7 +32,7 @@ public class IntakeSubsystem extends GRTSubsystem {
      * representing the counterclockwise angle from straight upwards.
      */
     public enum IntakePosition {
-        START(0), RAISED(44000), DEPLOYED(718724);
+        START(0), RAISED(57355), DEPLOYED(711003);
 
         public final double value;
 
@@ -145,7 +145,6 @@ public class IntakeSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         // TOOD: fix intake again
-        // 
         limitSwitchReset();
 
         // If the ball count is greater than 2, don't run intake.

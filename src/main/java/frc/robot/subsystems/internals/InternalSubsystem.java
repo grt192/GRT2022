@@ -15,7 +15,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.util.Color;
-
+import edu.wpi.first.wpilibj2.command.PrintCommand;
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
@@ -129,14 +129,16 @@ public class InternalSubsystem extends GRTSubsystem {
             motorBottom.set(0.3);
             entranceTimer.start();
             entranceStorageBall = true;
+            System.out.println("case 1");
         }
 
         // If 5 seconds have elapsed or the ball has progressed past entrance, stop the bottom motor
-        if ((storageDetected || entranceTimer.hasElapsed(5)) && entranceTimer.get() > 0) {
+        if ((storageDetected || entranceTimer.hasElapsed(5)) && entranceTimer.get() > 0 && stagingDetected) {
             motorBottom.set(0);
             entranceTimer.stop();
             entranceTimer.reset();
             entranceStorageBall = false;
+            System.out.println("case 2");
         }
 
         // If there is a ball between storage and staging and staging is empty, run the top and bottom motors
@@ -151,15 +153,22 @@ public class InternalSubsystem extends GRTSubsystem {
                 rejecting = storageColor != ALLIANCE_COLOR;
                 rejectingChecked = true;
             }
+
+            System.out.println("case 3, ball in storage" );
         }
 
         // If 0.5 seconds have elapsed or staging has detected the ball, stop the motors
         if (storageTimer.hasElapsed(0.5) || stagingDetected) {
             motorTop.set(0);
-            if (storageTimer.hasElapsed(0.5)) motorBottom.set(0);
+            System.out.println(storageTimer.get());
+            if (storageTimer.hasElapsed(0.5)) {
+                motorBottom.set(0);
+            }
             storageTimer.stop();
             storageTimer.reset();
+            System.out.println("storageStagingBall " + storageStagingBall);
             storageStagingBall = false;
+            System.out.println("case 4, " + storageDetected + ", " + stagingDetected);
         }
 
         // If there is a ball in staging, we don't want to push it into turret, especially if there is a shot going

@@ -24,6 +24,7 @@ public class PlebAutonSequence extends CommandBase {
 
     private final Timer autonTimer = new Timer();
     private final Timer forceTimer = new Timer();
+    private final Timer finalTimer = new Timer();
 
     private int shotsRequested = 0;
     private boolean complete = false;
@@ -56,10 +57,14 @@ public class PlebAutonSequence extends CommandBase {
         intakeSubsystem.setDriverOverride(true);
         intakeSubsystem.setIntakePower(1);
         intakeSubsystem.setPosition(IntakePosition.DEPLOYED);
+
+        turretSubsystem.setDriverOverrideFlywheel(true);
     }
 
     @Override
     public void execute() {
+        if (complete) return;
+
         // We are done driving if: we are beyond 55 inches of our starting position,
         // or 8 seconds have passed.
         boolean doneDriving = tankSubsystem.distance(start) > Units.inchesToMeters(55) 
@@ -72,7 +77,12 @@ public class PlebAutonSequence extends CommandBase {
         // If we're not requesting a shot, request one and reset the force timer.
         // End the command after shooting twice.
         if (!internalSubsystem.getShotRequested()) {
-            if (doneDriving && shotsRequested == 2) this.complete = true;
+            if (doneDriving && shotsRequested == 2) {
+                intakeSubsystem.setPosition(IntakePosition.RAISED);
+                tankSubsystem.setCarDrivePowers(0.4, 0);
+                finalTimer.start();
+                complete = true;
+            }
             forceTimer.reset();
             internalSubsystem.requestShot();
             shotsRequested++;
@@ -87,15 +97,20 @@ public class PlebAutonSequence extends CommandBase {
 
     @Override
     public boolean isFinished() {
-        return complete;
+        return finalTimer.hasElapsed(2.5);
     }
 
     @Override
     public void end(boolean interrupted) {
+        turretSubsystem.setDriverOverrideFlywheel(false);
+        tankSubsystem.setCarDrivePowers(0, 0);
+
         // Reset all timers when done
         autonTimer.stop();
         autonTimer.reset();
         forceTimer.stop();
         forceTimer.reset();
+        finalTimer.stop();
+        finalTimer.reset();
     }
 }
