@@ -1,27 +1,26 @@
 package frc.robot.subsystems.tank;
 
-import static frc.robot.Constants.TankConstants.bLeftMotorPort;
-import static frc.robot.Constants.TankConstants.bRightMotorPort;
-import static frc.robot.Constants.TankConstants.fLeftMotorPort;
-import static frc.robot.Constants.TankConstants.fRightMotorPort;
-import static frc.robot.Constants.TankConstants.mLeftMotorPort;
-import static frc.robot.Constants.TankConstants.mRightMotorPort;
-
 import com.kauailabs.navx.frc.AHRS;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
+
+import static frc.robot.Constants.TankConstants.*;
 
 /**
  * A subsystem which controls the robot's drivetrain. This subsystem handles both driving and odometry.
@@ -35,7 +34,8 @@ public class TankSubsystem extends GRTSubsystem {
     private final CANSparkMax rightMiddle;
     private final CANSparkMax rightBack;
 
-    private final PoseEstimatorThread poseEstimatorThread;
+    private final AHRS ahrs;
+    private final PoseEstimator poseEstimator;
 
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleX;
@@ -43,8 +43,7 @@ public class TankSubsystem extends GRTSubsystem {
     private final GRTNetworkTableEntry shuffleHeading;
     private final Field2d shuffleboardField;
 
-    // TODO: measure this for new robot
-    public static final double ENCODER_ROTATIONS_TO_METERS = 5 / 5.0;
+    public static final double ENCODER_ROTATIONS_TO_METERS = 4 / 71.11351407691836;
 
     public TankSubsystem() {
         // TODO: measure this
@@ -93,10 +92,11 @@ public class TankSubsystem extends GRTSubsystem {
 
         // Initialize navX AHRS
         // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
-        AHRS ahrs = new AHRS(SPI.Port.kMXP);
+        ahrs = new AHRS(SPI.Port.kMXP);
 
         // Start pose estimator thread
-        poseEstimatorThread = new PoseEstimatorThread(ahrs, leftEncoder, rightEncoder);
+        poseEstimator = new PoseEstimator(ahrs, leftEncoder, rightEncoder);
+        resetPosition();
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Drivetrain");
@@ -123,7 +123,6 @@ public class TankSubsystem extends GRTSubsystem {
             angularScale = squareInput(angularScale);
         }
 
-        // Set motor output state
         double leftPowerTemp = yScale + angularScale;
         double rightPowerTemp = yScale - angularScale;
 
@@ -173,12 +172,15 @@ public class TankSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
+        poseEstimator.update();
+        //System.out.println(getRobotPosition());
+
         // Update Shuffleboard entries
         Pose2d pose = getRobotPosition();
         
         shuffleX.setValue(pose.getX());
         shuffleY.setValue(pose.getY());
-        shuffleHeading.setValue(pose.getRotation().getRadians());
+        shuffleHeading.setValue(pose.getRotation().getDegrees());
         shuffleboardField.setRobotPose(pose);
     }
 
@@ -187,11 +189,29 @@ public class TankSubsystem extends GRTSubsystem {
      * @return The estimated position of the robot as a Pose2d.
      */
     public Pose2d getRobotPosition() {
-        return poseEstimatorThread.getPosition();
+        return poseEstimator.getPosition();
     }
 
+    /**
+     * Gets the wheel speeds of the robot as a DifferentialDriveWheelSpeeds.
+     * @return The wheel speeds of the robot as a DifferentialDriveWheelSpeeds.
+     */
     public DifferentialDriveWheelSpeeds getWheelSpeeds() {
-        return poseEstimatorThread.getWheelSpeeds();
+        // TODO: is this ok?
+        return poseEstimator.getLastWheelSpeeds();
+    }
+
+    /**
+     * Gets whether the robot is currently moving, according to the NavX's linear acceleration values
+     * and the left and right wheel speeds.
+     * @return Whether the robot is moving.
+     * TODO: is there a better way to find this?
+     */
+    public boolean isMoving() {
+        DifferentialDriveWheelSpeeds wheelSpeeds = poseEstimator.getLastWheelSpeeds();
+        return ahrs.isMoving() 
+            && Math.abs(wheelSpeeds.leftMetersPerSecond) > 0 
+            && Math.abs(wheelSpeeds.rightMetersPerSecond) > 0;
     }
 
     /**
@@ -199,7 +219,7 @@ public class TankSubsystem extends GRTSubsystem {
      * @param position The position to reset the pose estimator to.
      */
     public void resetPosition(Pose2d position) {
-        poseEstimatorThread.setPosition(position);
+        poseEstimator.setPosition(position);
     }
 
     /**
@@ -230,5 +250,11 @@ public class TankSubsystem extends GRTSubsystem {
 
         leftMain.setSmartCurrentLimit(motorLimit);
         rightMain.setSmartCurrentLimit(motorLimit);
+    }
+
+    public double distance(Translation2d other) {
+        Pose2d curr = getRobotPosition();
+
+        return Math.hypot(curr.getX() - other.getX(), curr.getY() - other.getY());
     }
 }

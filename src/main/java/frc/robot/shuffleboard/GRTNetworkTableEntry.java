@@ -2,6 +2,7 @@ package frc.robot.shuffleboard;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableValue;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 
 /**
  * A wrapper for NetworkTableEntry to allow different classes to do the
@@ -49,5 +50,17 @@ public class GRTNetworkTableEntry {
     public void setValue(Object value) {
         this.type = GRTEntryType.SET;
         this.buffer = value;
+    }
+
+    /**
+     * Convenience method for creating a GRTNetworkTableEntry from a shuffleboard tab, 
+     * entry name, and entry value.
+     * @param shuffleboardTab The tab to add the entry to.
+     * @param name The name of the entry.
+     * @param value The value of the entry.
+     * @return The GRTNetworkTableEntry.
+     */
+    public static GRTNetworkTableEntry from(ShuffleboardTab shuffleboardTab, String name, Object value) {
+        return new GRTNetworkTableEntry(shuffleboardTab.add(name, value).getEntry());
     }
 }

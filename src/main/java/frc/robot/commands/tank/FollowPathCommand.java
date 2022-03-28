@@ -26,18 +26,18 @@ import frc.robot.subsystems.tank.TankSubsystem;
  */
 public class FollowPathCommand extends RamseteCommand {
     // Robot constants
-    private static final double TRACK_WIDTH = 0.7805022504396351;
+    private static final double TRACK_WIDTH = 0.6522;
     private static final DifferentialDriveKinematics KINEMATICS = 
         new DifferentialDriveKinematics(TRACK_WIDTH);
 
     // Drive constants
     // https://docs.wpilib.org/en/stable/docs/software/examples-tutorials/trajectory-tutorial/characterizing-drive.html
-    private static final double Ks = 0.15964; // V
-    private static final double Kv = 2.3796; // Vs/m
-    private static final double Ka = 0.31372; // Vs^2/m
+    private static final double Ks = 0.12898; // V
+    private static final double Kv = 2.3435; // Vs/m
+    private static final double Ka = 0.64221; // Vs^2/m
 
     // Velocity PID constants
-    private static final double Kp = 0.018101;
+    private static final double Kp = 3.3283;
     private static final double Ki = 0;
     private static final double Kd = 0;
 
@@ -74,6 +74,33 @@ public class FollowPathCommand extends RamseteCommand {
     }
 
     /**
+     * Creates a FollowPathCommand from a given start point, list of waypoints, end point, and boolean representing whether
+     * the path should be reversed (if the robot should drive backwards through the trajectory).
+     * 
+     * @param tankSubsystem The tank subsystem.
+     * @param start The start point of the trajectory as a Pose2d.
+     * @param waypoints A list of waypoints the robot must pass through as a List<Translation2d>.
+     * @param end The end point of the trajectory as a Pose2d.
+     * @param reversed Whether the trajectory is reversed.
+     */
+    public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Translation2d> waypoints, Pose2d end, boolean reversed) {
+        this(
+            tankSubsystem,
+            // Target trajectory
+            TrajectoryGenerator.generateTrajectory(
+                start, waypoints, end, 
+                new TrajectoryConfig(MAX_VEL, MAX_ACCEL)
+                    .setReversed(reversed)
+                    .setKinematics(KINEMATICS)
+                    .addConstraint(new DifferentialDriveVoltageConstraint(
+                        new SimpleMotorFeedforward(Ks, Kv, Ka), 
+                        KINEMATICS, 
+                        10))
+            )
+        );
+    }
+
+    /**
      * Creates a FollowPathCommand from a given start point, list of waypoints, and end point.
      * 
      * @param tankSubsystem The tank subsystem.
@@ -82,18 +109,6 @@ public class FollowPathCommand extends RamseteCommand {
      * @param end The end point of the trajectory as a Pose2d.
      */
     public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Translation2d> waypoints, Pose2d end) {
-        this(
-            tankSubsystem,
-            // Target trajectory
-            TrajectoryGenerator.generateTrajectory(
-                start, waypoints, end, 
-                new TrajectoryConfig(MAX_VEL, MAX_ACCEL)
-                    .setKinematics(KINEMATICS)
-                    .addConstraint(new DifferentialDriveVoltageConstraint(
-                        new SimpleMotorFeedforward(Ks, Kv, Ka), 
-                        KINEMATICS, 
-                        10))
-            )
-        );
+        this(tankSubsystem, start, waypoints, end, false);
     }
 }

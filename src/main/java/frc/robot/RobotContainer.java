@@ -9,8 +9,12 @@ import java.util.List;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.EntryListenerFlags;
+import edu.wpi.first.networktables.EntryNotification;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -18,9 +22,20 @@ import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.brownout.PowerController;
+import frc.robot.commands.intake.DeployIntakeCommand;
+import frc.robot.commands.intake.RaiseIntakeCommand;
+import frc.robot.commands.intake.RunIntakeCommand;
 import frc.robot.commands.internals.RequestShotCommand;
+import frc.robot.commands.tank.AutonBlueBottomSequence;
+import frc.robot.commands.tank.AutonBlueMiddleSequence;
+import frc.robot.commands.tank.AutonBlueTopSequence;
+import frc.robot.commands.tank.AutonRedBottomSequence;
+import frc.robot.commands.tank.AutonRedMiddleSequence;
+import frc.robot.commands.tank.AutonRedTopSequence;
 import frc.robot.commands.tank.FollowPathCommand;
+import frc.robot.commands.tank.PlebAutonSequence;
 import frc.robot.jetson.JetsonConnection;
+import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.internals.InternalSubsystem;
@@ -34,13 +49,12 @@ import frc.robot.subsystems.tank.TankSubsystem;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-
     // Subsystems
     private final TankSubsystem tankSubsystem;
     private final TurretSubsystem turretSubsystem;
     private final IntakeSubsystem intakeSubsystem;
     private final InternalSubsystem internalSubsystem;
-    // private final ClimbSubsystem climbSubsystem;
+    private final ClimbSubsystem climbSubsystem;
 
     private final JetsonConnection jetson;
     private final PowerController powerController = null;
@@ -58,10 +72,16 @@ public class RobotContainer {
         mechAButton = new JoystickButton(mechController, XboxController.Button.kA.value),
         mechBButton = new JoystickButton(mechController, XboxController.Button.kB.value),
         mechXButton = new JoystickButton(mechController, XboxController.Button.kX.value),
-        mechYButton = new JoystickButton(mechController, XboxController.Button.kY.value);
+        mechYButton = new JoystickButton(mechController, XboxController.Button.kY.value),
+        mechLBumper = new JoystickButton(mechController, XboxController.Button.kLeftBumper.value),
+        mechRBumper = new JoystickButton(mechController, XboxController.Button.kRightBumper.value);
 
     // Commands
-    private final Command autonCommand;
+    private Command autonCommand;
+
+    // Debug flags
+    // Whether to run an auton path or skip auton and set starting position manually.
+    private static final boolean SKIP_AUTON = false;
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -74,8 +94,8 @@ public class RobotContainer {
         tankSubsystem = new TankSubsystem();
         turretSubsystem = new TurretSubsystem(tankSubsystem, jetson);
         internalSubsystem = new InternalSubsystem(turretSubsystem);
-        intakeSubsystem = new IntakeSubsystem(internalSubsystem);
-        // climbSubsystem = new ClimbSubsystem();
+        intakeSubsystem = new IntakeSubsystem(internalSubsystem, jetson);
+        climbSubsystem = new ClimbSubsystem();
 
         // Instantiate power controller
         /*
@@ -88,27 +108,29 @@ public class RobotContainer {
         );
         */
 
-        // Instantiate commands
-        // Drive an S-shaped curve from the origin to 3 meters in front through 2 waypoints
-        /*
-        if (tankSubsystem != null) {
-            autonCommand = new FollowPathCommand(
-                tankSubsystem,
-                new Pose2d(),
-                List.of(
-                    new Translation2d(1, 1),
-                    new Translation2d(2, -1)
-                ),
-                new Pose2d(3, 0, new Rotation2d())
-            );
-        } else {
-            autonCommand = new InstantCommand();
-        }
-        */
-        autonCommand = new InstantCommand();
-
         // Configure the button bindings
         configureButtonBindings();
+
+        // Instantiate auton command.
+        // If skipping autonomous, run an empty command in auton and set initial position
+        // from a manual hub distance. This assumes we are facing directly away from the hub
+        // at 0 degrees with a distance of `hubDist` between the robot and the hub.
+        if (SKIP_AUTON) {
+            double hubDist = 70;
+            Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
+            setInitialPosition(initialPose);
+
+            autonCommand = new InstantCommand();
+        } else {
+            // Set the auton command from the shuffleboard int.
+            // 1, 2, 3 -> red top, middle, bottom
+            // 4, 5, 6 -> blue top, middle, bottom
+            // 7 -> pleb auton sequence
+            // 8 -> InstantCommand (skip auton)
+            int autonSequence = 7;
+            Shuffleboard.getTab("Drivetrain").add("Auton sequence", autonSequence).getEntry()
+                .addListener(this::setAutonCommand, EntryListenerFlags.kImmediate | EntryListenerFlags.kUpdate | EntryListenerFlags.kNew);
+        }
     }
 
     /**
@@ -116,17 +138,10 @@ public class RobotContainer {
      * created by instantiating a {@link GenericHID} or one of its subclasses
      * ({@link edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then
      * passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-     */
-    private void configureButtonBindings() {
-        controllerBindings();
-    }
-
-    /**
-     * TODO: finalize these, talk to drivers
      * 
      * Controller 1 (driver):
-     * Joysticks -> car drive (tank)
-     * Left trigger -> run intake (intake)
+     * Joysticks -> car drive -- left Y -> foward, right X -> angular (tank)
+     * Triggers -> manual override intake -- left backwards, right forwards (intake)
      * A button -> lower intake (intake)
      * B button -> raise intake (intake)
      * 
@@ -134,67 +149,83 @@ public class RobotContainer {
      * A button -> request shot (internals)
      * X button -> start climb sequence (climb)
      */
-    private void controllerBindings() {
-        //driveAButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
-        //driveBButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+    private void configureButtonBindings() {
+        // driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
+        // driveBButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
+        // driveYButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
+        driveXButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
 
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
-        mechXButton.whenPressed(new InstantCommand(() -> internalSubsystem.setPower(0)));
+        mechBButton.whenPressed(new InstantCommand(intakeSubsystem::togglePosition));
+        mechXButton.whenPressed(new InstantCommand(turretSubsystem::resetOffsets));
+        // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
+        // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
+        mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleLow));
+        mechLBumper.toggleWhenPressed(new StartEndCommand(
+            () -> turretSubsystem.setDriverOverrideFlywheel(true),
+            () -> turretSubsystem.setDriverOverrideFlywheel(false), 
+            turretSubsystem
+        ));
+        mechRBumper.whenPressed(new InstantCommand(() -> {
+            turretSubsystem.setR(140);
+        }));
 
-        mechYButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0.2)));
-        mechBButton.whenPressed(new InstantCommand(() -> turretSubsystem.setFlywheelPower(0)));
+        // Car drive with the left Y axis controlling y power and the right X axis controlling angular
+        tankSubsystem.setDefaultCommand(new RunCommand(() -> {
+            boolean slowMode = driveController.getRightBumper() || mechController.getRightBumper();
 
-        if (tankSubsystem != null) {
-            Runnable tank = () -> tankSubsystem.setCarDrivePowers(-driveController.getLeftY(), driveController.getRightX());
-            tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
-        }
+            // double turn_stick = driveController.getRightX();
+            double yPow = -driveController.getLeftY();
+            double turnPow = driveController.getRightX() * 0.7;
 
-        if (intakeSubsystem != null) {
-            // TODO: tune deadband
-            Runnable intake = () -> {
-                intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
+            if (slowMode) {
+                yPow *= 0.3;
+                turnPow *= 0.3;
+            }
 
-                double deployPow = 0;
-                if (driveController.getPOV() == 90) {
-                    deployPow = 0.2;
-                } else if (driveController.getPOV() == 270) {
-                    deployPow = -0.2;
-                }
-                intakeSubsystem.setDeployPower(deployPow);
-            };
-            intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
-        }
+            tankSubsystem.setCarDrivePowers(yPow, turnPow);
+        }, tankSubsystem));
 
-        if (internalSubsystem != null) {
-            internalSubsystem.setDefaultCommand(new RunCommand(() -> {
-                double leftTrigger = mechController.getLeftTriggerAxis();
-                double rightTrigger = mechController.getRightTriggerAxis();
+        // Driver-override intake command
+        intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, mechController));
 
-                if (leftTrigger != 0 || rightTrigger != 0) {
-                    internalSubsystem.setDriverOverride(true);
-                    internalSubsystem.setPower(leftTrigger - rightTrigger);
-                } else {
-                    internalSubsystem.setDriverOverride(false);
-                }
-            }, internalSubsystem));
-        }
+        // Set turret offsets from mech controller POV input:
+        // Top/bottom to increase/decrease hub distance offset,
+        // right/left to increase/decrease theta offset.
+        turretSubsystem.setDefaultCommand(new RunCommand(() -> {
+            switch (mechController.getPOV()) {
+                case 0: turretSubsystem.changeDistanceOffset(3); break;
+                case 90: turretSubsystem.changeTurntableOffset(Math.toRadians(3)); break;
+                case 180: turretSubsystem.changeDistanceOffset(-3); break;
+                case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-3)); break;
+                default: break;
+            }
+        }, turretSubsystem));
 
-        if (turretSubsystem != null) {
-            driveXButton.whileHeld(new StartEndCommand(
-                () -> turretSubsystem.spin = true, 
-                () -> turretSubsystem.spin = false, 
-                turretSubsystem));
+        // Manual climb control with the right mech joystick:
+        // Push up to extend, down to retract; brakes are automatically set when manual control 
+        // is supplied.
+        climbSubsystem.setDefaultCommand(new RunCommand(() -> {
+            double pow = -mechController.getRightY();
+            climbSubsystem.setSixPower(pow);
+            climbSubsystem.setSixBrake(pow == 0);
+        }, climbSubsystem));
+    }
 
-            turretSubsystem.setDefaultCommand(new RunCommand(() -> {
-                double turntablePower = -mechController.getLeftY();
-                double hoodPower = -mechController.getRightY();
-
-                //System.out.println("Turntable power: " + turntablePower);
-                //System.out.println("Hood power: " + hoodPower);
-
-                turretSubsystem.setTurntablePower(turntablePower);
-                turretSubsystem.setHoodPower(hoodPower);
-            }, turretSubsystem));
+    /**
+     * Sets the selected auton command from the shuffleboard integer value.
+     * @param change The EntryNotification representing a shuffleboard value change.
+     */
+    private void setAutonCommand(EntryNotification change) {
+        switch ((int) change.value.getDouble()) {
+            case 1: autonCommand = new AutonRedTopSequence(this); break;
+            case 2: autonCommand = new AutonRedMiddleSequence(this); break;
+            case 3: autonCommand = new AutonRedBottomSequence(this); break;
+            case 4: autonCommand = new AutonBlueTopSequence(this); break;
+            case 5: autonCommand = new AutonBlueMiddleSequence(this); break;
+            case 6: autonCommand = new AutonBlueBottomSequence(this); break;
+            case 7: autonCommand = new PlebAutonSequence(this); break;
+            case 8: autonCommand = new InstantCommand(); break;
         }
     }
 
@@ -207,6 +238,16 @@ public class RobotContainer {
     }
 
     /**
+     * Sets the initial position of the robot. Wraps a call to reset localization
+     * and set the initial `r` and `theta` of the turret.
+     * @param position The initial position of the robot.
+     */
+    public void setInitialPosition(Pose2d position) {
+        tankSubsystem.resetPosition(position);
+        turretSubsystem.setInitialPose(position);
+    }
+
+    /**
      * Gets the PowerController instance for scaling in `Robot.periodic()`.
      * @return The PowerController instance.
      */
@@ -215,7 +256,31 @@ public class RobotContainer {
     }
 
     /**
-     * Gets the InternalSubsystem for setting initial ball count in `Robot.autonomousInit()`.
+     * Gets the robot's TankSubsystem instance.
+     * @return The TankSubsystem instance.
+     */
+    public TankSubsystem getTankSubsystem() {
+        return tankSubsystem;
+    }
+
+    /**
+     * Gets the robot's TurretSubsystem instance.
+     * @return The TurretSubsystem instance.
+     */
+    public TurretSubsystem getTurretSubsystem() {
+        return turretSubsystem;
+    }
+
+    /**
+     * Gets the robot's IntakeSubsystem instance.
+     * @return The IntakeSubsystem instance.
+     */
+    public IntakeSubsystem getIntakeSubsystem() {
+        return intakeSubsystem;
+    }
+
+    /**
+     * Gets the robot's InternalSubsystem instance.
      * @return The InternalSubsystem instance.
      */
     public InternalSubsystem getInternalSubsystem() {

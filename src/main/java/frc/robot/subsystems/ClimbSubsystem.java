@@ -11,11 +11,16 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMax.SoftLimitDirection;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.networktables.EntryListenerFlags;
+import edu.wpi.first.networktables.EntryNotification;
 import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
@@ -31,6 +36,7 @@ public class ClimbSubsystem extends GRTSubsystem {
     private final SparkMaxPIDController sixPidController;
     private final WPI_TalonSRX sixBrake;
 
+    /*
     private final CANSparkMax ten;
     private final RelativeEncoder tenEncoder;
     private final SparkMaxPIDController tenPidController;
@@ -41,16 +47,31 @@ public class ClimbSubsystem extends GRTSubsystem {
 
     private final WPI_TalonSRX fifteenMain;
     private final WPI_TalonSRX fifteenFollow;
+    */
 
-    // Six point arm position PID constants
-    private static final double sixP = 0.125;
+    // Six point arm smart motion PID constants
+    private static final double sixP = 0;
     private static final double sixI = 0;
     private static final double sixD = 0;
+    private static final double sixFF = 0.000125;
+    private static final double maxVel = 150;
+    private static final double maxAccel = 300;
+
+    private static final double SIX_MIN_POS = 0;
+    private static final double SIX_MAX_POS = 199.32318115234375;
+    private static final double SIX_RETRACTED_POS = 50;
 
     // Ten point arm position PID constants
     private static final double tenP = 0.125;
     private static final double tenI = 0;
     private static final double tenD = 0;
+
+    // Temp states for brake toggles
+    private boolean sixBrakeEngaged = false;
+    private boolean lastRetracted = false;
+    private boolean retractToExtend = false;
+    private boolean brakeLastEngaged = true;
+    private Timer brakeSwitch;
 
     // Fifteen point arm position PID constants
     private static final double fifteenP = 0.125;
@@ -58,17 +79,10 @@ public class ClimbSubsystem extends GRTSubsystem {
     private static final double fifteenD = 0;
 
     private final ShuffleboardTab shuffleboardTab;
-    // private final NetworkTableEntry shuffleboardSixPEntry;
-    // private final NetworkTableEntry shuffleboardSixIEntry;
-    // private final NetworkTableEntry shuffleboardSixDEntry;
 
-    // private final NetworkTableEntry shuffleboardTenPEntry;
-    // private final NetworkTableEntry shuffleboardTenIEntry;
-    // private final NetworkTableEntry shuffleboardTenDEntry;
-
-    // private final NetworkTableEntry shuffleboardFifteenPEntry;
-    // private final NetworkTableEntry shuffleboardFifteenIEntry;
-    // private final NetworkTableEntry shuffleboardFifteenDEntry;
+    // Debug flags
+    // Whether PID tuning shuffleboard entries should be displayed
+    private static boolean DEBUG_PID = false;
 
     public ClimbSubsystem() {
         // TODO: measure this
@@ -78,6 +92,15 @@ public class ClimbSubsystem extends GRTSubsystem {
         six = new CANSparkMax(sixMotorPort, MotorType.kBrushless);
         six.restoreFactoryDefaults();
         six.setIdleMode(IdleMode.kBrake);
+        six.setInverted(true);
+        brakeSwitch = new Timer();
+
+        lastRetracted = true;
+
+        six.setSoftLimit(SoftLimitDirection.kForward, (float) SIX_MAX_POS);
+        six.setSoftLimit(SoftLimitDirection.kReverse, (float) SIX_MIN_POS);
+        //six.enableSoftLimit(SoftLimitDirection.kForward, true);
+        //six.enableSoftLimit(SoftLimitDirection.kReverse, true);
 
         sixEncoder = six.getEncoder();
         sixEncoder.setPosition(0);
@@ -91,6 +114,7 @@ public class ClimbSubsystem extends GRTSubsystem {
         sixBrake.configFactoryDefault();
 
         // Initialize ten point arm NEO, encoder PID, and solenoid brake
+        /*
         ten = new CANSparkMax(tenMotorPort, MotorType.kBrushless);
         ten.restoreFactoryDefaults();
         ten.setIdleMode(IdleMode.kBrake);
@@ -130,36 +154,84 @@ public class ClimbSubsystem extends GRTSubsystem {
         fifteenFollow.configFactoryDefault();
         fifteenFollow.follow(fifteenMain);
         fifteenMain.setNeutralMode(NeutralMode.Brake);
+        */
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Climb");
-        // shuffleboardSixPEntry = shuffleboardTab.add("Six point arm kP", sixP).getEntry();
-        // shuffleboardSixIEntry = shuffleboardTab.add("Six point arm kI", sixI).getEntry();
-        // shuffleboardSixDEntry = shuffleboardTab.add("Six point arm kD", sixD).getEntry();
 
-        // shuffleboardTenPEntry = shuffleboardTab.add("Ten point arm kP", tenP).getEntry();
-        // shuffleboardTenIEntry = shuffleboardTab.add("Ten point arm kI", tenI).getEntry();
-        // shuffleboardTenDEntry = shuffleboardTab.add("Ten point arm kD", tenD).getEntry();
-
-        // shuffleboardFifteenPEntry = shuffleboardTab.add("Fifteen point arm kP", fifteenP).getEntry();
-        // shuffleboardFifteenIEntry = shuffleboardTab.add("Fifteen point arm kI", fifteenI).getEntry();
-        // shuffleboardFifteenDEntry = shuffleboardTab.add("Fifteen point arm kD", fifteenD).getEntry();
+        // If DEBUG_PID is set, allow for PID tuning on shuffleboard
+        if (DEBUG_PID) {
+            shuffleboardTab.add("Six kP", sixP).getEntry()
+                .addListener(this::setSixP, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Six kI", sixI).getEntry()
+                .addListener(this::setSixI, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Six kD", sixD).getEntry()
+                .addListener(this::setSixD, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Six kFF", sixFF).getEntry()
+                .addListener(this::setSixFF, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Six maxVel", maxVel).getEntry()
+                .addListener(this::setSixMaxVel, EntryListenerFlags.kUpdate);
+            shuffleboardTab.add("Six maxAccel", maxAccel).getEntry()
+                .addListener(this::setSixMaxAccel, EntryListenerFlags.kUpdate);
+        }
     }
 
-    @Override
-    public void periodic() {
-        // Get PID constants from Shuffleboard for testing
-        // sixPidController.setP(shuffleboardSixPEntry.getDouble(sixP));
-        // sixPidController.setP(shuffleboardSixIEntry.getDouble(sixI));
-        // sixPidController.setP(shuffleboardSixDEntry.getDouble(sixD));
+    /**
+     * Manually sets the six winch power.
+     * @param pow The power to set.
+     */
+    public void setSixPower(double pow) {
+      /*
+        double power = pow;
+        if (power > 0) {
+            lastRetracted = true;
+        }
+        six.set(pow);
+        */
 
-        // tenPidController.setP(shuffleboardTenPEntry.getDouble(tenP));
-        // tenPidController.setP(shuffleboardTenIEntry.getDouble(tenI));
-        // tenPidController.setP(shuffleboardTenDEntry.getDouble(tenD));
+        double power = pow;
+        if (power < 0) {
+            lastRetracted = true;
+        }
+        
+       if (lastRetracted && brakeLastEngaged && (power > 0)) {
+            System.out.println();
+            brakeSwitch.start();
+            lastRetracted = false;
+            power = -0.07;
+            retractToExtend = true;
+        } else if (retractToExtend) {
+            power = -0.07;
+        }
 
-        // fifteenMain.config_kP(0, shuffleboardFifteenPEntry.getDouble(fifteenP));
-        // fifteenMain.config_kI(0, shuffleboardFifteenIEntry.getDouble(fifteenI));
-        // fifteenMain.config_kD(0, shuffleboardFifteenDEntry.getDouble(fifteenD));
+        //stop retracting and start extending
+        if (retractToExtend && brakeSwitch.hasElapsed(0.3)) {
+            sixBrake.set(1);
+            sixBrakeEngaged = false;
+            brakeLastEngaged = false;
+            retractToExtend = false;
+            brakeSwitch.stop();
+            brakeSwitch.reset();
+        }
+        
+        // set power and brake mode
+        six.set(power);
+        // brake engaged -> not powered, disengaged -> powered
+        sixBrake.set(sixBrakeEngaged ? 0 : 1);
+
+    }
+
+    /**
+     * Manually sets the six brake status. When the brake is disengaged, 
+     * the solenoid is powered (retracted).
+     * @param brake Whether to engage the brake.
+     */
+    public void setSixBrake(boolean brake) {
+        sixBrakeEngaged = brake;
+        if (brake) {
+            brakeLastEngaged = true;
+        }
+       // sixBrakeEngaged = !sixBrakeEngaged;
     }
 
     /**
@@ -171,95 +243,29 @@ public class ClimbSubsystem extends GRTSubsystem {
         public void initialize() {
             // Disengage the six point arm brake and extend the arm to grab the rung
             sixBrake.set(0);
-            sixPidController.setReference(20, ControlType.kPosition);
+            sixPidController.setReference(SIX_MAX_POS, ControlType.kSmartMotion);
         }
 
         @Override
         public boolean isFinished() {
-            return withinThreshold(sixEncoder.getPosition(), 20);
+            return Math.abs(sixEncoder.getPosition() - SIX_MAX_POS) < 1;
         }
 
         @Override
         public void end(boolean interrupted) {
             // Engage the brake and partially retract the arm after grabbing
             sixBrake.set(1);
-            sixPidController.setReference(10, ControlType.kPosition);
+            sixPidController.setReference(SIX_RETRACTED_POS, ControlType.kSmartMotion);
         }
-    }
-
-    /**
-     * PHASE 2 (10 point rung)
-     */
-    public class ClimbPhase2Command extends CommandBase {
-        @Override
-        public void initialize() {
-            // Disengage the ten point arm brake and extend the arm, simultaneously further retracting the six point arm.
-            // After this motion the robot should be flat under the 10 point rung.
-            tenBrake.set(0);
-            tenPidController.setReference(20, ControlType.kPosition);
-            sixPidController.setReference(5, ControlType.kPosition);
-        }
-
-        @Override
-        public boolean isFinished() {
-            return withinThreshold(tenEncoder.getPosition(), 20)
-                && withinThreshold(sixEncoder.getPosition(), 5);
-        }
-
-        @Override
-        public void end(boolean interrupted) {
-            // Engage the brake and partially retract the arm after grabbing
-            tenBrake.set(1);
-            tenPidController.setReference(10, ControlType.kPosition);
-        }
-    }
-
-    /**
-     * PHASE 3 (15 point rung)
-     */
-    public class ClimbPhase3Command extends CommandBase {
-        @Override
-        public void initialize() {
-            // Extend the 15 point arms and grab the bar
-            fifteenMain.set(ControlMode.Position, 20);
-        }
-
-        @Override
-        public boolean isFinished() {
-            return withinThreshold(fifteenMain.getSelectedSensorPosition(), 20);
-        }
-
-        @Override
-        public void end(boolean interrupted) {
-            // Release the six point arm by extending it, and the ten point arm using a solenoid mechanism
-            sixBrake.set(0);
-            sixPidController.setReference(20, ControlType.kPosition);
-            tenSolenoidMain.set(1);
-        }
-    }
-
-    /**
-     * Convenience method to perform thresholding with the same value on all climb position PID loops.
-     * @param value The current encoder reading.
-     * @param desired The desired motor position.
-     * @return Whether the reading is within threshold of the desired value.
-     * TODO: tune this threshold value
-     */
-    public boolean withinThreshold(double value, double desired) {
-        return Math.abs(value - desired) < 1;
     }
 
     /**
      * Gets the climb sequence as a SequentialCommandGroup.
      * @return The command group representing the climb sequence.
      */
-    public SequentialCommandGroup climb() {
-        return new ClimbPhase1Command().andThen(
-            new WaitUntilCommand(() -> withinThreshold(sixEncoder.getPosition(), 10)),
-            new ClimbPhase2Command(),
-            new WaitUntilCommand(() -> withinThreshold(tenEncoder.getPosition(), 10)),
-            new ClimbPhase3Command()
-        );
+    public Command climb(GRTSubsystem... subsystems) {
+        for (GRTSubsystem subsystem : subsystems) subsystem.climbInit();
+        return new ClimbPhase1Command();
     }
 
     @Override
@@ -272,11 +278,38 @@ public class ClimbSubsystem extends GRTSubsystem {
 
     @Override
     public void setCurrentLimit(double limit) {
-        // TODO: do the solenoids draw significant power? should they be factored in to the limit calculation?
-        int motorLimit = (int) Math.floor(limit / 4);
+        int motorLimit = (int) Math.floor(limit);
 
         six.setSmartCurrentLimit(motorLimit);
-        ten.setSmartCurrentLimit(motorLimit);
-        fifteenMain.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
+        // ten.setSmartCurrentLimit(motorLimit);
+        // fifteenMain.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
+    }
+
+    /**
+     * Climb PID tuning NetworkTable callbacks.
+     * @param change The `EntryNotification` representing the NetworkTable entry change.
+     */
+    private void setSixP(EntryNotification change) {
+        sixPidController.setP(change.value.getDouble());
+    }
+
+    private void setSixI(EntryNotification change) {
+        sixPidController.setI(change.value.getDouble());
+    }
+
+    private void setSixD(EntryNotification change) {
+        sixPidController.setD(change.value.getDouble());
+    }
+
+    private void setSixFF(EntryNotification change) {
+        sixPidController.setFF(change.value.getDouble());
+    }
+
+    private void setSixMaxVel(EntryNotification change) {
+        sixPidController.setSmartMotionMaxVelocity(change.value.getDouble(), 0);
+    }
+
+    private void setSixMaxAccel(EntryNotification change) {
+        sixPidController.setSmartMotionMaxAccel(change.value.getDouble(), 0);
     }
 }

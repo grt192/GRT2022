@@ -7,32 +7,32 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.HttpCamera;
 
 import static frc.robot.Constants.JetsonConstants.*;
 
 public class JetsonConnection {
-
     private final JetsonConnectionRunnable runnable;
 
-    // Instance variables
-    private Thread thread;
-
     public JetsonConnection() {
+        // Start turret HTTP stream
+        HttpCamera turretCam = createCamera("10.1.92.94", 5801);
+        CameraServer.startAutomaticCapture(turretCam);
+
         runnable = new JetsonConnectionRunnable();
-        thread = new Thread(runnable);
+        Thread thread = new Thread(runnable);
         thread.setDaemon(true);
         thread.start();
     }
 
-    
     /**
      * Returns whether the turret camera can see vision targets, in case there are momentary lapses in vision or the
      * hub is currently in the turntable blind spot.
      * @return Whether turret vision is working.
      */
     public boolean turretVisionWorking() { 
-        return runnable.turretVisionStatus; 
+        return runnable.turretVisionWorking(); 
     }
 
     /**
@@ -40,7 +40,7 @@ public class JetsonConnection {
      * @return The desired turntable angle.
      */
     public double getTurretTheta() { 
-        return runnable.turretTheta; 
+        return runnable.getTurretTheta(); 
     }
 
     /**
@@ -48,7 +48,7 @@ public class JetsonConnection {
      * @return The distance from the camera to the hub.
      */
     public double getHubDistance() { 
-        return runnable.hubDistance; 
+        return runnable.getHubDistance(); 
     }
 
     /**
@@ -56,11 +56,19 @@ public class JetsonConnection {
      * @return Whether a ball is in intake range.
      */
     public boolean ballDetected() { 
-        return runnable.ballDetected; 
+        return runnable.ballDetected(); 
     } 
 
+    /**
+     * Creates an MJPEG camera over the Jetson connection.
+     * @param port The port to connect to.
+     * @return The camera object.
+     */
+    private HttpCamera createCamera(String name, int port) {
+        return new HttpCamera(name + " - Port " + port, "http://" + jetsonIP + ":" + port + "/?action=stream");
+    }
+    
     class JetsonConnectionRunnable implements Runnable {
-
         private Socket socket;
         private BufferedReader stdIn;
     
@@ -82,16 +90,19 @@ public class JetsonConnection {
 
                     // Check if we need to connect
                     if (stdIn == null || socket == null || socket.isClosed() || !socket.isConnected() || !socket.isBound()) {
+                        System.out.println("Connecting to jetson...");
                         isConnected = connect();
 
                         if (!isConnected) {
                             System.out.println("Unable to connect to Jetson");
                             // Wait before trying to connect again
-                            Thread.sleep(500);
+                            Thread.sleep(2000);
                         }
                     } else {
                         readCameraData();
                     }
+
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                     // If interrupted, exit
                     return;
@@ -105,7 +116,7 @@ public class JetsonConnection {
          * Attempt to connect to the jetson socket.
          * @return If the connection was successful.
          */
-        public boolean connect() {
+        private boolean connect() {
             try {
                 socket = new Socket(jetsonIP, jetsonPort);
                 stdIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -130,13 +141,15 @@ public class JetsonConnection {
          * Read the camera data and update stored values.
          * data: (bool -- turret vision status, double -- turret theta, double -- hub distance, boolean -- ball detected)
          */
-        public void readCameraData() throws InterruptedException {
+        private void readCameraData() throws InterruptedException {
             try {
-                String in = stdIn.readLine();
+                String in = null;
+                while (stdIn.ready()) in = stdIn.readLine();
+
                 if (in != null) {
                     String[] data = in.replace("(", "").replace(")", "").split(",");
-                    
-                    System.out.println(Arrays.toString(data));
+
+                    // System.out.println(Arrays.toString(data));
 
                     turretVisionStatus = strToBool(data[0]);
                     turretTheta = Double.parseDouble(data[1]);
@@ -194,13 +207,5 @@ public class JetsonConnection {
             return ballDetected; 
         }
 
-        /**
-         * Creates an MJPEG camera over the Jetson connection.
-         * @param port The port to connect to.
-         * @return The camera object.
-         */
-        public HttpCamera createCamera(String name, int port) {
-            return new HttpCamera(name + " - Port " + port, "http://" + jetsonIP + ":" + port + "/?action=stream");
-        }
     }
 }
