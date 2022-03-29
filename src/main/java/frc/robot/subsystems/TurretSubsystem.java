@@ -167,7 +167,7 @@ public class TurretSubsystem extends GRTSubsystem {
     // Whether current system tolerances (flywheel, hood, turntable) should be printed.
     private static boolean PRINT_TOLERANCES = false;
     // Whether PID tuning shuffleboard entries should be displayed.
-    private static boolean DEBUG_PID = false;
+    private static boolean DEBUG_PID = true;
     // Whether rtheta logic should be skipped and the turntable, hood, and flywheel references 
     // should be manually set through shuffleboard.
     private static boolean MANUAL_CONTROL = true;
@@ -271,7 +271,18 @@ public class TurretSubsystem extends GRTSubsystem {
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
             shuffleboardTab
+                .list("Flywheel PID")
+                .at(5, 0)
+                .withSize(1, 3)
+                .addListener("kP", flywheelP, this::setFlywheelP)
+                .addListener("kI", flywheelI, this::setFlywheelI)
+                .addListener("kD", flywheelD, this::setFlywheelD)
+                .addListener("kFF", flywheelFF, this::setFlywheelFF);
+
+            shuffleboardTab
                 .list("Turntable PID")
+                .at(6, 0)
+                .withSize(1, 3)
                 .addListener("kP", turntableP, this::setTurntableP)
                 .addListener("kI", turntableI, this::setTurntableI)
                 .addListener("kD", turntableD, this::setTurntableD)
@@ -281,14 +292,9 @@ public class TurretSubsystem extends GRTSubsystem {
                 .addListener("theta FF", TURNTABLE_THETA_FF, this::setTurntableThetaFF);
 
             shuffleboardTab
-                .list("Flywheel PID")
-                .addListener("kP", flywheelP, this::setFlywheelP)
-                .addListener("kI", flywheelI, this::setFlywheelI)
-                .addListener("kD", flywheelD, this::setFlywheelD)
-                .addListener("kFF", flywheelFF, this::setFlywheelFF);
-
-            shuffleboardTab
                 .list("Hood PID")
+                .at(7, 0)
+                .withSize(1, 3)
                 .addListener("kP", hoodP, this::setHoodP)
                 .addListener("kI", hoodI, this::setHoodI)
                 .addListener("kD", hoodD, this::setHoodD);

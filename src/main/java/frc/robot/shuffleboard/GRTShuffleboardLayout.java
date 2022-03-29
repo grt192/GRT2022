@@ -23,6 +23,30 @@ public class GRTShuffleboardLayout {
     }
 
     /**
+     * Positions this layout at the specified column and row.
+     * 
+     * @param col The column of the top left cell of the layout.
+     * @param row The row of the top left cell of the layout.
+     * @return The shuffleboard layout, for call chaining.
+     */
+    public GRTShuffleboardLayout at(int col, int row) {
+        shuffleboardLayout.withPosition(col, row);
+        return this;
+    }
+
+    /**
+     * Sizes this layout to the specified width and height.
+     * 
+     * @param width The width of the layout.
+     * @param height The height of the layout.
+     * @return The shuffleboard layout, for call chaining.
+     */
+    public GRTShuffleboardLayout withSize(int width, int height) {
+        shuffleboardLayout.withSize(width, height);
+        return this;
+    }
+
+    /**
      * Adds a network table shuffleboard entry to the layout with the supplied name and value.
      * This is typically for displaying data. For reading data, see `addListener`.
      * 
