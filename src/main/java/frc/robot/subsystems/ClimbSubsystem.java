@@ -194,7 +194,7 @@ public class ClimbSubsystem extends GRTSubsystem {
             lastRetracted = true;
         }
         
-       if (lastRetracted && brakeLastEngaged && (power > 0)) {
+        if (lastRetracted && brakeLastEngaged && (power > 0)) {
             System.out.println();
             brakeSwitch.start();
             lastRetracted = false;
@@ -218,7 +218,6 @@ public class ClimbSubsystem extends GRTSubsystem {
         six.set(power);
         // brake engaged -> not powered, disengaged -> powered
         sixBrake.set(sixBrakeEngaged ? 0 : 1);
-
     }
 
     /**

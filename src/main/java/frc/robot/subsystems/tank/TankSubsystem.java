@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
+import frc.robot.shuffleboard.GRTShuffleboardTab;
 
 import static frc.robot.Constants.TankConstants.*;
 
@@ -37,7 +38,7 @@ public class TankSubsystem extends GRTSubsystem {
     private final AHRS ahrs;
     private final PoseEstimator poseEstimator;
 
-    private final ShuffleboardTab shuffleboardTab;
+    private final GRTShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleX;
     private final GRTNetworkTableEntry shuffleY;
     private final GRTNetworkTableEntry shuffleHeading;
@@ -99,12 +100,12 @@ public class TankSubsystem extends GRTSubsystem {
         resetPosition();
 
         // Initialize Shuffleboard entries
-        shuffleboardTab = Shuffleboard.getTab("Drivetrain");
-        shuffleX = new GRTNetworkTableEntry(shuffleboardTab.add("Robot x", 0).getEntry());
-        shuffleY = new GRTNetworkTableEntry(shuffleboardTab.add("Robot y", 0).getEntry());
-        shuffleHeading = new GRTNetworkTableEntry(shuffleboardTab.add("Robot heading", 0).getEntry());
+        shuffleboardTab = new GRTShuffleboardTab("Drivetrain");
+        shuffleX = shuffleboardTab.addEntry("Robot x", 0);
+        shuffleY = shuffleboardTab.addEntry("Robot y", 0);
+        shuffleHeading = shuffleboardTab.addEntry("Robot heading", 0);
         shuffleboardField = new Field2d();
-        shuffleboardTab.add("Field", shuffleboardField);
+        shuffleboardTab.addWidget("Field", shuffleboardField);
     }
 
     /**

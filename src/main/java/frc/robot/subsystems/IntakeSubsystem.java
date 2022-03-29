@@ -22,6 +22,7 @@ import frc.robot.commands.intake.DeployIntakeCommand;
 import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
+import frc.robot.shuffleboard.GRTShuffleboardTab;
 import frc.robot.subsystems.internals.InternalSubsystem;
 
 import static frc.robot.Constants.IntakeConstants.*;
@@ -69,7 +70,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     private static final int sCurveStrength = 3;
 
     // Shuffleboard
-    private final ShuffleboardTab shuffleboardTab;
+    private final GRTShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardDeployPosition;
     private final GRTNetworkTableEntry shuffleboardVeloEntry;
 
@@ -113,38 +114,33 @@ public class IntakeSubsystem extends GRTSubsystem {
         limitSwitch = new DigitalInput(limitSwitchPort);
 
         // Initialize Shuffleboard entries
-        shuffleboardTab = Shuffleboard.getTab("Intake");
-        shuffleboardVeloEntry = 
-            GRTNetworkTableEntry.from(shuffleboardTab, "velo", deploy.getSelectedSensorVelocity());
-        shuffleboardDeployPosition = 
-            GRTNetworkTableEntry.from(shuffleboardTab, "Deploy position", 0);
+        shuffleboardTab = new GRTShuffleboardTab("Intake");
+        shuffleboardVeloEntry = shuffleboardTab.addEntry("velo", deploy.getSelectedSensorVelocity());
+        shuffleboardDeployPosition = shuffleboardTab.addEntry("Deploy position", 0);
 
-        shuffleboardTab.add("Skip internals check", skipInternalsCheck).getEntry()
-            .addListener(this::setSkipInternalsCheck, EntryListenerFlags.kUpdate);
+        shuffleboardTab.addToggle("Skip internals check", skipInternalsCheck, this::setSkipInternalsCheck);
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
-            shuffleboardTab.add("kP", kP).getEntry()
-                .addListener(this::setDeployP, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("kI", kI).getEntry()
-                .addListener(this::setDeployI, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("kD", kD).getEntry()
-                .addListener(this::setDeployD, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("kFF", kFF).getEntry()
-                .addListener(this::setDeployFF, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Cruise Vel", cruiseVel).getEntry()
-                .addListener(this::setDeployCruiseVel, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Accel", accel).getEntry()
-                .addListener(this::setDeployAccel, EntryListenerFlags.kUpdate);
+            shuffleboardTab
+                .list("Deploy PID")
+                .addListener("kP", kP, this::setDeployP)
+                .addListener("kI", kI, this::setDeployI)
+                .addListener("kD", kD, this::setDeployD)
+                .addListener("kFF", kFF, this::setDeployFF)
+                .addListener("Cruise Vel", cruiseVel, this::setDeployCruiseVel)
+                .addListener("Accel", accel, this::setDeployAccel);
         }
 
-        shuffleboardTab.add("Raise", new RaiseIntakeCommand(this));
-        shuffleboardTab.add("Deploy", new DeployIntakeCommand(this));
+        shuffleboardTab
+            .list("Commands")
+            .addWidget("Raise", new RaiseIntakeCommand(this))
+            .addWidget("Deploy", new DeployIntakeCommand(this));
     }
 
     @Override
     public void periodic() {
-        // TOOD: fix intake again
+        /*
         limitSwitchReset();
 
         // If the ball count is greater than 2, don't run intake.
@@ -171,7 +167,6 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
         shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
-        
     }
 
     private void moveDeployTo(double targPos) {

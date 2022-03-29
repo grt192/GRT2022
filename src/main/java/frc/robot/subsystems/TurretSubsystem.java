@@ -158,7 +158,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private final GRTNetworkTableEntry shuffleboardHoodPosEntry;
     private final GRTNetworkTableEntry rEntry, thetaEntry;
     private final GRTNetworkTableEntry turnOffsetEntry, distOffsetEntry;
-    private final GRTNetworkTableEntry flyReady, turnReady, hoodReady;
+    private final GRTNetworkTableEntry flyReady, turnReady, hoodReady, jetsonDetected;
 
     // Debug flags
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, 
@@ -251,54 +251,55 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = new GRTShuffleboardTab("Turret");;
-        shuffleboardTurntablePosEntry = 
-            shuffleboardTab.addEntry("Turntable pos", Math.toDegrees(turntableEncoder.getPosition()));
-        shuffleboardFlywheelVeloEntry = 
-            shuffleboardTab.addEntry("Flywheel vel", flywheelEncoder.getVelocity());
-        shuffleboardHoodPosEntry = 
-            shuffleboardTab.addEntry("Hood pos", 0);
+        shuffleboardFlywheelVeloEntry = shuffleboardTab.addEntry("Flywheel vel", 0, 2, 1);
+        shuffleboardTurntablePosEntry = shuffleboardTab.addEntry("Turntable pos", 0, 3, 1);
+        shuffleboardHoodPosEntry = shuffleboardTab.addEntry("Hood pos", 0, 4, 1);
 
-        rEntry = shuffleboardTab.addEntry("r", 0);
-        thetaEntry = shuffleboardTab.addEntry("theta", 0);
-        distOffsetEntry = shuffleboardTab.addEntry("dist offset", 0);
-        turnOffsetEntry = shuffleboardTab.addEntry("turntable offset", 0);
+        rEntry = shuffleboardTab.addEntry("r", 0, 0, 1);
+        thetaEntry = shuffleboardTab.addEntry("theta", 0, 1, 1);
+        distOffsetEntry = shuffleboardTab.addEntry("r offset", 0, 0, 0);
+        turnOffsetEntry = shuffleboardTab.addEntry("theta offset", 0, 1, 0);
 
-        flyReady = shuffleboardTab.addEntry("fly ready", false);
-        turnReady = shuffleboardTab.addEntry("turn ready", false);
-        hoodReady = shuffleboardTab.addEntry("hood ready", false);
+        flyReady = shuffleboardTab.addEntry("Fly ready", false, 2, 2);
+        turnReady = shuffleboardTab.addEntry("Turn ready", false, 3, 2);
+        hoodReady = shuffleboardTab.addEntry("Hood ready", false, 4, 2);
+        jetsonDetected = shuffleboardTab.addEntry("Jetson data", false, 1, 2);
 
-        shuffleboardTab.addListener("Jetson disabled", jetsonDisabled, this::setDisableJetson);
+        shuffleboardTab.addToggle("Jetson disabled", jetsonDisabled, this::setDisableJetson, 0, 2);
         // shuffleboardTab.addListener("Freeze turret", frozen, this::setFreeze);
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
             shuffleboardTab
-                .addListener("Turntable kP", turntableP, this::setTurntableP)
-                .addListener("Turntable kI", turntableI, this::setTurntableI)
-                .addListener("Turntable kD", turntableD, this::setTurntableD)
-                .addListener("Turntable kFF", turntableFF, this::setTurntableFF)
-                .addListener("Turntable maxVel", maxVel, this::setTurntableMaxVel)
-                .addListener("Turntable maxAcc", maxAccel, this::setTurntableMaxAcc)
-                .addListener("Turntable theta FF", TURNTABLE_THETA_FF, this::setTurntableThetaFF);
-            
-            shuffleboardTab
-                .addListener("Flywheel kP", flywheelP, this::setFlywheelP)
-                .addListener("Flywheel kI", flywheelI, this::setFlywheelI)
-                .addListener("Flywheel kD", flywheelD, this::setFlywheelD)
-                .addListener("Flywheel kFF", flywheelFF, this::setFlywheelFF);
+                .list("Turntable PID")
+                .addListener("kP", turntableP, this::setTurntableP)
+                .addListener("kI", turntableI, this::setTurntableI)
+                .addListener("kD", turntableD, this::setTurntableD)
+                .addListener("kFF", turntableFF, this::setTurntableFF)
+                .addListener("maxVel", maxVel, this::setTurntableMaxVel)
+                .addListener("maxAcc", maxAccel, this::setTurntableMaxAcc)
+                .addListener("theta FF", TURNTABLE_THETA_FF, this::setTurntableThetaFF);
 
             shuffleboardTab
-                .addListener("Hood kP", hoodP, this::setHoodP)
-                .addListener("Hood kI", hoodI, this::setHoodI)
-                .addListener("Hood kD", hoodD, this::setHoodD);
+                .list("Flywheel PID")
+                .addListener("kP", flywheelP, this::setFlywheelP)
+                .addListener("kI", flywheelI, this::setFlywheelI)
+                .addListener("kD", flywheelD, this::setFlywheelD)
+                .addListener("kFF", flywheelFF, this::setFlywheelFF);
+
+            shuffleboardTab
+                .list("Hood PID")
+                .addListener("kP", hoodP, this::setHoodP)
+                .addListener("kI", hoodI, this::setHoodI)
+                .addListener("kD", hoodD, this::setHoodD);
         }
 
         // If MANUAL_CONTROL is enabled, allow for reference setting on shuffleboard
         if (MANUAL_CONTROL) {
             shuffleboardTab
-                .addListener("Turntable ref pos", Math.toDegrees(turntableEncoder.getPosition()), this::setTurntableRefPos)
-                .addListener("Flywheel ref vel", flywheelRefVel, this::setFlywheelRefVel)
-                .addListener("Hood ref degs", hoodRefPos, this::setHoodRefPos);
+                .addListener("Flywheel ref vel", flywheelRefVel, this::setFlywheelRefVel, 2, 0)
+                .addListener("Turntable ref pos", Math.toDegrees(turntableRefPos), this::setTurntableRefPos, 3, 0)
+                .addListener("Hood ref degs", hoodRefPos, this::setHoodRefPos, 4, 0);
         }
     }
 
@@ -307,6 +308,7 @@ public class TurretSubsystem extends GRTSubsystem {
         shuffleboardTurntablePosEntry.setValue(Math.toDegrees(turntableEncoder.getPosition()));
         shuffleboardFlywheelVeloEntry.setValue(flywheelEncoder.getVelocity());
         shuffleboardHoodPosEntry.setValue(Math.toDegrees(hood.getSelectedSensorPosition() / HOOD_RADIANS_TO_TICKS));
+        jetsonDetected.setValue(jetson.turretVisionWorking());
 
         // Check limit switches and reset encoders if detected
         // if (leftLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MIN_RADIANS);
@@ -325,7 +327,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // If the jetson has been disabled on shuffleboard, use `rtheta` instead.
         if (jetson.turretVisionWorking() && !runFlywheel && !jetsonDisabled) {
             r = jetson.getHubDistance();
-            theta = jetson.getTurretTheta();
+            theta = jetson.getTurretTheta() - turntableEncoder.getPosition();
 
             // System.out.println("JETSON r: " + r + " theta: " + theta);
         } else {
@@ -343,7 +345,7 @@ public class TurretSubsystem extends GRTSubsystem {
         previousPosition = currentPosition;
 
         rEntry.setValue(this.r);
-        thetaEntry.setValue(this.theta);
+        thetaEntry.setValue(Math.toDegrees(theta));
 
         // If retracted, skip interpolation calculations
         if (mode == TurretMode.RETRACTED) {

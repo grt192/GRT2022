@@ -17,7 +17,7 @@ public class JetsonConnection {
 
     public JetsonConnection() {
         // Start turret HTTP stream
-        HttpCamera turretCam = createCamera("10.1.92.94", 5801);
+        HttpCamera turretCam = createCamera(jetsonIP, 5801);
         CameraServer.startAutomaticCapture(turretCam);
 
         runnable = new JetsonConnectionRunnable();
@@ -149,7 +149,7 @@ public class JetsonConnection {
                 if (in != null) {
                     String[] data = in.replace("(", "").replace(")", "").split(",");
 
-                    // System.out.println(Arrays.toString(data));
+                    System.out.println(Arrays.toString(data));
 
                     turretVisionStatus = strToBool(data[0]);
                     turretTheta = Double.parseDouble(data[1]);
@@ -180,7 +180,7 @@ public class JetsonConnection {
          * @return Whether turret vision is working.
          */
         public boolean turretVisionWorking() { 
-            return turretVisionStatus; 
+            return isConnected && turretVisionStatus; 
         }
 
         /**
@@ -206,6 +206,5 @@ public class JetsonConnection {
         public boolean ballDetected() { 
             return ballDetected; 
         }
-
     }
 }

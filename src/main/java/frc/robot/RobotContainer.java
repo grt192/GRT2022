@@ -81,7 +81,7 @@ public class RobotContainer {
 
     // Debug flags
     // Whether to run an auton path or skip auton and set starting position manually.
-    private static final boolean SKIP_AUTON = false;
+    private static final boolean SKIP_AUTON = true;
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
