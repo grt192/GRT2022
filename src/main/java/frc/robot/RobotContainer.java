@@ -15,6 +15,7 @@ import edu.wpi.first.networktables.EntryNotification;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -77,11 +78,11 @@ public class RobotContainer {
         mechRBumper = new JoystickButton(mechController, XboxController.Button.kRightBumper.value);
 
     // Commands
-    private Command autonCommand;
+    private final SendableChooser<Command> autonChooser;
 
     // Debug flags
-    // Whether to run an auton path or skip auton and set starting position manually.
-    private static final boolean SKIP_AUTON = true;
+    // Whether to set starting position manually. This will still be overriden if an auton sequence is run.
+    private static final boolean MANUAL_START_POS = true;
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -111,25 +112,26 @@ public class RobotContainer {
         // Configure the button bindings
         configureButtonBindings();
 
-        // Instantiate auton command.
-        // If skipping autonomous, run an empty command in auton and set initial position
-        // from a manual hub distance. This assumes we are facing directly away from the hub
-        // at 0 degrees with a distance of `hubDist` between the robot and the hub.
-        if (SKIP_AUTON) {
+        // Add auton sequences to the chooser and add the chooser to shuffleboard
+        autonChooser = new SendableChooser<>();
+        autonChooser.addOption("Red top", new AutonRedTopSequence(this));
+        autonChooser.addOption("Red middle", new AutonRedMiddleSequence(this));
+        autonChooser.addOption("Red bottom", new AutonRedBottomSequence(this));
+        autonChooser.addOption("Blue top", new AutonBlueTopSequence(this));
+        autonChooser.addOption("Blue middle", new AutonBlueMiddleSequence(this));
+        autonChooser.addOption("Blue bottom", new AutonBlueBottomSequence(this));
+        autonChooser.setDefaultOption("Pleb auton", new PlebAutonSequence(this));
+        autonChooser.addOption("Skip auton", new InstantCommand());
+
+        Shuffleboard.getTab("Drivetrain").add("Auton sequence", autonChooser);
+
+        // If setting initial position manually, start it at a position assuming we are facing the hub
+        // at a distance `hubDist` inches and 0 on the y axis.
+        // TODO: is this worth having be a flag at all?
+        if (MANUAL_START_POS) {
             double hubDist = 70;
             Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
             setInitialPosition(initialPose);
-
-            autonCommand = new InstantCommand();
-        } else {
-            // Set the auton command from the shuffleboard int.
-            // 1, 2, 3 -> red top, middle, bottom
-            // 4, 5, 6 -> blue top, middle, bottom
-            // 7 -> pleb auton sequence
-            // 8 -> InstantCommand (skip auton)
-            int autonSequence = 7;
-            Shuffleboard.getTab("Drivetrain").add("Auton sequence", autonSequence).getEntry()
-                .addListener(this::setAutonCommand, EntryListenerFlags.kImmediate | EntryListenerFlags.kUpdate | EntryListenerFlags.kNew);
         }
     }
 
@@ -213,28 +215,11 @@ public class RobotContainer {
     }
 
     /**
-     * Sets the selected auton command from the shuffleboard integer value.
-     * @param change The EntryNotification representing a shuffleboard value change.
-     */
-    private void setAutonCommand(EntryNotification change) {
-        switch ((int) change.value.getDouble()) {
-            case 1: autonCommand = new AutonRedTopSequence(this); break;
-            case 2: autonCommand = new AutonRedMiddleSequence(this); break;
-            case 3: autonCommand = new AutonRedBottomSequence(this); break;
-            case 4: autonCommand = new AutonBlueTopSequence(this); break;
-            case 5: autonCommand = new AutonBlueMiddleSequence(this); break;
-            case 6: autonCommand = new AutonBlueBottomSequence(this); break;
-            case 7: autonCommand = new PlebAutonSequence(this); break;
-            case 8: autonCommand = new InstantCommand(); break;
-        }
-    }
-
-    /**
      * Use this to pass the autonomous command to the main {@link Robot} class.
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return autonCommand;
+        return autonChooser.getSelected();
     }
 
     /**

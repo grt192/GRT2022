@@ -19,7 +19,7 @@ public class AutonRedTopSequence extends GRTAutonSequence {
         Units.inchesToMeters(-5.472), 
         Units.inchesToMeters(60.540), 
         Rotation2d.fromDegrees(114));
-    private static final Pose2d ballOnePose = localizeBallCoordinate(RIGHT_TOP_RED, 90);
+    private static final Pose2d ballOnePose = localizeToIntakeFront(RIGHT_TOP_RED, 90);
 
     public AutonRedTopSequence(RobotContainer robotContainer) {
         super(robotContainer, initialPose, ballOnePose);
