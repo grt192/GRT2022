@@ -61,7 +61,7 @@ public class InternalSubsystem extends GRTSubsystem {
 
     // Shuffleboard
     private final GRTShuffleboardTab shuffleboardTab;
-    private final GRTNetworkTableEntry ballCountEntry;
+    private final GRTNetworkTableEntry ballCountEntry, shotRequestedEntry, skipToleranceEntry;
     private final GRTNetworkTableEntry 
         entranceEntry, entranceStorageEntry, storageEntry, storageStagingEntry, stagingEntry, stagingExitEntry;
     private final GRTNetworkTableEntry entranceRawEntry, stagingRawEntry;
@@ -115,7 +115,9 @@ public class InternalSubsystem extends GRTSubsystem {
         storageStagingEntry = shuffleboardTab.addEntry("Storage -> staging", storageStagingBall).at(3, 0);
         stagingEntry = shuffleboardTab.addEntry("Staging", staging.get() >= 0.2).at(4, 0);
         stagingExitEntry = shuffleboardTab.addEntry("Staging -> exit", stagingExitBall).at(5, 0);
-        ballCountEntry = shuffleboardTab.addEntry("Ball count", ballCount).at(6, 0);
+        ballCountEntry = shuffleboardTab.addEntry("Ball count", ballCount).at(0, 2);
+        shotRequestedEntry = shuffleboardTab.addEntry("Shot requested", shotRequested).at(1, 2);
+        skipToleranceEntry = shuffleboardTab.addEntry("Skip tolerance", skipToleranceCheck).at(2, 2);
         entranceRawEntry = shuffleboardTab.addEntry("Entrance raw", entrance.get()).at(0, 1);
         stagingRawEntry = shuffleboardTab.addEntry("Staging raw", staging.get()).at(4, 1);
     }
@@ -146,6 +148,8 @@ public class InternalSubsystem extends GRTSubsystem {
         stagingEntry.setValue(stagingDetected);
         stagingExitEntry.setValue(stagingExitBall);
         ballCountEntry.setValue(ballCount);
+        shotRequestedEntry.setValue(shotRequested);
+        skipToleranceEntry.setValue(skipToleranceCheck);
         entranceRawEntry.setValue(entranceRaw);
         stagingRawEntry.setValue(stagingRaw);
 
@@ -165,7 +169,7 @@ public class InternalSubsystem extends GRTSubsystem {
         }
 
         // If there is a ball between storage and staging and staging is empty, run the top and bottom motors
-        if (storageDetected && !stagingDetected && !shotRequested) {
+        if (storageDetected && !stagingDetected && !stagingExitBall) {
             // Spin the bottom and top motors on a timer
             storageTimer.start();
             motorTop.set(0.5);
@@ -199,7 +203,7 @@ public class InternalSubsystem extends GRTSubsystem {
         // alignment is fine.
         turretSubsystem.setReject(rejecting);
         ModuleState turretState = turretSubsystem.getState();
-        if (shotRequested && (skipToleranceCheck 
+        if (shotRequested && stagingDetected && (skipToleranceCheck 
             || turretState == ModuleState.HIGH_TOLERANCE
             || ((rejecting || turretSubsystem.getMode() == TurretMode.LOW_HUB) && turretState == ModuleState.LOW_TOLERANCE))
         ) {
@@ -246,19 +250,19 @@ public class InternalSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Gets how many total balls are inside internals.
-     * @return The current ball count.
-     */
-    public int getBallCount() {
-        return ballCount;
-    }
-
-    /**
      * Gets whether a shot has been requested.
      * @return Whether a shot has been requested.
      */
     public boolean getShotRequested() {
         return shotRequested;
+    }
+
+    /**
+     * Gets how many total balls are inside internals.
+     * @return The current ball count.
+     */
+    public int getBallCount() {
+        return ballCount;
     }
 
     /**

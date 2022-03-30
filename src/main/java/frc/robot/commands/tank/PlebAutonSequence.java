@@ -7,6 +7,9 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.RobotContainer;
+import frc.robot.shuffleboard.GRTNetworkTableEntry;
+import frc.robot.shuffleboard.GRTShuffleboardLayout;
+import frc.robot.shuffleboard.GRTShuffleboardTab;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.IntakeSubsystem.IntakePosition;
@@ -24,10 +27,14 @@ public class PlebAutonSequence extends CommandBase {
 
     private final Timer autonTimer = new Timer();
     private final Timer forceTimer = new Timer();
-    private final Timer finalTimer = new Timer();
 
-    private int shotsRequested = 0;
+    private int shotsCompleted = 0;
     private boolean complete = false;
+
+    private final GRTShuffleboardTab shuffleboardTab = new GRTShuffleboardTab("Auton");
+    private final GRTNetworkTableEntry forceTimerEntry = shuffleboardTab.addEntry("Force timer", forceTimer.get());
+    private final GRTNetworkTableEntry shotsCompletedEntry = shuffleboardTab.addEntry("Shots completed", shotsCompleted);
+    private final GRTNetworkTableEntry completedEntry = shuffleboardTab.addEntry("Completed", complete);
 
     public PlebAutonSequence(RobotContainer robotContainer) {
         this.container = robotContainer;
@@ -46,6 +53,8 @@ public class PlebAutonSequence extends CommandBase {
 
     @Override
     public void initialize() {
+        shotsCompleted = 0;
+
         // Set initial position assuming we are 0in on the y axis, 87in on the x axis,
         // with theta equal to the current turntable position.
         double turnPos = turretSubsystem.getTurntablePosition();
@@ -63,7 +72,8 @@ public class PlebAutonSequence extends CommandBase {
 
     @Override
     public void execute() {
-        if (complete) return;
+        forceTimerEntry.setValue(forceTimer.get());
+        shotsCompletedEntry.setValue(shotsCompleted);
 
         // We are done driving if: we are beyond 55 inches of our starting position,
         // or 8 seconds have passed.
@@ -77,40 +87,35 @@ public class PlebAutonSequence extends CommandBase {
         // If we're not requesting a shot, request one and reset the force timer.
         // End the command after shooting twice.
         if (!internalSubsystem.getShotRequested()) {
-            if (doneDriving && shotsRequested == 2) {
+            if (doneDriving && shotsCompleted == 2) {
                 intakeSubsystem.setPosition(IntakePosition.RAISED);
-                tankSubsystem.setCarDrivePowers(0.4, 0);
-                finalTimer.start();
+                completedEntry.setValue(true);
                 complete = true;
             }
             forceTimer.reset();
             internalSubsystem.requestShot();
-            shotsRequested++;
+            shotsCompleted++;
         }
 
-        // Force a shot if we haven't shot in 6 seconds
-        if (forceTimer.hasElapsed(6)) {
-            internalSubsystem.requestShot();
-            forceTimer.reset();
+        // Force a shot if we haven't shot in 4 seconds
+        if (forceTimer.hasElapsed(4)) {
+            //internalSubsystem.requestShot();
         }
     }
 
     @Override
     public boolean isFinished() {
-        return finalTimer.hasElapsed(2.5);
+        return complete;
     }
 
     @Override
     public void end(boolean interrupted) {
         turretSubsystem.setDriverOverrideFlywheel(false);
-        tankSubsystem.setCarDrivePowers(0, 0);
 
         // Reset all timers when done
         autonTimer.stop();
         autonTimer.reset();
         forceTimer.stop();
         forceTimer.reset();
-        finalTimer.stop();
-        finalTimer.reset();
     }
 }

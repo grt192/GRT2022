@@ -42,7 +42,18 @@ public class TurretSubsystem extends GRTSubsystem {
      * In RETRACTED, the turret will retract itself for climb.
      */
     public enum TurretMode {
-        SHOOTING, LOW_HUB, REJECTING, RETRACTED
+        SHOOTING, LOW_HUB, REJECTING, RETRACTED;
+
+        @Override
+        public String toString() {
+            switch (this) {
+                case SHOOTING: return "SHOOTING";
+                case REJECTING: return "REJECTING";
+                case LOW_HUB: return "LOW_HUB";
+                case RETRACTED: return "RETRACTED";
+            }
+            return "UNKNOWN";
+        }
     }
 
     /**
@@ -54,7 +65,17 @@ public class TurretSubsystem extends GRTSubsystem {
      * If a module is UNALIGNED, it is not ready; it will require more than a second to get it to READY status.
      */
     public enum ModuleState {
-        HIGH_TOLERANCE, LOW_TOLERANCE, UNALIGNED
+        HIGH_TOLERANCE, LOW_TOLERANCE, UNALIGNED;
+
+        @Override
+        public String toString() {
+            switch (this) {
+                case HIGH_TOLERANCE: return "HIGH_TOLERANCE";
+                case LOW_TOLERANCE: return "LOW_TOLERANCE";
+                case UNALIGNED: return "UNALIGNED";
+            }
+            return "UNKNOWN";
+        }
     }
 
     private final TankSubsystem tankSubsystem;
@@ -149,12 +170,12 @@ public class TurretSubsystem extends GRTSubsystem {
 
     // Shuffleboard
     private final GRTShuffleboardTab shuffleboardTab;
-    private final GRTNetworkTableEntry shuffleboardTurntablePosEntry;
-    private final GRTNetworkTableEntry shuffleboardFlywheelVeloEntry;
-    private final GRTNetworkTableEntry shuffleboardHoodPosEntry;
+    private final GRTNetworkTableEntry turntablePosEntry, flywheelVeloEntry, hoodPosEntry;
     private final GRTNetworkTableEntry rEntry, thetaEntry;
     private final GRTNetworkTableEntry turnOffsetEntry, distOffsetEntry;
-    private final GRTNetworkTableEntry flyReady, turnReady, hoodReady, jetsonDetected;
+    private final GRTNetworkTableEntry flyReadyEntry, turnReadyEntry, hoodReadyEntry;
+    private final GRTNetworkTableEntry runFlywheelEntry, driverOverrideEntry, jetsonDetectedEntry;
+    private final GRTNetworkTableEntry turretModeEntry;
 
     // Debug flags
     // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, 
@@ -247,19 +268,22 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = new GRTShuffleboardTab("Turret");;
-        shuffleboardFlywheelVeloEntry = shuffleboardTab.addEntry("Flywheel vel", 0).at(2, 1);
-        shuffleboardTurntablePosEntry = shuffleboardTab.addEntry("Turntable pos", 0).at(3, 1);
-        shuffleboardHoodPosEntry = shuffleboardTab.addEntry("Hood pos", 0).at(4, 1);
+        flywheelVeloEntry = shuffleboardTab.addEntry("Flywheel vel", 0).at(2, 1);
+        turntablePosEntry = shuffleboardTab.addEntry("Turntable pos", 0).at(3, 1);
+        hoodPosEntry = shuffleboardTab.addEntry("Hood pos", 0).at(4, 1);
 
         rEntry = shuffleboardTab.addEntry("r", 0).at(0, 1);
         thetaEntry = shuffleboardTab.addEntry("theta", 0).at(1, 1);
         distOffsetEntry = shuffleboardTab.addEntry("r offset", 0).at(0, 0);
         turnOffsetEntry = shuffleboardTab.addEntry("theta offset", 0).at(1, 0);
 
-        flyReady = shuffleboardTab.addEntry("Fly ready", false).at(2, 2);
-        turnReady = shuffleboardTab.addEntry("Turn ready", false).at(3, 2);
-        hoodReady = shuffleboardTab.addEntry("Hood ready", false).at(4, 2);
-        jetsonDetected = shuffleboardTab.addEntry("Jetson data", false).at(1, 2);
+        flyReadyEntry = shuffleboardTab.addEntry("Fly ready", false).at(2, 2);
+        turnReadyEntry = shuffleboardTab.addEntry("Turn ready", false).at(3, 2);
+        hoodReadyEntry = shuffleboardTab.addEntry("Hood ready", false).at(4, 2);
+        jetsonDetectedEntry = shuffleboardTab.addEntry("Jetson data", false).at(1, 2);
+        runFlywheelEntry = shuffleboardTab.addEntry("Run flywheel", false).at(2, 3);
+        driverOverrideEntry = shuffleboardTab.addEntry("Driver override flywheel", driverOverrideFlywheel).at(3, 3);
+        turretModeEntry = shuffleboardTab.addEntry("Turret mode", mode.toString()).at(1, 3);
 
         shuffleboardTab.addToggle("Jetson disabled", jetsonDisabled, this::setDisableJetson, 0, 2);
         // shuffleboardTab.addListener("Freeze turret", frozen, this::setFreeze);
@@ -307,10 +331,12 @@ public class TurretSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
-        shuffleboardTurntablePosEntry.setValue(Math.toDegrees(turntableEncoder.getPosition()));
-        shuffleboardFlywheelVeloEntry.setValue(flywheelEncoder.getVelocity());
-        shuffleboardHoodPosEntry.setValue(Math.toDegrees(hood.getSelectedSensorPosition() / HOOD_RADIANS_TO_TICKS));
-        jetsonDetected.setValue(jetson.turretVisionWorking());
+        turntablePosEntry.setValue(Math.toDegrees(turntableEncoder.getPosition()));
+        flywheelVeloEntry.setValue(flywheelEncoder.getVelocity());
+        hoodPosEntry.setValue(Math.toDegrees(hood.getSelectedSensorPosition() / HOOD_RADIANS_TO_TICKS));
+        jetsonDetectedEntry.setValue(jetson.turretVisionWorking());
+        driverOverrideEntry.setValue(driverOverrideFlywheel);
+        turretModeEntry.setValue(mode.toString());
 
         // Check limit switches and reset encoders if detected
         // if (leftLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MIN_RADIANS);
@@ -318,6 +344,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
         boolean runFlywheel = (/* !tankSubsystem.isMoving() && */ ballReady) || driverOverrideFlywheel;
+        runFlywheelEntry.setValue(runFlywheel);
 
         // Set turntable lazy tracking if a ball isn't ready
         double pow = !ballReady ? 0.25 : 0.5;
@@ -344,8 +371,7 @@ public class TurretSubsystem extends GRTSubsystem {
         }
 
         previousPosition = currentPosition;
-
-        rEntry.setValue(this.r);
+        rEntry.setValue(r);
         thetaEntry.setValue(Math.toDegrees(theta));
 
         // If retracted, skip interpolation calculations
@@ -586,14 +612,14 @@ public class TurretSubsystem extends GRTSubsystem {
         ModuleState turntableState = turntableAligned();
         ModuleState hoodState = hoodReady();
 
-        flyReady.setValue(flywheelState == ModuleState.HIGH_TOLERANCE);
-        turnReady.setValue(turntableState == ModuleState.HIGH_TOLERANCE);
-        hoodReady.setValue(hoodState == ModuleState.HIGH_TOLERANCE);
+        flyReadyEntry.setValue(flywheelState == ModuleState.HIGH_TOLERANCE);
+        turnReadyEntry.setValue(turntableState == ModuleState.HIGH_TOLERANCE);
+        hoodReadyEntry.setValue(hoodState == ModuleState.HIGH_TOLERANCE);
 
         if (PRINT_TOLERANCES) System.out.println(
-            "flywheel state: " + (flywheelState == ModuleState.UNALIGNED ? "UNALIGNED" : flywheelState == ModuleState.LOW_TOLERANCE ? "LOW_TOLERANCE" : "HIGH_TOLERANCE")
-            + "\nturntable state: " + (turntableState == ModuleState.UNALIGNED ? "UNALIGNED" : turntableState == ModuleState.LOW_TOLERANCE ? "LOW_TOLERANCE" : "HIGH_TOLERANCE")
-            + "\nhood state: " + (hoodState == ModuleState.UNALIGNED ? "UNALIGNED" : hoodState == ModuleState.LOW_TOLERANCE ? "LOW_TOLERANCE" : "HIGH_TOLERANCE")
+            "flywheel state: " + flywheelState
+            + "\nturntable state: " + turntableState
+            + "\nhood state: " + hoodState
         );
 
         // TODO: is there a better way to implement this?

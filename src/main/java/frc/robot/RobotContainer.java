@@ -4,17 +4,11 @@
 
 package frc.robot;
 
-import java.util.List;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.EntryListenerFlags;
-import edu.wpi.first.networktables.EntryNotification;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -33,9 +27,9 @@ import frc.robot.commands.tank.AutonBlueTopSequence;
 import frc.robot.commands.tank.AutonRedBottomSequence;
 import frc.robot.commands.tank.AutonRedMiddleSequence;
 import frc.robot.commands.tank.AutonRedTopSequence;
-import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.commands.tank.PlebAutonSequence;
 import frc.robot.jetson.JetsonConnection;
+import frc.robot.shuffleboard.GRTShuffleboardTab;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
@@ -81,7 +75,7 @@ public class RobotContainer {
     private final SendableChooser<Command> autonChooser;
 
     // Debug flags
-    // Whether to set starting position manually. This will still be overriden if an auton sequence is run.
+    // Whether to set starting position manually. This position will still be overriden if an auton sequence is run.
     private static final boolean MANUAL_START_POS = true;
 
     /**
@@ -123,7 +117,7 @@ public class RobotContainer {
         autonChooser.setDefaultOption("Pleb auton", new PlebAutonSequence(this));
         autonChooser.addOption("Skip auton", new InstantCommand());
 
-        Shuffleboard.getTab("Drivetrain").add("Auton sequence", autonChooser);
+        new GRTShuffleboardTab("Drivetrain").addWidget("Auton sequence", autonChooser);
 
         // If setting initial position manually, start it at a position assuming we are facing the hub
         // at a distance `hubDist` inches and 0 on the y axis.

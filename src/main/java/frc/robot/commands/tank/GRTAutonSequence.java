@@ -134,7 +134,7 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
 
     /**
      * Localizes a ball coordinate to a robot pose used in path following by using the coordinate of the ball
-     * touching the front of the robot at an approach of `angleOfApproach` degrees.
+     * touching the center of the robot at an approach of `angleOfApproach` degrees.
      * 
      * @param ball The ball coordinate, represented as a Translation2d.
      * @param angleOfApproach The angle the robot should approach the ball, in degrees.
