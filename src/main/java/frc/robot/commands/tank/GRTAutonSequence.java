@@ -47,7 +47,7 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
         addRequirements(tankSubsystem, internalSubsystem, intakeSubsystem);
 
         addCommands(
-            new DeployIntakeCommand(intakeSubsystem), // TODO: actually supply power to intake and rely on autodeploy
+            new DeployIntakeCommand(intakeSubsystem),
             new FollowPathCommand(tankSubsystem, initialPose, List.of(), ballOnePose)
                 .withTimeout(5),
             new ShootCommand(internalSubsystem),
@@ -63,12 +63,13 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
     /**
      * Creates a GRTAutonSequence from an initial, ball one, back, and final pose. This is used for the red top and 
      * blue bottom paths, where we may not taxi if we just drive to the ball; the wall is too close. Drives to
-     * the ball, shoots twice, then drives in reverse through the back waypoint to the final (taxi) pose.
+     * the ball, shoots twice, then drives to the final pose.
      * 
      * @param robotContainer The RobotContainer instance, for calling `.setInitialPose()`.
      * @param initialPose The initial pose of the sequence.
      * @param ballOnePose The first ball pose of the sequence.
      * @param finalPose The ending pose of the sequence.
+     * @param finalReversed Whether the command should drive to the final pose in reverse.
      */
     public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose, Pose2d ballOnePose, Pose2d finalPose, boolean finalReversed) {
         this(robotContainer, initialPose, ballOnePose);

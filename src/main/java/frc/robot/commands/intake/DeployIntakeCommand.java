@@ -5,16 +5,27 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.IntakeSubsystem.IntakePosition;
 
+/**
+ * Deploys and runs the intake at a supplied power (defaults to 1.0).
+ */
 public class DeployIntakeCommand extends InstantCommand {
-    private final IntakeSubsystem intake;
+    private final IntakeSubsystem intakeSubsystem;
+    private final double intakePow;
 
-    public DeployIntakeCommand(IntakeSubsystem intake) {
-        this.intake = intake;
-        addRequirements(intake);
+    public DeployIntakeCommand(IntakeSubsystem intakeSubsystem, double intakePow) {
+        this.intakeSubsystem = intakeSubsystem;
+        this.intakePow = intakePow;
+        addRequirements(intakeSubsystem);
+    }
+
+    public DeployIntakeCommand(IntakeSubsystem intakeSubsystem) {
+        this(intakeSubsystem, 1.0);
     }
 
     @Override
     public void initialize() {
-        intake.setPosition(IntakePosition.DEPLOYED);
+        intakeSubsystem.setPosition(IntakePosition.DEPLOYED);
+        intakeSubsystem.setDriverOverride(true);
+        intakeSubsystem.setIntakePower(intakePow);
     }
 }
