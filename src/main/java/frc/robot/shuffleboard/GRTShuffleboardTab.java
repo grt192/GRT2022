@@ -43,10 +43,6 @@ public class GRTShuffleboardTab {
         return new GRTNetworkTableEntry(shuffleboardTab, name, value);
     }
 
-    public GRTNetworkTableEntry addEntry(String name, Object value, int row, int col) {
-        return new GRTNetworkTableEntry(shuffleboardTab, name, value, row, col);
-    }
-
     /**
      * Adds a listener shuffleboard entry to the tab with the supplied name and value.
      * The entry will call the callback according to the set flags (defaults to every value update).

@@ -139,7 +139,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
     private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(47);
     private static final double TURNTABLE_MAX_RADIANS = Math.toRadians(320);
-    private double TURNTABLE_THETA_FF = 4; // TODO: tune
+    private double TURNTABLE_THETA_FF = 12;
 
     private static final double HOOD_RADIANS_TO_TICKS = 243732.0 / Math.toRadians(35.8029900116);
     public static final double HOOD_MIN_POS = 0.0;
@@ -247,19 +247,19 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = new GRTShuffleboardTab("Turret");;
-        shuffleboardFlywheelVeloEntry = shuffleboardTab.addEntry("Flywheel vel", 0, 2, 1);
-        shuffleboardTurntablePosEntry = shuffleboardTab.addEntry("Turntable pos", 0, 3, 1);
-        shuffleboardHoodPosEntry = shuffleboardTab.addEntry("Hood pos", 0, 4, 1);
+        shuffleboardFlywheelVeloEntry = shuffleboardTab.addEntry("Flywheel vel", 0).at(2, 1);
+        shuffleboardTurntablePosEntry = shuffleboardTab.addEntry("Turntable pos", 0).at(3, 1);
+        shuffleboardHoodPosEntry = shuffleboardTab.addEntry("Hood pos", 0).at(4, 1);
 
-        rEntry = shuffleboardTab.addEntry("r", 0, 0, 1);
-        thetaEntry = shuffleboardTab.addEntry("theta", 0, 1, 1);
-        distOffsetEntry = shuffleboardTab.addEntry("r offset", 0, 0, 0);
-        turnOffsetEntry = shuffleboardTab.addEntry("theta offset", 0, 1, 0);
+        rEntry = shuffleboardTab.addEntry("r", 0).at(0, 1);
+        thetaEntry = shuffleboardTab.addEntry("theta", 0).at(1, 1);
+        distOffsetEntry = shuffleboardTab.addEntry("r offset", 0).at(0, 0);
+        turnOffsetEntry = shuffleboardTab.addEntry("theta offset", 0).at(1, 0);
 
-        flyReady = shuffleboardTab.addEntry("Fly ready", false, 2, 2);
-        turnReady = shuffleboardTab.addEntry("Turn ready", false, 3, 2);
-        hoodReady = shuffleboardTab.addEntry("Hood ready", false, 4, 2);
-        jetsonDetected = shuffleboardTab.addEntry("Jetson data", false, 1, 2);
+        flyReady = shuffleboardTab.addEntry("Fly ready", false).at(2, 2);
+        turnReady = shuffleboardTab.addEntry("Turn ready", false).at(3, 2);
+        hoodReady = shuffleboardTab.addEntry("Hood ready", false).at(4, 2);
+        jetsonDetected = shuffleboardTab.addEntry("Jetson data", false).at(1, 2);
 
         shuffleboardTab.addToggle("Jetson disabled", jetsonDisabled, this::setDisableJetson, 0, 2);
         // shuffleboardTab.addListener("Freeze turret", frozen, this::setFreeze);

@@ -62,7 +62,8 @@ public class InternalSubsystem extends GRTSubsystem {
     // Shuffleboard
     private final GRTShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry ballCountEntry;
-    private final GRTNetworkTableEntry entranceEntry, entranceStorageEntry, storageEntry, storageStagingEntry, stagingEntry, stagingExitEntry;
+    private final GRTNetworkTableEntry 
+        entranceEntry, entranceStorageEntry, storageEntry, storageStagingEntry, stagingEntry, stagingExitEntry;
     private final GRTNetworkTableEntry entranceRawEntry, stagingRawEntry;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
@@ -108,15 +109,15 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // Shuffleboard
         shuffleboardTab = new GRTShuffleboardTab("Internals");
-        entranceEntry = shuffleboardTab.addEntry("Entrance", entrance.get() >= 0.1, 0, 0);
-        entranceStorageEntry = shuffleboardTab.addEntry("Entrance -> storage", entranceStorageBall, 1, 0);
-        storageEntry = shuffleboardTab.addEntry("Storage", isBall(colorSensorThread.getLastStorage()), 2, 0);
-        storageStagingEntry = shuffleboardTab.addEntry("Storage -> staging", storageStagingBall, 3, 0);
-        stagingEntry = shuffleboardTab.addEntry("Staging", staging.get() >= 0.2, 4, 0);
-        stagingExitEntry = shuffleboardTab.addEntry("Staging -> exit", stagingExitBall, 5, 0);
-        ballCountEntry = shuffleboardTab.addEntry("Ball count", ballCount, 6, 0);
-        entranceRawEntry = shuffleboardTab.addEntry("Entrance raw", entrance.get(), 0, 1);
-        stagingRawEntry = shuffleboardTab.addEntry("Staging raw", staging.get(), 4, 1);
+        entranceEntry = shuffleboardTab.addEntry("Entrance", entrance.get() >= 0.1).at(0, 0);
+        entranceStorageEntry = shuffleboardTab.addEntry("Entrance -> storage", entranceStorageBall).at(1, 0);
+        storageEntry = shuffleboardTab.addEntry("Storage", isBall(colorSensorThread.getLastStorage())).at(2, 0);
+        storageStagingEntry = shuffleboardTab.addEntry("Storage -> staging", storageStagingBall).at(3, 0);
+        stagingEntry = shuffleboardTab.addEntry("Staging", staging.get() >= 0.2).at(4, 0);
+        stagingExitEntry = shuffleboardTab.addEntry("Staging -> exit", stagingExitBall).at(5, 0);
+        ballCountEntry = shuffleboardTab.addEntry("Ball count", ballCount).at(6, 0);
+        entranceRawEntry = shuffleboardTab.addEntry("Entrance raw", entrance.get()).at(0, 1);
+        stagingRawEntry = shuffleboardTab.addEntry("Staging raw", staging.get()).at(4, 1);
     }
 
     @Override

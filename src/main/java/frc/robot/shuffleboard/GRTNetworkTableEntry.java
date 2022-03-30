@@ -4,6 +4,7 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableValue;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj.shuffleboard.SimpleWidget;
 
 /**
  * A wrapper for NetworkTableEntry to allow different classes to do the
@@ -22,16 +23,18 @@ public class GRTNetworkTableEntry {
 
     private GRTEntryType type;
 
+    private final SimpleWidget tableEntryWidget;
     private final NetworkTableEntry tableEntry;
     private Object buffer;
 
     /**
-     * Creates a GRTNetworkTableEntry from a NetworkTableEntry.
-     * @param tableEntry The NetworkTableEntry to wrap.
+     * Creates a GRTNetworkTableEntry from a SimpleWidget (shuffleboardTab.add()).
+     * @param tableEntry The SimpleWidget to wrap.
      */
-    public GRTNetworkTableEntry(NetworkTableEntry tableEntry) {
+    public GRTNetworkTableEntry(SimpleWidget tableEntryWidget) {
         this.type = GRTEntryType.GET;
-        this.tableEntry = tableEntry;
+        this.tableEntryWidget = tableEntryWidget;
+        this.tableEntry = tableEntryWidget.getEntry();
 
         ShuffleboardManager.registerEntry(this);
     }
@@ -45,27 +48,37 @@ public class GRTNetworkTableEntry {
      * @return The GRTNetworkTableEntry.
      */
     public GRTNetworkTableEntry(ShuffleboardTab shuffleboardTab, String name, Object value) {
-        this(shuffleboardTab.add(name, value).getEntry());
+        this(shuffleboardTab.add(name, value));
     }
 
     public GRTNetworkTableEntry(ShuffleboardLayout shuffleboardLayout, String name, Object value) {
-        this(shuffleboardLayout.add(name, value).getEntry());
+        this(shuffleboardLayout.add(name, value));
     }
 
     /**
-     * Creates a GRTNetworkTableEntry from a shuffleboard tab, entry name, and initial value, positioning
-     * the entry at the supplied column and row. Columns and rows are 0-indexed starting from the left and
-     * top respectively.
+     * Positions this entry at the specified column and row.
      * 
-     * @param shuffleboardTab The tab to add the entry to.
-     * @param name The name of the entry.
-     * @param value The value of the entry.
-     * @param col The column of the top left cell of the entry.
-     * @param row The row of the top left cell of the entry.
+     * @param col The column of the top left cell of the layout.
+     * @param row The row of the top left cell of the layout.
+     * @return The shuffleboard entry, for call chaining.
      */
-    public GRTNetworkTableEntry(ShuffleboardTab shuffleboardTab, String name, Object value, int col, int row) {
-        this(shuffleboardTab.add(name, value).withPosition(col, row).getEntry());
+    public GRTNetworkTableEntry at(int col, int row) {
+        tableEntryWidget.withPosition(col, row);
+        return this;
     }
+
+    /**
+     * Sizes this entry to the specified width and height.
+     * 
+     * @param width The width of the layout.
+     * @param height The height of the layout.
+     * @return The shuffleboard entry, for call chaining.
+     */
+    public GRTNetworkTableEntry withSize(int width, int height) {
+        tableEntryWidget.withSize(width, height);
+        return this;
+    }
+
 
     public void update() {
         switch (this.type) {
