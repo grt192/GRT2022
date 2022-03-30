@@ -171,6 +171,7 @@ public class TurretSubsystem extends GRTSubsystem {
     // Shuffleboard
     private final GRTShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry turntablePosEntry, flywheelVeloEntry, hoodPosEntry;
+    private final GRTNetworkTableEntry turntableRefEntry, flywheelRefEntry, hoodRefEntry;
     private final GRTNetworkTableEntry rEntry, thetaEntry;
     private final GRTNetworkTableEntry turnOffsetEntry, distOffsetEntry;
     private final GRTNetworkTableEntry flyReadyEntry, turnReadyEntry, hoodReadyEntry;
@@ -178,8 +179,8 @@ public class TurretSubsystem extends GRTSubsystem {
     private final GRTNetworkTableEntry turretModeEntry;
 
     // Debug flags
-    // Whether interpolation (`r`, hood ref, flywheel ref) and rtheta (`r`, `theta`, `dx`, 
-    // `dy`, `dtheta`, `alpha`, `beta`, `x`, `y`, `h`) system states should be printed.
+    // Whether rtheta (`r`, `theta`, `dx`, `dy`, `dtheta`, `alpha`, `beta`, `x`, `y`, `h`) system states 
+    // should be printed.
     private static boolean PRINT_STATES = false;
     // Whether current system tolerances (flywheel, hood, turntable) should be printed.
     private static boolean PRINT_TOLERANCES = false;
@@ -269,8 +270,11 @@ public class TurretSubsystem extends GRTSubsystem {
         // Initialize Shuffleboard entries
         shuffleboardTab = new GRTShuffleboardTab("Turret");;
         flywheelVeloEntry = shuffleboardTab.addEntry("Flywheel vel", 0).at(2, 1);
+        flywheelRefEntry = shuffleboardTab.addEntry("Flywheel ref", 0).at(2, 0);
         turntablePosEntry = shuffleboardTab.addEntry("Turntable pos", 0).at(3, 1);
+        turntableRefEntry = shuffleboardTab.addEntry("Turntable ref", 0).at(3, 0);
         hoodPosEntry = shuffleboardTab.addEntry("Hood pos", 0).at(4, 1);
+        hoodRefEntry = shuffleboardTab.addEntry("Hood ref", 0).at(4, 0);
 
         rEntry = shuffleboardTab.addEntry("r", 0).at(0, 1);
         thetaEntry = shuffleboardTab.addEntry("theta", 0).at(1, 1);
@@ -323,9 +327,9 @@ public class TurretSubsystem extends GRTSubsystem {
         // If MANUAL_CONTROL is enabled, allow for reference setting on shuffleboard
         if (MANUAL_CONTROL) {
             shuffleboardTab
-                .addListener("Flywheel ref vel", flywheelRefVel, this::setFlywheelRefVel, 2, 0)
-                .addListener("Turntable ref pos", Math.toDegrees(turntableRefPos), this::setTurntableRefPos, 3, 0)
-                .addListener("Hood ref degs", hoodRefPos, this::setHoodRefPos, 4, 0);
+                .addListener("Flywheel ref vel", flywheelRefVel, this::setFlywheelRefVel, 5, 3)
+                .addListener("Turntable ref pos", Math.toDegrees(turntableRefPos), this::setTurntableRefPos, 6, 3)
+                .addListener("Hood ref degs", hoodRefPos, this::setHoodRefPos, 7, 3);
         }
     }
 
@@ -358,15 +362,15 @@ public class TurretSubsystem extends GRTSubsystem {
             r = jetson.getHubDistance();
             theta = Math.PI + jetson.getTurretTheta() - turntableEncoder.getPosition();
             jetson.setConsumed(true);
+
+            // Reset offsets when we refresh rtheta from vision.
+            resetOffsets();
         } else {
             // Otherwise, update our `r` and `theta` state system from the previous `r` and
             // `theta` values and the delta X and Y since our last position. We do this instead of using
             // raw odometry coordinates to prevent error accumulation over time; `r` and `theta` are 
             // reset to vision values when vision is in range, so our states only accumulate error while 
             // vision is out of range (as opposed to odometry, which accumulates error throughout the match).
-
-            // TODO: this assumes that the last r, theta we got is always 'clean' data.
-            // We need to do filtering of some sort, probably on the jetson, to ensure this is true.
             manualUpdateRTheta(previousPosition, currentPosition);
         }
 
@@ -381,6 +385,7 @@ public class TurretSubsystem extends GRTSubsystem {
             desiredFlywheelRPM = 0;
 
             turntablePidController.setReference(desiredTurntableRadians, ControlType.kSmartMotion);
+            turntableRefEntry.setValue(Math.toDegrees(desiredTurntableRadians));
         } else {
             // If frozen, interpolate flywheel and hood references from the frozen hub distance value
             interpolateFlywheelHoodRefs(this.frozen ? this.frozenR : this.r);
@@ -406,6 +411,7 @@ public class TurretSubsystem extends GRTSubsystem {
             }
 
             turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
+            turntableRefEntry.setValue(turntableReference);
             desiredTurntableRadians = newTurntableRadians;
         }
 
@@ -419,6 +425,8 @@ public class TurretSubsystem extends GRTSubsystem {
             flywheelPidController.setReference(runFlywheel ? desiredFlywheelRPM : 0, ControlType.kVelocity);
         }
 
+        flywheelRefEntry.setValue(desiredFlywheelRPM);
+        hoodRefEntry.setValue(Math.toDegrees(desiredHoodRadians));
         distOffsetEntry.setValue(distanceOffset);
         turnOffsetEntry.setValue(turntableOffset);
     }
@@ -441,7 +449,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Updates the state of the turntable's `r` and `theta` coordinate system.
-     * @param lastPosition    The previous odometry position.
+     * @param lastPosition The previous odometry position.
      * @param currentPosition The current odometry position.
      */
     private void manualUpdateRTheta(Pose2d lastPosition, Pose2d currentPosition) {
@@ -500,12 +508,6 @@ public class TurretSubsystem extends GRTSubsystem {
 
                 double hoodSlope = (hoodAngleTop - hoodAngleBottom) / (rTop - rBottom);
                 desiredHoodRadians = Math.toRadians(hoodAngleBottom + hoodSlope * (hubDistance - rBottom));
-
-                if (PRINT_STATES) System.out.println(
-                    "hub dist: " + hubDistance 
-                    + ", hood ref: " + Math.toDegrees(desiredHoodRadians) 
-                    + ", flywheel ref: " + desiredFlywheelRPM
-                );
                 return;
             }
         }
@@ -517,6 +519,7 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     public void setReject(boolean reject) {
         // Don't do anything if the turret is retracted
+        // TODO: this overrides low hub shooting; if we want to use low hub, return early here
         if (mode == TurretMode.RETRACTED) return;
         mode = reject ? TurretMode.REJECTING : TurretMode.SHOOTING;
     }
@@ -564,7 +567,6 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     private ModuleState flywheelReady() {
         // Thresholding in units of RPM
-        // TODO: test thresholding values
         double diffRPM = Math.abs(flywheelEncoder.getVelocity() 
             - (MANUAL_CONTROL ? flywheelRefVel : desiredFlywheelRPM));
 
@@ -579,7 +581,6 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     private ModuleState turntableAligned() {
         // Thresholding in units of radians
-        // TODO: test values
         double diffRads = Math.abs(angleWrap(turntableEncoder.getPosition() 
             - (MANUAL_CONTROL ? Math.toRadians(turntableRefPos) : desiredTurntableRadians)));
         return diffRads < Math.toRadians(5) ? ModuleState.HIGH_TOLERANCE
@@ -593,7 +594,6 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     private ModuleState hoodReady() {
         // Thesholding in units of encoder ticks
-        // TODO: test thresholding values
         double diffTicks = Math.abs(hood.getSelectedSensorPosition() 
             - ((MANUAL_CONTROL ? hoodRefPos : desiredHoodRadians) * HOOD_RADIANS_TO_TICKS));
         return diffTicks < Math.toRadians(8) * HOOD_RADIANS_TO_TICKS ? ModuleState.HIGH_TOLERANCE
