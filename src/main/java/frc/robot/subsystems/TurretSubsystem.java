@@ -99,7 +99,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double turntableD = 0;
     private static final double turntableFF = 0.0009;
     private static final double maxVel = 150;
-    private static final double maxAccel = 300;
+    private static final double maxAccel = 500;
 
     // Hood position PID constants
     private static final double hoodP = 0.125;
