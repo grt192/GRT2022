@@ -55,9 +55,25 @@ public class JetsonConnection {
      * Gets whether a ball is in range of the intake camera.
      * @return Whether a ball is in intake range.
      */
-    public boolean ballDetected() { 
-        return runnable.ballDetected(); 
-    } 
+    public boolean ballDetected() {
+        return runnable.ballDetected();
+    }
+
+    /**
+     * Gets whether the current jetson data is stale (already consumed).
+     * @return Whether the jetson data is stale.
+     */
+    public boolean getConsumed() {
+        return runnable.getConsumed();
+    }
+
+    /**
+     * Sets whether the current jetson data is stale (already consumed).
+     * @param consumed Whether the jetson data is stale.
+     */
+    public void setConsumed(boolean consumed) {
+        runnable.setConsumed(consumed);
+    }
 
     /**
      * Creates an MJPEG camera over the Jetson connection.
@@ -73,8 +89,9 @@ public class JetsonConnection {
         private BufferedReader stdIn;
     
         // Bool for connection status
-        public boolean isConnected = false;
-    
+        private boolean isConnected = false;
+        private boolean consumed = false;
+
         // Camera data
         private boolean turretVisionStatus = false; // Can the camera provide turret vision data?
         private double turretTheta = 0; // Delta theta of turret to target
@@ -155,6 +172,7 @@ public class JetsonConnection {
                     turretTheta = Double.parseDouble(data[1]);
                     hubDistance = Double.parseDouble(data[2]);
                     ballDetected = strToBool(data[3]);
+                    consumed = false;
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -179,32 +197,28 @@ public class JetsonConnection {
          * hub is currently in the turntable blind spot.
          * @return Whether turret vision is working.
          */
-        public boolean turretVisionWorking() { 
+        public boolean turretVisionWorking() {
             return isConnected && turretVisionStatus; 
         }
 
-        /**
-         * Gets the calculated turret angle.
-         * @return The desired turntable angle.
-         */
-        public double getTurretTheta() { 
+        public double getTurretTheta() {
             return turretTheta; 
         }
 
-        /**
-         * Gets the calculated hub distance.
-         * @return The distance from the camera to the hub.
-         */
-        public double getHubDistance() { 
+        public double getHubDistance() {
             return hubDistance; 
         }
 
-        /**
-         * Gets whether a ball is in range of the intake camera.
-         * @return Whether a ball is in intake range.
-         */
-        public boolean ballDetected() { 
+        public boolean ballDetected() {
             return ballDetected; 
+        }
+
+        public boolean getConsumed() {
+            return consumed;
+        }
+
+        public void setConsumed(boolean consumed) {
+            this.consumed = consumed;
         }
     }
 }

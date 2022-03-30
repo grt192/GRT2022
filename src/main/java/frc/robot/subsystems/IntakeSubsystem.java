@@ -140,7 +140,6 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
-        /*
         limitSwitchReset();
 
         // If the ball count is greater than 2, don't run intake.

@@ -150,7 +150,7 @@ public class RobotContainer {
      * X button -> start climb sequence (climb)
      */
     private void configureButtonBindings() {
-        // driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
+        driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         // driveBButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
         // driveYButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
         driveXButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));

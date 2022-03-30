@@ -25,7 +25,6 @@ public class GRTNetworkTableEntry {
     private final NetworkTableEntry tableEntry;
     private Object buffer;
 
-
     /**
      * Creates a GRTNetworkTableEntry from a NetworkTableEntry.
      * @param tableEntry The NetworkTableEntry to wrap.

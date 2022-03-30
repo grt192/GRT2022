@@ -62,7 +62,8 @@ public class InternalSubsystem extends GRTSubsystem {
     // Shuffleboard
     private final GRTShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry ballCountEntry;
-    private final GRTNetworkTableEntry entranceStorageEntry, storageEntry, storageStagingEntry, stagingEntry, stagingExitEntry;
+    private final GRTNetworkTableEntry entranceEntry, entranceStorageEntry, storageEntry, storageStagingEntry, stagingEntry, stagingExitEntry;
+    private final GRTNetworkTableEntry entranceRawEntry, stagingRawEntry;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         super(15);
@@ -107,21 +108,27 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // Shuffleboard
         shuffleboardTab = new GRTShuffleboardTab("Internals");
-        entranceStorageEntry = shuffleboardTab.addEntry("Entrance -> storage", entranceStorageBall, 0, 0);
-        storageEntry = shuffleboardTab.addEntry("Storage", isBall(colorSensorThread.getLastStorage()), 1, 0);
-        storageStagingEntry = shuffleboardTab.addEntry("Storage -> staging", storageStagingBall, 2, 0);
-        stagingEntry = shuffleboardTab.addEntry("Staging", staging.get() >= 0.2, 3, 0);
-        stagingExitEntry = shuffleboardTab.addEntry("Staging -> exit", stagingExitBall, 4, 0);
-        ballCountEntry = shuffleboardTab.addEntry("Ball count", ballCount, 5, 0);
+        entranceEntry = shuffleboardTab.addEntry("Entrance", entrance.get() >= 0.1, 0, 0);
+        entranceStorageEntry = shuffleboardTab.addEntry("Entrance -> storage", entranceStorageBall, 1, 0);
+        storageEntry = shuffleboardTab.addEntry("Storage", isBall(colorSensorThread.getLastStorage()), 2, 0);
+        storageStagingEntry = shuffleboardTab.addEntry("Storage -> staging", storageStagingBall, 3, 0);
+        stagingEntry = shuffleboardTab.addEntry("Staging", staging.get() >= 0.2, 4, 0);
+        stagingExitEntry = shuffleboardTab.addEntry("Staging -> exit", stagingExitBall, 5, 0);
+        ballCountEntry = shuffleboardTab.addEntry("Ball count", ballCount, 6, 0);
+        entranceRawEntry = shuffleboardTab.addEntry("Entrance raw", entrance.get(), 0, 1);
+        stagingRawEntry = shuffleboardTab.addEntry("Staging raw", staging.get(), 4, 1);
     }
 
     @Override
     public void periodic() {
         // Get states from IR and color sensors
-        boolean entranceDetected = entrance.get() >= 0.1;
+        double entranceRaw = entrance.get();
+        double stagingRaw = staging.get();
+
+        boolean entranceDetected = entranceRaw >= 0.1;
         Color storageColor = matchColor(colorSensorThread.getLastStorage());
         boolean storageDetected = isBall(storageColor);
-        boolean stagingDetected = staging.get() >= 0.2;
+        boolean stagingDetected = stagingRaw >= 0.2;
 
         // Set the ball count from staging, storage, and the transition state booleans.
         ballCount = (entranceStorageBall ? 1 : 0)
@@ -132,11 +139,14 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // Display system state on shuffleboard
         entranceStorageEntry.setValue(entranceStorageBall);
+        entranceEntry.setValue(entranceDetected);
         storageEntry.setValue(storageDetected);
         storageStagingEntry.setValue(storageStagingBall);
         stagingEntry.setValue(stagingDetected);
         stagingExitEntry.setValue(stagingExitBall);
         ballCountEntry.setValue(ballCount);
+        entranceRawEntry.setValue(entranceRaw);
+        stagingRawEntry.setValue(stagingRaw);
 
         // If there is a ball in the entrance, run the bottom motor.
         if (entranceDetected && !storageDetected) {
@@ -146,7 +156,7 @@ public class InternalSubsystem extends GRTSubsystem {
         }
 
         // If 5 seconds have elapsed or the ball has progressed past entrance, stop the bottom motor
-        if ((storageDetected || entranceTimer.hasElapsed(5)) && entranceTimer.get() > 0 && stagingDetected) {
+        if ((storageDetected || entranceTimer.hasElapsed(5)) && entranceTimer.get() > 0) {
             motorBottom.set(0);
             entranceTimer.stop();
             entranceTimer.reset();
@@ -168,26 +178,19 @@ public class InternalSubsystem extends GRTSubsystem {
         }
 
         // If 0.5 seconds have elapsed or staging has detected the ball, stop the motors
-        if (storageTimer.hasElapsed(0.5) || stagingDetected) {
+        if (storageTimer.hasElapsed(0.5)) {
             motorTop.set(0);
-            System.out.println(storageTimer.get());
-            if (storageTimer.hasElapsed(0.5)) {
-                motorBottom.set(0);
-            }
+            motorBottom.set(0);
             storageTimer.stop();
             storageTimer.reset();
             storageStagingBall = false;
         }
 
         // If there is a ball in staging, we don't want to push it into turret, especially if there is a shot going
-        // I'm leaving this as a failsafe in case I screwed something up. Uncomment this code
-        // and delete the `|| stagingDetected` in the above condition if something breaks.
-        /*
         if (stagingDetected) {
             motorTop.set(0);
             storageStagingBall = false;
         }
-        */
 
         // If a shot was requested and the turret is ready, load a ball into the turret.
         // For high goal shots, require that the turret be in high tolerance alignment.

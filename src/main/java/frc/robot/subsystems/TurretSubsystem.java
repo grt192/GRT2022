@@ -37,25 +37,21 @@ public class TurretSubsystem extends GRTSubsystem {
     /**
      * An enum representing the mode the shooter is currently in.
      * In SHOOTING, the turret will aim to score balls in the upper hub.
-     * In REJECTING, the turret will scale down its flywheel speed to reject
-     * wrong-colored balls.
+     * In LOW_HUB, the turret will aim to score balls in the lower hub.
+     * In REJECTING, the turret will scale down its flywheel speed to reject wrong-colored balls.
      * In RETRACTED, the turret will retract itself for climb.
-     * TODO: split SHOOTING into UPPER and LOWER modes?
      */
     public enum TurretMode {
-        SHOOTING, REJECTING, RETRACTED, LOW_HUB
+        SHOOTING, LOW_HUB, REJECTING, RETRACTED
     }
 
     /**
      * Represents the state of a turret module (flywheel, turntable, hood).
      * If a module is in HIGH_TOLERANCE, it is completely ready to shoot.
-     * If a module is in LOW_TOLERANCE, it is nearly ready and will become ready
-     * after a robot stop.
+     * If a module is in LOW_TOLERANCE, it is nearly ready and will become ready after a robot stop.
      * This state is for rejecting, which doesn't need a perfectly lined up shot but
-     * needs better than completely unaligned. It is also for drivers to know when the 
-     * turret is almost ready.
-     * If a module is UNALIGNED, it is not ready; it will require more than a second
-     * to get it to READY status.
+     * needs better than completely unaligned. It is also for drivers to know when the turret is almost ready.
+     * If a module is UNALIGNED, it is not ready; it will require more than a second to get it to READY status.
      */
     public enum ModuleState {
         HIGH_TOLERANCE, LOW_TOLERANCE, UNALIGNED
@@ -170,9 +166,9 @@ public class TurretSubsystem extends GRTSubsystem {
     private static boolean DEBUG_PID = true;
     // Whether rtheta logic should be skipped and the turntable, hood, and flywheel references 
     // should be manually set through shuffleboard.
-    private static boolean MANUAL_CONTROL = true;
+    private static boolean MANUAL_CONTROL = false;
     // Whether the turret should fire at full speed regardless of rejection logic.
-    private static boolean SKIP_REJECTION = false;
+    private static boolean SKIP_REJECTION = true;
 
     public TurretSubsystem(TankSubsystem tankSubsystem, JetsonConnection connection) {
         // TODO: measure this
@@ -327,15 +323,14 @@ public class TurretSubsystem extends GRTSubsystem {
         double pow = !ballReady ? 0.25 : 0.5;
         turntablePidController.setOutputRange(-pow, pow);
 
-        // If the hub is in vision range, use vision's `r` and `theta` as ground truth.
-        // While the flywheel is running, use the manual system values instead to
-        // prevent camera issues while the flywheel shakes the turntable.
+        // If the hub is in vision range and the jetson has fresh data, use vision's `r` and `theta` as ground truth.
+        // While the flywheel is running, use the manual system values instead to prevent camera issues while the 
+        // flywheel shakes the turntable.
         // If the jetson has been disabled on shuffleboard, use `rtheta` instead.
-        if (jetson.turretVisionWorking() && !runFlywheel && !jetsonDisabled) {
+        if (jetson.turretVisionWorking() && (!runFlywheel || mode == TurretMode.RETRACTED) && !jetson.getConsumed() && !jetsonDisabled) {
             r = jetson.getHubDistance();
-            theta = jetson.getTurretTheta() - turntableEncoder.getPosition();
-
-            // System.out.println("JETSON r: " + r + " theta: " + theta);
+            theta = Math.PI + jetson.getTurretTheta() - turntableEncoder.getPosition();
+            jetson.setConsumed(true);
         } else {
             // Otherwise, update our `r` and `theta` state system from the previous `r` and
             // `theta` values and the delta X and Y since our last position. We do this instead of using
