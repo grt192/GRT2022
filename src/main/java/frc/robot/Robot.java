@@ -126,7 +126,7 @@ public class Robot extends TimedRobot {
         // Sweep intake from -1 to 1 power
         intakeSubsystem.setDriverOverride(true);
         for (double pow = -1; pow <= 1; pow += 0.1) {
-            intakeSubsystem.setIntakePower(pow);
+            intakeSubsystem.setDriverPower(pow);
             Timer.delay(0.1);
         }
         intakeSubsystem.setDriverOverride(false);

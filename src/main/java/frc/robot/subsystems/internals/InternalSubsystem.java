@@ -12,10 +12,8 @@ import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.util.Color;
-import edu.wpi.first.wpilibj2.command.PrintCommand;
+
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
@@ -64,7 +62,7 @@ public class InternalSubsystem extends GRTSubsystem {
     private final GRTNetworkTableEntry ballCountEntry, shotRequestedEntry, skipToleranceEntry;
     private final GRTNetworkTableEntry 
         entranceEntry, entranceStorageEntry, storageEntry, storageStagingEntry, stagingEntry, stagingExitEntry;
-    private final GRTNetworkTableEntry entranceRawEntry, stagingRawEntry;
+    private final GRTNetworkTableEntry entranceRawEntry, storageRawEntry, stagingRawEntry;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         super(15);
@@ -115,10 +113,13 @@ public class InternalSubsystem extends GRTSubsystem {
         storageStagingEntry = shuffleboardTab.addEntry("Storage -> staging", storageStagingBall).at(3, 0);
         stagingEntry = shuffleboardTab.addEntry("Staging", staging.get() >= 0.2).at(4, 0);
         stagingExitEntry = shuffleboardTab.addEntry("Staging -> exit", stagingExitBall).at(5, 0);
+
         ballCountEntry = shuffleboardTab.addEntry("Ball count", ballCount).at(0, 2);
         shotRequestedEntry = shuffleboardTab.addEntry("Shot requested", shotRequested).at(1, 2);
         skipToleranceEntry = shuffleboardTab.addEntry("Skip tolerance", skipToleranceCheck).at(2, 2);
+
         entranceRawEntry = shuffleboardTab.addEntry("Entrance raw", entrance.get()).at(0, 1);
+        storageRawEntry = shuffleboardTab.addEntry("Storage color", colorToString(matchColor(colorSensorThread.getLastStorage()))).at(2, 1);
         stagingRawEntry = shuffleboardTab.addEntry("Staging raw", staging.get()).at(4, 1);
     }
 
@@ -151,6 +152,7 @@ public class InternalSubsystem extends GRTSubsystem {
         shotRequestedEntry.setValue(shotRequested);
         skipToleranceEntry.setValue(skipToleranceCheck);
         entranceRawEntry.setValue(entranceRaw);
+        storageRawEntry.setValue(colorToString(storageColor));
         stagingRawEntry.setValue(stagingRaw);
 
         // If there is a ball in the entrance, run the bottom motor.
@@ -287,12 +289,15 @@ public class InternalSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Utility function for pretty-printing Color objects.
-     * @param c The color to pretty-print.
-     * @return The color represented as an RGB string.
+     * Utility function for pretty-printing matched Color objects.
+     * @param c The matched color to pretty-print.
+     * @return The name of the color (RED, BLUE, EMPTY, NULL).
      */
     private String colorToString(Color c) {
-        return "(R: " + c.red + ", G: " + c.green + ", B: " + c.blue + ")";
+        return c == RED ? "RED" 
+            : c == BLUE ? "BLUE" 
+            : c == EMPTY ? "EMPTY" 
+            : "NULL";
     }
 
     @Override

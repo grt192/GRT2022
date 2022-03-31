@@ -114,7 +114,7 @@ public class RobotContainer {
         autonChooser.addOption("Blue top", new AutonBlueTopSequence(this));
         autonChooser.addOption("Blue middle", new AutonBlueMiddleSequence(this));
         autonChooser.addOption("Blue bottom", new AutonBlueBottomSequence(this));
-        autonChooser.setDefaultOption("Pleb auton", new PlebAutonSequence(this));
+        autonChooser.setDefaultOption("Pleb auton", PlebAutonSequence.from(this));
         autonChooser.addOption("Skip auton", new InstantCommand());
 
         new GRTShuffleboardTab("Drivetrain").addWidget("Auton sequence", autonChooser);

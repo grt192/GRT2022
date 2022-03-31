@@ -19,6 +19,6 @@ public class RaiseIntakeCommand extends InstantCommand {
     @Override
     public void initialize() {
         intakeSubsystem.setPosition(IntakePosition.RAISED);
-        intakeSubsystem.setDriverOverride(false);
+        intakeSubsystem.setAutoOverride(false);
     }
 }

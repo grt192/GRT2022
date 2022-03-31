@@ -25,7 +25,7 @@ public class DeployIntakeCommand extends InstantCommand {
     @Override
     public void initialize() {
         intakeSubsystem.setPosition(IntakePosition.DEPLOYED);
-        intakeSubsystem.setDriverOverride(true);
-        intakeSubsystem.setIntakePower(intakePow);
+        intakeSubsystem.setAutoOverride(true);
+        intakeSubsystem.setAutoPower(intakePow);
     }
 }

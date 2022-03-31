@@ -239,6 +239,8 @@ public class TurretSubsystem extends GRTSubsystem {
         hood.config_kP(0, hoodP);
         hood.config_kI(0, hoodI);
         hood.config_kD(0, hoodD);
+        hood.configPeakOutputForward(0.5);
+        hood.configPeakOutputReverse(-0.5);
 
         hood.configForwardSoftLimitEnable(true);
         hood.configReverseSoftLimitEnable(true);
@@ -327,9 +329,9 @@ public class TurretSubsystem extends GRTSubsystem {
         // If MANUAL_CONTROL is enabled, allow for reference setting on shuffleboard
         if (MANUAL_CONTROL) {
             shuffleboardTab
-                .addListener("Flywheel ref vel", flywheelRefVel, this::setFlywheelRefVel, 5, 3)
-                .addListener("Turntable ref pos", Math.toDegrees(turntableRefPos), this::setTurntableRefPos, 6, 3)
-                .addListener("Hood ref degs", hoodRefPos, this::setHoodRefPos, 7, 3);
+                .addListener("Manual fly ref", flywheelRefVel, this::setFlywheelRefVel, 5, 3)
+                .addListener("Manual turn ref", turntableRefPos, this::setTurntableRefPos, 6, 3)
+                .addListener("Manual hood ref", hoodRefPos, this::setHoodRefPos, 7, 3);
         }
     }
 
@@ -411,7 +413,7 @@ public class TurretSubsystem extends GRTSubsystem {
             }
 
             turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
-            turntableRefEntry.setValue(turntableReference);
+            turntableRefEntry.setValue(Math.toDegrees(turntableReference));
             desiredTurntableRadians = newTurntableRadians;
         }
 

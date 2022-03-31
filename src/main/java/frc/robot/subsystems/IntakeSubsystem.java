@@ -49,8 +49,10 @@ public class IntakeSubsystem extends GRTSubsystem {
     private final WPI_TalonSRX deploy;
     private final DigitalInput limitSwitch;
 
-    private double intakePower = 0;
+    private double driverPower = 0;
     private boolean driverOverride = false;
+    private double autoPower = 0;
+    private boolean autoOverride = false;
 
     private static final double DELAY_LIMIT_RESET = 0.2;
     private Double switchPressed = 0.0;
@@ -73,6 +75,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     private final GRTShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleboardDeployPosition;
     private final GRTNetworkTableEntry shuffleboardVeloEntry;
+    private final GRTNetworkTableEntry driverPowerEntry, driverOverrideEntry, autoPowerEntry, autoOverrideEntry;
 
     // Debug flags
     // Whether PID tuning shuffleboard entries should be displayed
@@ -118,6 +121,11 @@ public class IntakeSubsystem extends GRTSubsystem {
         shuffleboardVeloEntry = shuffleboardTab.addEntry("velo", deploy.getSelectedSensorVelocity());
         shuffleboardDeployPosition = shuffleboardTab.addEntry("Deploy position", 0);
 
+        driverPowerEntry = shuffleboardTab.addEntry("Driver power", driverPower);
+        driverOverrideEntry = shuffleboardTab.addEntry("Driver override", driverOverride);
+        autoPowerEntry = shuffleboardTab.addEntry("Auto power", autoPower);
+        autoOverrideEntry = shuffleboardTab.addEntry("Auto override", autoOverride);
+
         shuffleboardTab.addToggle("Skip internals check", skipInternalsCheck, this::setSkipInternalsCheck);
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
@@ -148,9 +156,10 @@ public class IntakeSubsystem extends GRTSubsystem {
         if (internalSubsystem.getBallCount() > 2 && !skipInternalsCheck) {
             power = 0;
         } else {
-            // Otherwise, use driver input if they're overriding and default to running
-            // intake automatically from vision.
-            power = driverOverride ? intakePower 
+            // Otherwise, use auto input if it's overriding, driver input if they're overriding 
+            // and default to running intake automatically from vision.
+            power = autoOverride ? autoPower
+                : driverOverride ? driverPower
                 : jetson.ballDetected() ? 0.5 : 0;
         }
 
@@ -166,6 +175,11 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
         shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
+
+        driverPowerEntry.setValue(driverPower);
+        driverOverrideEntry.setValue(driverOverride);
+        autoPowerEntry.setValue(autoPower);
+        autoOverrideEntry.setValue(autoOverride);
     }
 
     private void moveDeployTo(double targPos) {
@@ -207,11 +221,37 @@ public class IntakeSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Sets the power of the intake rollers.
-     * @param intakePower The power (in percent output) to run the motors at.
+     * Sets the driver requested power of the intake rollers. This power will be set
+     * when driver override is enabled.
+     * @param driverPower The power (in percent output) to run the motors at.
      */
-    public void setIntakePower(double intakePower) {
-        this.intakePower = intakePower;
+    public void setDriverPower(double driverPower) {
+        this.driverPower = driverPower;
+    }
+
+    /**
+     * Sets whether the driver is overriding the intake's automatic run procedure.
+     * @param override Whether to use driver input as power.
+     */
+    public void setDriverOverride(boolean override) {
+        driverOverride = override;
+    }
+
+    /**
+     * Sets the auton requested power of the intake rollers. This power will be set
+     * when auton override is enabled.
+     * @param driverPower The power (in percent output) to run the motors at.
+     */
+    public void setAutoPower(double autoPower) {
+        this.autoPower = autoPower;
+    }
+
+    /**
+     * Sets whether auton is overriding the intake's automatic run procedure.
+     * @param override Whether to use auton power as power.
+     */
+    public void setAutoOverride(boolean override) {
+        autoOverride = override;
     }
 
     /**
@@ -229,14 +269,6 @@ public class IntakeSubsystem extends GRTSubsystem {
         this.targetPosition = this.targetPosition == IntakePosition.DEPLOYED
             ? IntakePosition.RAISED
             : IntakePosition.DEPLOYED;
-    }
-
-    /**
-     * Sets whether the driver is overriding the intake's automatic run procedure.
-     * @param override Whether to use driver input as power.
-     */
-    public void setDriverOverride(boolean override) {
-        driverOverride = override;
     }
 
     @Override
