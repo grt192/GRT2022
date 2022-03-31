@@ -134,13 +134,6 @@ public class InternalSubsystem extends GRTSubsystem {
         boolean storageDetected = isBall(storageColor);
         boolean stagingDetected = stagingRaw >= 0.2;
 
-        // Set the ball count from staging, storage, and the transition state booleans.
-        ballCount = (entranceStorageBall ? 1 : 0)
-            + (storageDetected ? 1 : 0)
-            + (storageStagingBall ? 1 : 0)
-            + (stagingDetected ? 1 : 0) 
-            + (stagingExitBall ? 1 : 0);
-
         // Display system state on shuffleboard
         entranceStorageEntry.setValue(entranceStorageBall);
         entranceEntry.setValue(entranceDetected);
@@ -148,7 +141,6 @@ public class InternalSubsystem extends GRTSubsystem {
         storageStagingEntry.setValue(storageStagingBall);
         stagingEntry.setValue(stagingDetected);
         stagingExitEntry.setValue(stagingExitBall);
-        ballCountEntry.setValue(ballCount);
         shotRequestedEntry.setValue(shotRequested);
         skipToleranceEntry.setValue(skipToleranceCheck);
         entranceRawEntry.setValue(entranceRaw);
@@ -205,7 +197,7 @@ public class InternalSubsystem extends GRTSubsystem {
         // alignment is fine.
         turretSubsystem.setReject(rejecting);
         ModuleState turretState = turretSubsystem.getState();
-        if (shotRequested && stagingDetected && (skipToleranceCheck 
+        if (shotRequested && (stagingDetected || skipToleranceCheck) && (skipToleranceCheck 
             || turretState == ModuleState.HIGH_TOLERANCE
             || ((rejecting || turretSubsystem.getMode() == TurretMode.LOW_HUB) && turretState == ModuleState.LOW_TOLERANCE))
         ) {
@@ -227,6 +219,14 @@ public class InternalSubsystem extends GRTSubsystem {
             skipToleranceCheck = false;
             stagingExitBall = false;
         }
+
+        // Set the ball count from staging, storage, and the transition state booleans.
+        ballCount = (entranceStorageBall ? 1 : 0)
+            + (storageDetected ? 1 : 0)
+            + (storageStagingBall ? 1 : 0)
+            + (stagingDetected ? 1 : 0) 
+            + (stagingExitBall ? 1 : 0);
+        ballCountEntry.setValue(ballCount);
 
         turretSubsystem.setBallReady(ballCount > 0);
     }
