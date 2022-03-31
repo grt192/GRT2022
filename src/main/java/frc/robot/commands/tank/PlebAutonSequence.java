@@ -31,12 +31,12 @@ public class PlebAutonSequence extends CommandBase {
     private final Timer autonTimer = new Timer();
     private final Timer forceTimer = new Timer();
 
-    private int shotsCompleted = 0;
+    private int shotsRequested = 0;
     private boolean complete = false;
 
     private final GRTShuffleboardTab shuffleboardTab = new GRTShuffleboardTab("Auton");
     private final GRTNetworkTableEntry forceTimerEntry = shuffleboardTab.addEntry("Force timer", forceTimer.get());
-    private final GRTNetworkTableEntry shotsCompletedEntry = shuffleboardTab.addEntry("Shots completed", shotsCompleted);
+    private final GRTNetworkTableEntry shotsRequestedEntry = shuffleboardTab.addEntry("Shots requested", shotsRequested);
     private final GRTNetworkTableEntry completedEntry = shuffleboardTab.addEntry("Completed", complete);
 
     public PlebAutonSequence(RobotContainer robotContainer) {
@@ -73,7 +73,7 @@ public class PlebAutonSequence extends CommandBase {
     public void initialize() {
         turretSubsystem.setDriverOverrideFlywheel(true);
         autonTimer.start();
-        shotsCompleted = 0;
+        shotsRequested = 0;
 
         // Set initial position assuming we are 0 in on the y axis, 87 in on the x axis,
         // with theta equal to the current turntable position.
@@ -84,7 +84,7 @@ public class PlebAutonSequence extends CommandBase {
     @Override
     public void execute() {
         forceTimerEntry.setValue(forceTimer.get());
-        shotsCompletedEntry.setValue(shotsCompleted);
+        shotsRequestedEntry.setValue(shotsRequested);
 
         // We are done driving if: we are beyond 55 inches of our starting position,
         // or 8 seconds have passed.
@@ -100,14 +100,14 @@ public class PlebAutonSequence extends CommandBase {
         // If we're not requesting a shot, request one and reset the force timer.
         // End the command after shooting twice.
         if (!internalSubsystem.getShotRequested()) {
-            if (doneDriving && shotsCompleted == 2) {
+            if (doneDriving && shotsRequested == 2) {
                 intakeSubsystem.setPosition(IntakePosition.RAISED);
                 completedEntry.setValue(true);
                 complete = true;
             }
             forceTimer.reset();
             internalSubsystem.requestShot();
-            shotsCompleted++;
+            shotsRequested++;
         }
 
         // Force a shot if we haven't shot in 4 seconds

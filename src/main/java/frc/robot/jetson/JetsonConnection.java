@@ -9,6 +9,7 @@ import java.util.Arrays;
 
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.HttpCamera;
+import edu.wpi.first.math.Pair;
 
 import static frc.robot.Constants.JetsonConstants.*;
 
@@ -36,19 +37,12 @@ public class JetsonConnection {
     }
 
     /**
-     * Gets the calculated turret angle.
-     * @return The desired turntable angle.
+     * Gets the jetson data as a pair representing [hub dist, turret theta].
+     * Calling this method automatically marks the current jetson data as consumed and stale.
+     * @return The jetson data, in the form of [hub dist (in), turret theta (rads)].
      */
-    public double getTurretTheta() { 
-        return runnable.getTurretTheta(); 
-    }
-
-    /**
-     * Gets the calculated hub distance.
-     * @return The distance from the camera to the hub.
-     */
-    public double getHubDistance() { 
-        return runnable.getHubDistance(); 
+    public Pair<Double, Double> getData() {
+        return runnable.getData();
     }
 
     /**
@@ -65,14 +59,6 @@ public class JetsonConnection {
      */
     public boolean getConsumed() {
         return runnable.getConsumed();
-    }
-
-    /**
-     * Sets whether the current jetson data is stale (already consumed).
-     * @param consumed Whether the jetson data is stale.
-     */
-    public void setConsumed(boolean consumed) {
-        runnable.setConsumed(consumed);
     }
 
     /**
@@ -201,12 +187,9 @@ public class JetsonConnection {
             return isConnected && turretVisionStatus; 
         }
 
-        public double getTurretTheta() {
-            return turretTheta; 
-        }
-
-        public double getHubDistance() {
-            return hubDistance; 
+        public Pair<Double, Double> getData() {
+            consumed = true;
+            return new Pair<>(hubDistance, turretTheta);
         }
 
         public boolean ballDetected() {
@@ -215,10 +198,6 @@ public class JetsonConnection {
 
         public boolean getConsumed() {
             return consumed;
-        }
-
-        public void setConsumed(boolean consumed) {
-            this.consumed = consumed;
         }
     }
 }

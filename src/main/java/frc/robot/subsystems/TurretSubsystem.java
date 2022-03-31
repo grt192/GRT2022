@@ -14,6 +14,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.EntryNotification;
@@ -361,9 +362,9 @@ public class TurretSubsystem extends GRTSubsystem {
         // flywheel shakes the turntable.
         // If the jetson has been disabled on shuffleboard, use `rtheta` instead.
         if (jetson.turretVisionWorking() && (!runFlywheel || mode == TurretMode.RETRACTED) && !jetson.getConsumed() && !jetsonDisabled) {
-            r = jetson.getHubDistance();
-            theta = Math.PI + jetson.getTurretTheta() - turntableEncoder.getPosition();
-            jetson.setConsumed(true);
+            Pair<Double, Double> data = jetson.getData();
+            r = data.getFirst();
+            theta = Math.PI + data.getSecond() - turntableEncoder.getPosition();
 
             // Reset offsets when we refresh rtheta from vision.
             resetOffsets();
