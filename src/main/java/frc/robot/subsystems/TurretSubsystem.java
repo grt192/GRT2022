@@ -130,11 +130,11 @@ public class TurretSubsystem extends GRTSubsystem {
     // IMPORTANT: entries are assumed to be in order by hub distance. Without this assumption the array would have to be
     // sorted before interpolation.
     private static final double[][] INTERPOLATION_TABLE = {
-        //{ 59, 4600, 0 },
-        { 69, 5000, 7 },
-        //{ 75, 4800, 8 },
+        { 59, 4600, 0 },
+        // { 69, 5000, 7 },
+        { 75, 4800, 8 },
         { 88, 5100, 13.5 },
-        //{ 91, 4950, 10 },
+        // { 91, 4950, 10 },
         { 112, 5300, 17 },
         { 139, 5600, 20 },
         { 175, 6000, 25 },
