@@ -151,8 +151,8 @@ public class TurretSubsystem extends GRTSubsystem {
     private Pose2d previousPosition = new Pose2d();
     private double previousLoopTime = Timer.getFPGATimestamp();
 
-    private double R_FF = 0;
-    private double THETA_FF = 0;
+    private double R_FF = 0.2;
+    private double THETA_FF = 0.2;
 
     // Motor state variables
     private double desiredFlywheelRPM;
@@ -282,27 +282,27 @@ public class TurretSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = new GRTShuffleboardTab("Turret");;
-        flywheelVeloEntry = shuffleboardTab.addEntry("Flywheel vel", 0).at(2, 1);
-        flywheelRefEntry = shuffleboardTab.addEntry("Flywheel ref", 0).at(2, 0);
-        turntablePosEntry = shuffleboardTab.addEntry("Turntable pos", 0).at(3, 1);
-        turntableRefEntry = shuffleboardTab.addEntry("Turntable ref", 0).at(3, 0);
-        hoodPosEntry = shuffleboardTab.addEntry("Hood pos", 0).at(4, 1);
-        hoodRefEntry = shuffleboardTab.addEntry("Hood ref", 0).at(4, 0);
+        flywheelVeloEntry = shuffleboardTab.addEntry("Flywheel vel", 0).at(0, 4);
+        flywheelRefEntry = shuffleboardTab.addEntry("Flywheel ref", 0).at(0, 3);
+        turntablePosEntry = shuffleboardTab.addEntry("Turntable pos", 0).at(1, 4);
+        turntableRefEntry = shuffleboardTab.addEntry("Turntable ref", 0).at(1, 3);
+        hoodPosEntry = shuffleboardTab.addEntry("Hood pos", 0).at(2, 4);
+        hoodRefEntry = shuffleboardTab.addEntry("Hood ref", 0).at(2, 3);
 
         rEntry = shuffleboardTab.addEntry("r", 0).at(0, 1);
         thetaEntry = shuffleboardTab.addEntry("theta", 0).at(1, 1);
         distOffsetEntry = shuffleboardTab.addEntry("r offset", 0).at(0, 0);
         turnOffsetEntry = shuffleboardTab.addEntry("theta offset", 0).at(1, 0);
 
-        flyReadyEntry = shuffleboardTab.addEntry("Fly ready", false).at(2, 2);
-        turnReadyEntry = shuffleboardTab.addEntry("Turn ready", false).at(3, 2);
-        hoodReadyEntry = shuffleboardTab.addEntry("Hood ready", false).at(4, 2);
-        jetsonDetectedEntry = shuffleboardTab.addEntry("Jetson data", false).at(1, 2);
-        runFlywheelEntry = shuffleboardTab.addEntry("Run flywheel", false).at(2, 3);
-        driverOverrideEntry = shuffleboardTab.addEntry("Driver override flywheel", driverOverrideFlywheel).at(3, 3);
-        turretModeEntry = shuffleboardTab.addEntry("Turret mode", mode.toString()).at(1, 3);
+        flyReadyEntry = shuffleboardTab.addEntry("Fly ready", false).at(0, 2);
+        turnReadyEntry = shuffleboardTab.addEntry("Turn ready", false).at(1, 2);
+        hoodReadyEntry = shuffleboardTab.addEntry("Hood ready", false).at(2, 2);
+        jetsonDetectedEntry = shuffleboardTab.addEntry("Jetson data", false).at(3, 0);
+        runFlywheelEntry = shuffleboardTab.addEntry("Run flywheel", false).at(3, 1);
+        driverOverrideEntry = shuffleboardTab.addEntry("Driver override flywheel", driverOverrideFlywheel).at(4, 2);
+        turretModeEntry = shuffleboardTab.addEntry("Turret mode", mode.toString()).at(2, 1);
 
-        shuffleboardTab.addToggle("Jetson disabled", jetsonDisabled, this::setDisableJetson, 0, 2);
+        shuffleboardTab.addToggle("Jetson disabled", jetsonDisabled, this::setDisableJetson, 4, 0);
         // shuffleboardTab.addListener("Freeze turret", frozen, this::setFreeze);
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard

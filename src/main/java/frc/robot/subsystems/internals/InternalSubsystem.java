@@ -204,8 +204,20 @@ public class InternalSubsystem extends GRTSubsystem {
             // Spin the top motor on a timer
             exitTimer.start();
             motorTop.set(0.5);
-            stagingExitBall = true;
+            // TEST stagingExitBall = true;
         }
+
+        /*if (stagingExitBall) {
+            motorTop.set(0.5);
+        }
+        */
+
+        // shot requested, timer starts, while ball is in staging timer keeps 
+        // starting, when ball exits staging 0.5
+        // seconds after shot is finished, if in that time period 0<t<0.5 
+        // another ball is detected, timer *should* reset
+        // however if there is still 1 or 0 balls in internals, shot is 
+        // finished and timer will not start again if ball is detected
 
         // If 0.5 seconds have elapsed, mark the shot as finished
         if (exitTimer.hasElapsed(0.5)) {
@@ -215,18 +227,18 @@ public class InternalSubsystem extends GRTSubsystem {
 
             // Reset states
             // If the only ball in the system is the one we just shot, mark the shot as completed
-            if (ballCount <= 1) shotRequested = false;
+            if (ballCount < 1) shotRequested = false;
             rejectingChecked = false;
             skipToleranceCheck = false;
-            stagingExitBall = false;
+            // TEST stagingExitBall = false;
         }
 
         // Set the ball count from staging, storage, and the transition state booleans.
         ballCount = (entranceStorageBall ? 1 : 0)
             + (storageDetected ? 1 : 0)
             + (storageStagingBall ? 1 : 0)
-            + (stagingDetected ? 1 : 0) 
-            + (stagingExitBall ? 1 : 0);
+            + (stagingDetected ? 1 : 0) ;
+            // TEST + (stagingExitBall ? 1 : 0);
         ballCountEntry.setValue(ballCount);
 
         turretSubsystem.setBallReady(ballCount > 0);
