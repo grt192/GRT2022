@@ -18,6 +18,7 @@ import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.EntryNotification;
+import edu.wpi.first.wpilibj.Timer;
 
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
@@ -129,8 +130,11 @@ public class TurretSubsystem extends GRTSubsystem {
     // IMPORTANT: entries are assumed to be in order by hub distance. Without this assumption the array would have to be
     // sorted before interpolation.
     private static final double[][] INTERPOLATION_TABLE = {
+        //{ 59, 4600, 0 },
         { 69, 5000, 7 },
+        //{ 75, 4800, 8 },
         { 88, 5100, 13.5 },
+        //{ 91, 4950, 10 },
         { 112, 5300, 17 },
         { 139, 5600, 20 },
         { 175, 6000, 25 },
@@ -139,9 +143,16 @@ public class TurretSubsystem extends GRTSubsystem {
     };
 
     // System state variables
-    private double theta;
     private double r;
+    private double theta;
+    private double rFeedForward;
+    private double thetaFeedForward;
+
     private Pose2d previousPosition = new Pose2d();
+    private double previousLoopTime = Timer.getFPGATimestamp();
+
+    private double R_FF = 0;
+    private double THETA_FF = 0;
 
     // Motor state variables
     private double desiredFlywheelRPM;
@@ -161,7 +172,6 @@ public class TurretSubsystem extends GRTSubsystem {
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
     private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(47);
     private static final double TURNTABLE_MAX_RADIANS = Math.toRadians(320);
-    private double TURNTABLE_THETA_FF = 12;
 
     private static final double HOOD_RADIANS_TO_TICKS = 243732.0 / Math.toRadians(35.8029900116);
     public static final double HOOD_MIN_POS = 0.0;
@@ -315,8 +325,7 @@ public class TurretSubsystem extends GRTSubsystem {
                 .addListener("kD", turntableD, this::setTurntableD)
                 .addListener("kFF", turntableFF, this::setTurntableFF)
                 .addListener("maxVel", maxVel, this::setTurntableMaxVel)
-                .addListener("maxAcc", maxAccel, this::setTurntableMaxAcc)
-                .addListener("theta FF", TURNTABLE_THETA_FF, this::setTurntableThetaFF);
+                .addListener("maxAcc", maxAccel, this::setTurntableMaxAcc);
 
             shuffleboardTab
                 .list("Hood PID")
@@ -325,6 +334,13 @@ public class TurretSubsystem extends GRTSubsystem {
                 .addListener("kP", hoodP, this::setHoodP)
                 .addListener("kI", hoodI, this::setHoodI)
                 .addListener("kD", hoodD, this::setHoodD);
+
+            shuffleboardTab
+                .list("Feedforward constants")
+                .at(8, 0)
+                .withSize(1, 3)
+                .addListener("r FF", R_FF, this::setRFF)
+                .addListener("theta FF", THETA_FF, this::setThetaFF);
         }
 
         // If MANUAL_CONTROL is enabled, allow for reference setting on shuffleboard
@@ -357,6 +373,8 @@ public class TurretSubsystem extends GRTSubsystem {
         double pow = !ballReady ? 0.25 : 0.5;
         turntablePidController.setOutputRange(-pow, pow);
 
+        Pair<Double, Double> deltas = calculateRThetaDeltas(previousPosition, currentPosition);
+
         // If the hub is in vision range and the jetson has fresh data, use vision's `r` and `theta` as ground truth.
         // While the flywheel is running, use the manual system values instead to prevent camera issues while the 
         // flywheel shakes the turntable.
@@ -374,62 +392,50 @@ public class TurretSubsystem extends GRTSubsystem {
             // raw odometry coordinates to prevent error accumulation over time; `r` and `theta` are 
             // reset to vision values when vision is in range, so our states only accumulate error while 
             // vision is out of range (as opposed to odometry, which accumulates error throughout the match).
-            manualUpdateRTheta(previousPosition, currentPosition);
+            r += deltas.getFirst();
+            theta += deltas.getSecond();
         }
 
+        applyRThetaFeedForward(deltas);
         previousPosition = currentPosition;
-        rEntry.setValue(r);
-        thetaEntry.setValue(Math.toDegrees(theta));
+        rEntry.setValue(rFeedForward);
+        thetaEntry.setValue(Math.toDegrees(thetaFeedForward));
 
         // If retracted, skip interpolation calculations
         if (mode == TurretMode.RETRACTED) {
             desiredTurntableRadians = Math.toRadians(180);
             desiredHoodRadians = 0;
             desiredFlywheelRPM = 0;
-
-            turntablePidController.setReference(desiredTurntableRadians, ControlType.kSmartMotion);
-            turntableRefEntry.setValue(Math.toDegrees(desiredTurntableRadians));
         } else {
-            // If frozen, interpolate flywheel and hood references from the frozen hub distance value
-            interpolateFlywheelHoodRefs(this.frozen ? this.frozenR : this.r);
-
-            // If MANUAL_CONTROL is enabled, set the turntable reference from shuffleboard.
-            // Otherwise, use the theta given by `rtheta`.
-            // TODO: threshold for wrapping to prevent excessive swing-between
-            double newTurntableRadians = MANUAL_CONTROL
-                ? (Math.toRadians(turntableRefPos) - currentPosition.getRotation().getRadians()) % (2 * Math.PI)
-                : angleWrap(Math.PI - (this.frozen ? this.frozenTheta : theta) + turntableOffset);
-
-            // Apply feedforward and constrain within max and min angle
-            double deltaTurntableRadians = newTurntableRadians - desiredTurntableRadians;
-            double turntableReference = Math.min(Math.max(
-                newTurntableRadians + deltaTurntableRadians * TURNTABLE_THETA_FF,
-                TURNTABLE_MIN_RADIANS), TURNTABLE_MAX_RADIANS);
+            // Set desired motor states from interpolation and the rtheta system state.
+            // If frozen, interpolate flywheel and hood references from the frozen hub distance value.
+            interpolateFlywheelHoodRefs(frozen ? frozenR : rFeedForward);
+            desiredTurntableRadians = angleWrap(Math.PI - (frozen ? frozenTheta : thetaFeedForward) + turntableOffset);
 
             // TODO tune
             if (this.mode == TurretMode.LOW_HUB) {
                 desiredFlywheelRPM = 3500;
                 desiredHoodRadians = Math.toRadians(21) * HOOD_RADIANS_TO_TICKS;
-                turntableReference = Math.toRadians(180);
+                desiredTurntableRadians = Math.toRadians(180);
             }
-
-            turntablePidController.setReference(turntableReference, ControlType.kSmartMotion);
-            turntableRefEntry.setValue(Math.toDegrees(turntableReference));
-            desiredTurntableRadians = newTurntableRadians;
         }
 
         // If MANUAL_CONTROL is enabled, set the references from shuffleboard
         if (MANUAL_CONTROL) {
-            hood.set(ControlMode.Position, Math.toRadians(hoodRefPos) * HOOD_RADIANS_TO_TICKS);
             flywheelPidController.setReference(flywheelRefVel, ControlType.kVelocity);
+            turntablePidController.setReference(angleWrap(Math.toRadians(turntableRefPos) - currentPosition.getRotation().getRadians()), ControlType.kSmartMotion);
+            hood.set(ControlMode.Position, Math.toRadians(hoodRefPos) * HOOD_RADIANS_TO_TICKS);
         } else {
             // Otherwise, use the interpolated values from hub distance
-            hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
             flywheelPidController.setReference(runFlywheel ? desiredFlywheelRPM : 0, ControlType.kVelocity);
+            turntablePidController.setReference(desiredTurntableRadians, ControlType.kSmartMotion);
+            hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
         }
 
         flywheelRefEntry.setValue(desiredFlywheelRPM);
+        turntableRefEntry.setValue(Math.toDegrees(desiredTurntableRadians));
         hoodRefEntry.setValue(Math.toDegrees(desiredHoodRadians));
+
         distOffsetEntry.setValue(distanceOffset);
         turnOffsetEntry.setValue(turntableOffset);
     }
@@ -451,11 +457,15 @@ public class TurretSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Updates the state of the turntable's `r` and `theta` coordinate system.
+     * Calculates the deltas of the `r` and `theta` coordinate system from odometry deltas.
+     * Used for `rtheta` feedforward, as well as `rtheta` state updating while vision is
+     * out of range.
+     * 
      * @param lastPosition The previous odometry position.
      * @param currentPosition The current odometry position.
+     * @return The `rtheta` deltas, as a pair of [dr (in), dtheta (rads)].
      */
-    private void manualUpdateRTheta(Pose2d lastPosition, Pose2d currentPosition) {
+    private Pair<Double, Double> calculateRThetaDeltas(Pose2d lastPosition, Pose2d currentPosition) {
         Pose2d deltas = currentPosition.relativeTo(lastPosition);
 
         double dx = Units.metersToInches(deltas.getX());
@@ -477,8 +487,28 @@ public class TurretSubsystem extends GRTSubsystem {
             + "\nr: " + r + ", theta: " + Math.toDegrees(theta)
         );
 
-        this.r = Math.hypot(x, y);
-        this.theta = (theta + dTheta) - Math.atan2(y, x);
+        double deltaR = Math.hypot(x, y) - r;
+        double deltaTheta = dTheta - Math.atan2(y, x);
+        return new Pair<>(deltaR, deltaTheta);
+    }
+
+    /**
+     * Updates `r` and `theta, applying feedforward to new `rtheta` values from manual calculation.
+     * @param states The new `rtheta` states, as a pair of [dr (in), dtheta (rads)].
+     */
+    private void applyRThetaFeedForward(Pair<Double, Double> deltas) {
+        double deltaR = deltas.getFirst(), deltaTheta = deltas.getSecond();
+
+        double newTimestamp = Timer.getFPGATimestamp();
+        double deltaLoopTime = newTimestamp - previousLoopTime;
+
+        // Velocities in in/s and radians/s respectively
+        double rVel = deltaR / deltaLoopTime;
+        double thetaVel = deltaTheta / deltaLoopTime;
+
+        rFeedForward = r + rVel * R_FF;
+        thetaFeedForward = theta + thetaVel * THETA_FF;
+        previousLoopTime = Timer.getFPGATimestamp();
     }
 
     /**
@@ -522,9 +552,17 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     public void setReject(boolean reject) {
         // Don't do anything if the turret is retracted
-        // TODO: this overrides low hub shooting; if we want to use low hub, return early here
         if (mode == TurretMode.RETRACTED) return;
+        if (mode == TurretMode.LOW_HUB) return;
         mode = reject ? TurretMode.REJECTING : TurretMode.SHOOTING;
+    }
+
+    /**
+     * Sets the mode of the turret.
+     * @param mode The mode to set.
+     */
+    public void setMode(TurretMode mode) {
+        this.mode = mode;
     }
 
     /**
@@ -584,8 +622,8 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     private ModuleState turntableAligned() {
         // Thresholding in units of radians
-        double diffRads = Math.abs(angleWrap(turntableEncoder.getPosition() 
-            - (MANUAL_CONTROL ? Math.toRadians(turntableRefPos) : desiredTurntableRadians)));
+        double diffRads = Math.abs(turntableEncoder.getPosition() 
+            - (MANUAL_CONTROL ? Math.toRadians(turntableRefPos) : desiredTurntableRadians));
         return diffRads < Math.toRadians(5) ? ModuleState.HIGH_TOLERANCE
             : diffRads < Math.toRadians(10) ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
@@ -641,7 +679,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Contrains an angle between [center - pi, center + pi]. Defaults to [0, 2pi]. 
-     * @param angle  The angle to wrap.
+     * @param angle The angle to wrap.
      * @param center The center of constraint.
      * @return The wrapped angle.
      */
@@ -694,8 +732,8 @@ public class TurretSubsystem extends GRTSubsystem {
 
     public void setFreeze(boolean frozen) {
         if (frozen) {
-            this.frozenR = this.r;
-            this.frozenTheta = this.theta;
+            this.frozenR = this.rFeedForward;
+            this.frozenTheta = this.thetaFeedForward;
         }
         this.frozen = frozen;
     }
@@ -778,10 +816,6 @@ public class TurretSubsystem extends GRTSubsystem {
         turntablePidController.setSmartMotionMaxAccel(change.value.getDouble(), 0);
     }
 
-    private void setTurntableThetaFF(EntryNotification change) {
-        TURNTABLE_THETA_FF = change.value.getDouble();
-    }
-
     private void setFlywheelRefVel(EntryNotification change) {
         flywheelRefVel = change.value.getDouble();
     }
@@ -816,6 +850,14 @@ public class TurretSubsystem extends GRTSubsystem {
 
     private void setHoodD(EntryNotification change) {
         hood.config_kD(0, change.value.getDouble());
+    }
+
+    private void setRFF(EntryNotification change) {
+        R_FF = change.value.getDouble();
+    }
+
+    private void setThetaFF(EntryNotification change) {
+        THETA_FF = change.value.getDouble();
     }
 
     private void setDisableJetson(EntryNotification change) {

@@ -16,6 +16,7 @@ import frc.robot.shuffleboard.GRTShuffleboardTab;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.IntakeSubsystem.IntakePosition;
+import frc.robot.subsystems.TurretSubsystem.TurretMode;
 import frc.robot.subsystems.internals.InternalSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
 
@@ -71,6 +72,7 @@ public class PlebAutonSequence extends CommandBase {
 
     @Override
     public void initialize() {
+        turretSubsystem.setMode(TurretMode.SHOOTING);
         turretSubsystem.setDriverOverrideFlywheel(true);
         autonTimer.start();
         shotsRequested = 0;

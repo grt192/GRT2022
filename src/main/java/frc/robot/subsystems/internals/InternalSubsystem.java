@@ -214,7 +214,8 @@ public class InternalSubsystem extends GRTSubsystem {
             motorTop.set(0);
 
             // Reset states
-            shotRequested = false;
+            // If the only ball in the system is the one we just shot, mark the shot as completed
+            if (ballCount <= 1) shotRequested = false;
             rejectingChecked = false;
             skipToleranceCheck = false;
             stagingExitBall = false;
