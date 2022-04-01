@@ -134,19 +134,6 @@ public class InternalSubsystem extends GRTSubsystem {
         boolean storageDetected = isBall(storageColor);
         boolean stagingDetected = stagingRaw >= 0.2;
 
-        // Display system state on shuffleboard
-        entranceStorageEntry.setValue(entranceStorageBall);
-        entranceEntry.setValue(entranceDetected);
-        storageEntry.setValue(storageDetected);
-        storageStagingEntry.setValue(storageStagingBall);
-        stagingEntry.setValue(stagingDetected);
-        stagingExitEntry.setValue(stagingExitBall);
-        shotRequestedEntry.setValue(shotRequested);
-        skipToleranceEntry.setValue(skipToleranceCheck);
-        entranceRawEntry.setValue(entranceRaw);
-        storageRawEntry.setValue(colorToString(storageColor));
-        stagingRawEntry.setValue(stagingRaw);
-
         // If there is a ball in the entrance, run the bottom motor.
         if (entranceDetected && !storageDetected) {
             motorBottom.set(0.3);
@@ -230,9 +217,23 @@ public class InternalSubsystem extends GRTSubsystem {
             + (storageStagingBall ? 1 : 0)
             + (stagingDetected ? 1 : 0)
             + (stagingExitBall ? 1 : 0);
-        ballCountEntry.setValue(ballCount);
-
         turretSubsystem.setBallReady(ballCount > 0);
+
+        // Display system state on shuffleboard
+        entranceStorageEntry.setValue(entranceStorageBall);
+        entranceEntry.setValue(entranceDetected);
+        storageEntry.setValue(storageDetected);
+        storageStagingEntry.setValue(storageStagingBall);
+        stagingEntry.setValue(stagingDetected);
+        stagingExitEntry.setValue(stagingExitBall);
+
+        entranceRawEntry.setValue(entranceRaw);
+        storageRawEntry.setValue(colorToString(storageColor));
+        stagingRawEntry.setValue(stagingRaw);
+
+        ballCountEntry.setValue(ballCount);
+        shotRequestedEntry.setValue(shotRequested);
+        skipToleranceEntry.setValue(skipToleranceCheck);
     }
 
     /**

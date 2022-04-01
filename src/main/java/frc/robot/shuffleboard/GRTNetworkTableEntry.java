@@ -5,6 +5,7 @@ import edu.wpi.first.networktables.NetworkTableValue;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.shuffleboard.SimpleWidget;
+import edu.wpi.first.wpilibj.shuffleboard.WidgetType;
 
 /**
  * A wrapper for NetworkTableEntry to allow different classes to do the
@@ -79,6 +80,17 @@ public class GRTNetworkTableEntry {
         return this;
     }
 
+    /**
+     * Displays this entry as the specified widget. The supported types of the widget must include 
+     * the data type of the networktable entry.
+     * 
+     * @param widget The widget to display the entry as. 
+     * @return The shuffleboard entry, for call chaining.
+     */
+    public GRTNetworkTableEntry widget(WidgetType widget) {
+        tableEntryWidget.withWidget(widget);
+        return this;
+    }
 
     public void update() {
         switch (this.type) {
