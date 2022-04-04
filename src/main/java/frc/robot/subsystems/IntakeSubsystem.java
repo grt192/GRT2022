@@ -47,15 +47,19 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     private final CANSparkMax intake;
     private final WPI_TalonSRX deploy;
-    private final DigitalInput limitSwitch;
+
+    private final DigitalInput topLimitSwitch;
+    private final Timer topTimer = new Timer();
+    private final DigitalInput bottomLimitSwitch;
+    private final Timer bottomTimer = new Timer();
+
+    private static final double TOP_LIMIT_DELAY = 0;
+    private static final double BOTTOM_LIMIT_DELAY = 0.2;
 
     private double driverPower = 0;
     private boolean driverOverride = false;
     private double autoPower = 0;
     private boolean autoOverride = false;
-
-    private static final double DELAY_LIMIT_RESET = 0.2;
-    private Double switchPressed = 0.0;
 
     private boolean skipInternalsCheck = false;
 
@@ -114,7 +118,8 @@ public class IntakeSubsystem extends GRTSubsystem {
         deploy.configReverseSoftLimitEnable(false);
         deploy.configReverseSoftLimitThreshold(IntakePosition.START.value);
 
-        limitSwitch = new DigitalInput(limitSwitchPort);
+        topLimitSwitch = new DigitalInput(tLimitSwitchPort);
+        bottomLimitSwitch = new DigitalInput(bLimitSwitchPort);
 
         // Initialize Shuffleboard entries
         shuffleboardTab = new GRTShuffleboardTab("Intake");
@@ -152,7 +157,8 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
-        limitSwitchReset();
+        delayLimitSwitchReset(bottomLimitSwitch, bottomTimer, BOTTOM_LIMIT_DELAY, IntakePosition.DEPLOYED.value);
+        delayLimitSwitchReset(topLimitSwitch, topTimer, TOP_LIMIT_DELAY, IntakePosition.START.value);
 
         // If the ball count is greater than 2, don't run intake.
         // Skip this check if disabled on shuffleboard.
@@ -208,20 +214,24 @@ public class IntakeSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Check the limit switch for whether the intake is down and reset the encoder on a delay
-     * to prevent uneven tilting on one side.
+     * Checks the target limit switch for whether the intake is touching it and resets the encoder on
+     * the given delay to prevent uneven tilting on the limit switch side.
+     * 
+     * @param limitSwitch The limit switch to check.
+     * @param timer The timer corresponding to that limit switch.
+     * @param delay The delay to reset to the position after, in seconds.
+     * @param resetPos The position to reset to, in encoder ticks.
      */
-    private void limitSwitchReset() {
-        // Check limit switch and reset encoder if detected.
-        // If the limit switch returns `false`, it's being pressed and the encoder should be reset.
+    private void delayLimitSwitchReset(DigitalInput limitSwitch, Timer timer, double delay, double resetPos) {
         if (!limitSwitch.get()) {
-            if (switchPressed == null) switchPressed = Timer.getFPGATimestamp();
+            timer.start();
         } else {
-            switchPressed = null;
+            timer.stop();
+            timer.reset();
         }
 
-        if (switchPressed != null && Timer.getFPGATimestamp() > switchPressed + DELAY_LIMIT_RESET)
-            deploy.setSelectedSensorPosition(IntakePosition.DEPLOYED.value);
+        if (timer.hasElapsed(delay))
+            deploy.setSelectedSensorPosition(resetPos);
     }
 
     /**

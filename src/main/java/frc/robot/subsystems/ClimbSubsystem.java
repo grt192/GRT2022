@@ -60,7 +60,7 @@ public class ClimbSubsystem extends GRTSubsystem {
     private static final double maxAccel = 300;
 
     private static final double SIX_MIN_POS = 0;
-    private static final double SIX_MAX_POS = 199.32318115234375;
+    private static final double SIX_MAX_POS = 208.7743377685547;
     private static final double SIX_RETRACTED_POS = 50;
 
     // Ten point arm position PID constants
@@ -85,7 +85,7 @@ public class ClimbSubsystem extends GRTSubsystem {
 
     // Debug flags
     // Whether PID tuning shuffleboard entries should be displayed
-    private static boolean DEBUG_PID = false;
+    private static boolean DEBUG_PID = true;
 
     public ClimbSubsystem() {
         // TODO: measure this

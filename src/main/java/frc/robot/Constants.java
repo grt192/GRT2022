@@ -52,7 +52,8 @@ public final class Constants {
     public static final class IntakeConstants {
         public static final int intakePort = 12;
         public static final int deploymentPort = 11;
-        public static final int limitSwitchPort = 3;
+        public static final int tLimitSwitchPort = 3;
+        public static final int bLimitSwitchPort = 4;
     }
 
     public static final class ClimbConstants {
