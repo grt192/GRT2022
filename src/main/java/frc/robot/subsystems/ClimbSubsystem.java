@@ -27,6 +27,8 @@ import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
+import frc.robot.shuffleboard.GRTNetworkTableEntry;
+import frc.robot.shuffleboard.GRTShuffleboardTab;
 
 import static frc.robot.Constants.ClimbConstants.*;
 
@@ -78,7 +80,8 @@ public class ClimbSubsystem extends GRTSubsystem {
     private static final double fifteenI = 0;
     private static final double fifteenD = 0;
 
-    private final ShuffleboardTab shuffleboardTab;
+    private final GRTShuffleboardTab shuffleboardTab;
+    private final GRTNetworkTableEntry sixPosEntry;
 
     // Debug flags
     // Whether PID tuning shuffleboard entries should be displayed
@@ -157,23 +160,25 @@ public class ClimbSubsystem extends GRTSubsystem {
         */
 
         // Initialize Shuffleboard entries
-        shuffleboardTab = Shuffleboard.getTab("Climb");
+        shuffleboardTab = new GRTShuffleboardTab("Climb");
+        sixPosEntry = shuffleboardTab.addEntry("Six pos", sixEncoder.getPosition());
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
-            shuffleboardTab.add("Six kP", sixP).getEntry()
-                .addListener(this::setSixP, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Six kI", sixI).getEntry()
-                .addListener(this::setSixI, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Six kD", sixD).getEntry()
-                .addListener(this::setSixD, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Six kFF", sixFF).getEntry()
-                .addListener(this::setSixFF, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Six maxVel", maxVel).getEntry()
-                .addListener(this::setSixMaxVel, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Six maxAccel", maxAccel).getEntry()
-                .addListener(this::setSixMaxAccel, EntryListenerFlags.kUpdate);
+            shuffleboardTab
+                .list("Six PID")
+                .addListener("kP", sixP, this::setSixP)
+                .addListener("kI", sixI, this::setSixI)
+                .addListener("kD", sixD, this::setSixD)
+                .addListener("kFF", sixFF, this::setSixFF)
+                .addListener("Max vel", maxVel, this::setSixMaxVel)
+                .addListener("Max accel", maxAccel, this::setSixMaxAccel);
         }
+    }
+
+    @Override
+    public void periodic() {
+        sixPosEntry.setValue(sixEncoder.getPosition());
     }
 
     /**
