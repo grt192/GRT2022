@@ -101,7 +101,7 @@ public class ClimbSubsystem extends GRTSubsystem {
         lastRetracted = true;
 
         six.setSoftLimit(SoftLimitDirection.kForward, (float) SIX_MAX_POS);
-        six.setSoftLimit(SoftLimitDirection.kReverse, (float) SIX_MIN_POS);
+        //six.setSoftLimit(SoftLimitDirection.kReverse, (float) SIX_MIN_POS);
         //six.enableSoftLimit(SoftLimitDirection.kForward, true);
         //six.enableSoftLimit(SoftLimitDirection.kReverse, true);
 
@@ -210,7 +210,7 @@ public class ClimbSubsystem extends GRTSubsystem {
         }
 
         //stop retracting and start extending
-        if (retractToExtend && brakeSwitch.hasElapsed(0.3)) {
+        if (retractToExtend && brakeSwitch.hasElapsed(0.15)) {
             sixBrake.set(1);
             sixBrakeEngaged = false;
             brakeLastEngaged = false;

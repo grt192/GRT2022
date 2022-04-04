@@ -33,7 +33,7 @@ public class IntakeSubsystem extends GRTSubsystem {
      * representing the counterclockwise angle from straight upwards.
      */
     public enum IntakePosition {
-        START(0), RAISED(57355), DEPLOYED(711003);
+        START(0), RAISED(10355), DEPLOYED(105248);
 
         public final double value;
 
@@ -53,8 +53,8 @@ public class IntakeSubsystem extends GRTSubsystem {
     private final DigitalInput bottomLimitSwitch;
     private final Timer bottomTimer = new Timer();
 
-    private static final double TOP_LIMIT_DELAY = 0;
-    private static final double BOTTOM_LIMIT_DELAY = 0.2;
+    private static final double TOP_LIMIT_DELAY = 0.01;
+    private static final double BOTTOM_LIMIT_DELAY = 0.01;
 
     private double driverPower = 0;
     private boolean driverOverride = false;
@@ -67,18 +67,17 @@ public class IntakeSubsystem extends GRTSubsystem {
     private IntakePosition targetPosition = IntakePosition.START;
 
     // Deploy position PID constants
-    private static final double kP = 0.1;
+    private static final double kP = 0.05;
     private static final double kI = 0;
     private static final double kD = 0;
-    private static final double kFF = 0.016;
-    private static final double cruiseVel = 20000;
-    private static final double accel = 40000;
+    private static final double kFF = 0.03;
+    private static final double cruiseVel = 7000;
+    private static final double accel = 12000;
     private static final int sCurveStrength = 3;
 
     // Shuffleboard
     private final GRTShuffleboardTab shuffleboardTab;
-    private final GRTNetworkTableEntry deployPosEntry;
-    private final GRTNetworkTableEntry deployVelEntry;
+    private final GRTNetworkTableEntry deployPosEntry, deployVelEntry, targetPosEntry;
     private final GRTNetworkTableEntry driverPowerEntry, driverOverrideEntry, autoPowerEntry, autoOverrideEntry;
 
     // Debug flags
@@ -99,12 +98,12 @@ public class IntakeSubsystem extends GRTSubsystem {
         // Initialize the deploy (intake position) motor
         deploy = new WPI_TalonSRX(deploymentPort);
         deploy.configFactoryDefault();
-        deploy.setInverted(true);
+        //deploy.setInverted(true);
         deploy.setNeutralMode(NeutralMode.Brake);
 
         deploy.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
         deploy.setSelectedSensorPosition(IntakePosition.START.value);
-        deploy.setSensorPhase(true);
+        //deploy.setSensorPhase(true);
         deploy.config_kP(0, kP);
         deploy.config_kI(0, kI);
         deploy.config_kD(0, kD);
@@ -125,6 +124,7 @@ public class IntakeSubsystem extends GRTSubsystem {
         shuffleboardTab = new GRTShuffleboardTab("Intake");
         deployPosEntry = shuffleboardTab.addEntry("Deploy pos", deploy.getSelectedSensorPosition()).at(3, 0);
         deployVelEntry = shuffleboardTab.addEntry("Deploy vel", deploy.getSelectedSensorVelocity()).at(3, 1);
+        targetPosEntry = shuffleboardTab.addEntry("Target pos", targetPosition.value).at(3, 2);
 
         driverOverrideEntry = shuffleboardTab.addEntry("Driver override", driverOverride).at(0, 0);
         driverPowerEntry = shuffleboardTab.addEntry("Driver power", driverPower).at(0, 1);
@@ -145,6 +145,9 @@ public class IntakeSubsystem extends GRTSubsystem {
                 .addListener("kFF", kFF, this::setDeployFF)
                 .addListener("Cruise Vel", cruiseVel, this::setDeployCruiseVel)
                 .addListener("Accel", accel, this::setDeployAccel);
+
+            shuffleboardTab.addEntry("IMPORTANT REMINDER", "Remember to disable phoenix tuner control and the robot before changing these values!")
+                .at(5, 0).withSize(2, 2);
         }
 
         shuffleboardTab
@@ -152,12 +155,12 @@ public class IntakeSubsystem extends GRTSubsystem {
             .at(2, 0)
             .withSize(1, 2)
             .addWidget("Raise", new RaiseIntakeCommand(this))
-            .addWidget("Deploy", new DeployIntakeCommand(this));
+            .addWidget("Deploy", new DeployIntakeCommand(this, 0));
     }
 
     @Override
     public void periodic() {
-        delayLimitSwitchReset(bottomLimitSwitch, bottomTimer, BOTTOM_LIMIT_DELAY, IntakePosition.DEPLOYED.value);
+        //delayLimitSwitchReset(bottomLimitSwitch, bottomTimer, BOTTOM_LIMIT_DELAY, IntakePosition.DEPLOYED.value);
         delayLimitSwitchReset(topLimitSwitch, topTimer, TOP_LIMIT_DELAY, IntakePosition.START.value);
 
         // If the ball count is greater than 2, don't run intake.
@@ -174,9 +177,11 @@ public class IntakeSubsystem extends GRTSubsystem {
         }
 
         intake.set(power);
+        /*
         moveDeployTo(autoDeployIntake && power > 0.1
             ? IntakePosition.DEPLOYED.value
             : targetPosition.value);
+        */
         /*
         deploy.set(ControlMode.MotionMagic, autoDeployIntake && power > 0.1
             ? IntakePosition.DEPLOYED.value
@@ -185,6 +190,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         deployPosEntry.setValue(deploy.getSelectedSensorPosition());
         deployVelEntry.setValue(deploy.getSelectedSensorVelocity());
+        targetPosEntry.setValue(targetPosition.value);
 
         driverPowerEntry.setValue(driverPower);
         driverOverrideEntry.setValue(driverOverride);
