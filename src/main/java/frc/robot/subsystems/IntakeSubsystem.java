@@ -73,8 +73,8 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     // Shuffleboard
     private final GRTShuffleboardTab shuffleboardTab;
-    private final GRTNetworkTableEntry shuffleboardDeployPosition;
-    private final GRTNetworkTableEntry shuffleboardVeloEntry;
+    private final GRTNetworkTableEntry deployPosEntry;
+    private final GRTNetworkTableEntry deployVelEntry;
     private final GRTNetworkTableEntry driverPowerEntry, driverOverrideEntry, autoPowerEntry, autoOverrideEntry;
 
     // Debug flags
@@ -118,20 +118,22 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         // Initialize Shuffleboard entries
         shuffleboardTab = new GRTShuffleboardTab("Intake");
-        shuffleboardVeloEntry = shuffleboardTab.addEntry("velo", deploy.getSelectedSensorVelocity());
-        shuffleboardDeployPosition = shuffleboardTab.addEntry("Deploy position", 0);
+        deployPosEntry = shuffleboardTab.addEntry("Deploy pos", deploy.getSelectedSensorPosition()).at(3, 0);
+        deployVelEntry = shuffleboardTab.addEntry("Deploy vel", deploy.getSelectedSensorVelocity()).at(3, 1);
 
-        driverPowerEntry = shuffleboardTab.addEntry("Driver power", driverPower);
-        driverOverrideEntry = shuffleboardTab.addEntry("Driver override", driverOverride);
-        autoPowerEntry = shuffleboardTab.addEntry("Auto power", autoPower);
-        autoOverrideEntry = shuffleboardTab.addEntry("Auto override", autoOverride);
+        driverOverrideEntry = shuffleboardTab.addEntry("Driver override", driverOverride).at(0, 0);
+        driverPowerEntry = shuffleboardTab.addEntry("Driver power", driverPower).at(0, 1);
+        autoOverrideEntry = shuffleboardTab.addEntry("Auto override", autoOverride).at(1, 0);
+        autoPowerEntry = shuffleboardTab.addEntry("Auto power", autoPower).at(1, 1);
 
-        shuffleboardTab.addToggle("Skip internals check", skipInternalsCheck, this::setSkipInternalsCheck);
+        shuffleboardTab.addToggle("Skip internals check", skipInternalsCheck, this::setSkipInternalsCheck, 0, 2);
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
             shuffleboardTab
                 .list("Deploy PID")
+                .at(4, 0)
+                .withSize(1, 4)
                 .addListener("kP", kP, this::setDeployP)
                 .addListener("kI", kI, this::setDeployI)
                 .addListener("kD", kD, this::setDeployD)
@@ -142,6 +144,8 @@ public class IntakeSubsystem extends GRTSubsystem {
 
         shuffleboardTab
             .list("Commands")
+            .at(2, 0)
+            .withSize(1, 2)
             .addWidget("Raise", new RaiseIntakeCommand(this))
             .addWidget("Deploy", new DeployIntakeCommand(this));
     }
@@ -173,8 +177,8 @@ public class IntakeSubsystem extends GRTSubsystem {
             : targetPosition.value);
         */
 
-        shuffleboardDeployPosition.setValue(deploy.getSelectedSensorPosition());
-        shuffleboardVeloEntry.setValue(deploy.getSelectedSensorVelocity());
+        deployPosEntry.setValue(deploy.getSelectedSensorPosition());
+        deployVelEntry.setValue(deploy.getSelectedSensorVelocity());
 
         driverPowerEntry.setValue(driverPower);
         driverOverrideEntry.setValue(driverOverride);
