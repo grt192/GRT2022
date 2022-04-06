@@ -33,7 +33,7 @@ public class IntakeSubsystem extends GRTSubsystem {
      * representing the counterclockwise angle from straight upwards.
      */
     public enum IntakePosition {
-        START(0), RAISED(10355), DEPLOYED(105248);
+        START(0), RAISED(0), DEPLOYED(107891), BOTTOM(107891);
 
         public final double value;
 
@@ -67,13 +67,13 @@ public class IntakeSubsystem extends GRTSubsystem {
     private IntakePosition targetPosition = IntakePosition.START;
 
     // Deploy position PID constants
-    private static final double kP = 0.05;
+    private static final double kP = 0.4;
     private static final double kI = 0;
     private static final double kD = 0;
-    private static final double kFF = 0.03;
-    private static final double cruiseVel = 7000;
-    private static final double accel = 12000;
-    private static final int sCurveStrength = 3;
+    private static final double kFF = 0.046;
+    private static final double cruiseVel = 16000;
+    private static final double accel = 26000;
+    private static final int sCurveStrength = 2;
 
     // Shuffleboard
     private final GRTShuffleboardTab shuffleboardTab;
@@ -160,7 +160,7 @@ public class IntakeSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
-        //delayLimitSwitchReset(bottomLimitSwitch, bottomTimer, BOTTOM_LIMIT_DELAY, IntakePosition.DEPLOYED.value);
+        delayLimitSwitchReset(bottomLimitSwitch, bottomTimer, BOTTOM_LIMIT_DELAY, IntakePosition.BOTTOM.value);
         delayLimitSwitchReset(topLimitSwitch, topTimer, TOP_LIMIT_DELAY, IntakePosition.START.value);
 
         // If the ball count is greater than 2, don't run intake.
@@ -182,11 +182,9 @@ public class IntakeSubsystem extends GRTSubsystem {
             ? IntakePosition.DEPLOYED.value
             : targetPosition.value);
         */
-        /*
         deploy.set(ControlMode.MotionMagic, autoDeployIntake && power > 0.1
             ? IntakePosition.DEPLOYED.value
             : targetPosition.value);
-        */
 
         deployPosEntry.setValue(deploy.getSelectedSensorPosition());
         deployVelEntry.setValue(deploy.getSelectedSensorVelocity());
@@ -205,16 +203,16 @@ public class IntakeSubsystem extends GRTSubsystem {
         if (Math.abs(targPos - currentPos) < 2000) {
             deploy.set(0);
         } else if (targPos > currentPos || targPos == IntakePosition.DEPLOYED.value) { // going down
-            if (currentPos < 50000) {
-                deploy.set(0.55);
+            if (currentPos < 20000) {
+                deploy.set(0.1);
             } else {
                 deploy.set(0.25);
             }
         } else { // going up
-            if (currentPos < 50000) {
+            if (currentPos < 20000) {
                 deploy.set(-0.1);
             } else {
-                deploy.set(-0.6);
+                deploy.set(-0.3);
             }
         }
     }

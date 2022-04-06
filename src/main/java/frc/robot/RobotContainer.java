@@ -74,10 +74,6 @@ public class RobotContainer {
     // Commands
     private final SendableChooser<Command> autonChooser;
 
-    // Debug flags
-    // Whether to set starting position manually. This position will still be overriden if an auton sequence is run.
-    private static final boolean MANUAL_START_POS = true;
-
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
@@ -119,14 +115,18 @@ public class RobotContainer {
 
         new GRTShuffleboardTab("Drivetrain").addWidget("Auton sequence", autonChooser);
 
-        // If setting initial position manually, start it at a position assuming we are facing the hub
+        double hubDist = 70;
+        Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
+
+        // Setting initial position assuming we are facing the hub
         // at a distance `hubDist` inches and 0 on the y axis.
-        // TODO: is this worth having be a flag at all?
-        if (MANUAL_START_POS) {
-            double hubDist = 70;
-            Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
+        setInitialPosition(initialPose);
+
+        // Shuffleboard manual reset button
+        new GRTShuffleboardTab("Turret").addWidget("Zero position", new InstantCommand(() -> {
             setInitialPosition(initialPose);
-        }
+            turretSubsystem.zeroEncoders();
+        }, turretSubsystem, tankSubsystem));
     }
 
     /**

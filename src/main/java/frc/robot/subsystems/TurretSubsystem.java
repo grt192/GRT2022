@@ -221,7 +221,6 @@ public class TurretSubsystem extends GRTSubsystem {
         turntableEncoder = turntable.getEncoder();
         turntableEncoder.setPositionConversionFactor(TURNTABLE_ROTATIONS_TO_RADIANS);
         turntableEncoder.setVelocityConversionFactor(TURNTABLE_ROTATIONS_TO_RADIANS);
-        turntableEncoder.setPosition(Math.toRadians(180));
 
         turntablePidController = turntable.getPIDController();
         turntablePidController.setP(turntableP);
@@ -245,7 +244,6 @@ public class TurretSubsystem extends GRTSubsystem {
         hood.setNeutralMode(NeutralMode.Brake);
 
         hood.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-        hood.setSelectedSensorPosition(0);
         hood.setSensorPhase(true);
         hood.config_kP(0, hoodP);
         hood.config_kI(0, hoodI);
@@ -268,13 +266,14 @@ public class TurretSubsystem extends GRTSubsystem {
         flywheelEncoder = flywheel.getEncoder();
         flywheelEncoder.setPositionConversionFactor(FLYWHEEL_GEAR_RATIO);
         flywheelEncoder.setVelocityConversionFactor(FLYWHEEL_GEAR_RATIO);
-        flywheelEncoder.setPosition(0);
 
         flywheelPidController = flywheel.getPIDController();
         flywheelPidController.setP(flywheelP);
         flywheelPidController.setI(flywheelI);
         flywheelPidController.setD(flywheelD);
         flywheelPidController.setFF(flywheelFF);
+
+        zeroEncoders();
 
         // Initialize limit switches
         // leftLimitSwitch = new DigitalInput(lLimitSwitchPort);
@@ -385,7 +384,7 @@ public class TurretSubsystem extends GRTSubsystem {
             theta = Math.PI + data.getSecond() - turntableEncoder.getPosition();
 
             // Reset offsets when we refresh rtheta from vision.
-            resetOffsets();
+            //resetOffsets();
         } else {
             // Otherwise, update our `r` and `theta` state system from the previous `r` and
             // `theta` values and the delta X and Y since our last position. We do this instead of using
@@ -714,6 +713,16 @@ public class TurretSubsystem extends GRTSubsystem {
         } else {
             this.mode = TurretMode.SHOOTING;
         }
+    }
+
+    /**
+     * Zeroes the turntable, flywheel, and hood encoders for manual readjustment after
+     * deployment.
+     */
+    public void zeroEncoders() {
+        flywheelEncoder.setPosition(0);
+        hood.setSelectedSensorPosition(0);
+        turntableEncoder.setPosition(Math.toRadians(180));
     }
 
     /**
