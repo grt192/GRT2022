@@ -186,14 +186,6 @@ public class ClimbSubsystem extends GRTSubsystem {
      * @param pow The power to set.
      */
     public void setSixPower(double pow) {
-      /*
-        double power = pow;
-        if (power > 0) {
-            lastRetracted = true;
-        }
-        six.set(pow);
-        */
-
         double power = pow;
         if (power < 0) {
             lastRetracted = true;

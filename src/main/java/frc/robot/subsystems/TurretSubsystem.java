@@ -353,13 +353,6 @@ public class TurretSubsystem extends GRTSubsystem {
 
     @Override
     public void periodic() {
-        turntablePosEntry.setValue(Math.toDegrees(turntableEncoder.getPosition()));
-        flywheelVeloEntry.setValue(flywheelEncoder.getVelocity());
-        hoodPosEntry.setValue(Math.toDegrees(hood.getSelectedSensorPosition() / HOOD_RADIANS_TO_TICKS));
-        jetsonDetectedEntry.setValue(jetson.turretVisionWorking());
-        driverOverrideEntry.setValue(driverOverrideFlywheel);
-        turretModeEntry.setValue(mode.toString());
-
         // Check limit switches and reset encoders if detected
         // if (leftLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MIN_RADIANS);
         // if (rightLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MAX_RADIANS);
@@ -378,7 +371,8 @@ public class TurretSubsystem extends GRTSubsystem {
         // While the flywheel is running, use the manual system values instead to prevent camera issues while the 
         // flywheel shakes the turntable.
         // If the jetson has been disabled on shuffleboard, use `rtheta` instead.
-        if (jetson.turretVisionWorking() && (!runFlywheel || mode == TurretMode.RETRACTED) && !jetson.getConsumed() && !jetsonDisabled) {
+        boolean jetsonWorking = jetson.turretVisionWorking();
+        if (jetsonWorking && (!runFlywheel || mode == TurretMode.RETRACTED) && !jetson.getConsumed() && !jetsonDisabled) {
             Pair<Double, Double> data = jetson.getData();
             r = data.getFirst();
             theta = Math.PI + data.getSecond() - turntableEncoder.getPosition();
@@ -397,8 +391,6 @@ public class TurretSubsystem extends GRTSubsystem {
 
         applyRThetaFeedForward(deltas);
         previousPosition = currentPosition;
-        rEntry.setValue(rFeedForward);
-        thetaEntry.setValue(Math.toDegrees(thetaFeedForward));
 
         // If retracted, skip interpolation calculations
         if (mode == TurretMode.RETRACTED) {
@@ -435,6 +427,16 @@ public class TurretSubsystem extends GRTSubsystem {
         turntableRefEntry.setValue(Math.toDegrees(desiredTurntableRadians));
         hoodRefEntry.setValue(Math.toDegrees(desiredHoodRadians));
 
+        turntablePosEntry.setValue(Math.toDegrees(turntableEncoder.getPosition()));
+        flywheelVeloEntry.setValue(flywheelEncoder.getVelocity());
+        hoodPosEntry.setValue(Math.toDegrees(hood.getSelectedSensorPosition() / HOOD_RADIANS_TO_TICKS));
+
+        jetsonDetectedEntry.setValue(jetsonWorking);
+        driverOverrideEntry.setValue(driverOverrideFlywheel);
+        turretModeEntry.setValue(mode.toString());
+
+        rEntry.setValue(rFeedForward);
+        thetaEntry.setValue(Math.toDegrees(thetaFeedForward));
         distOffsetEntry.setValue(distanceOffset);
         turnOffsetEntry.setValue(turntableOffset);
     }
