@@ -24,7 +24,7 @@ import frc.robot.subsystems.tank.TankSubsystem;
  * 
  * TODO: remeasure constants for new robot
  */
-public class FollowPathCommand extends RamseteCommand {
+public class FollowPathCommand /* extends RamseteCommand */ {
     // Robot constants
     private static final double TRACK_WIDTH = 0.7805022504396351;
     private static final DifferentialDriveKinematics KINEMATICS = 
@@ -55,6 +55,7 @@ public class FollowPathCommand extends RamseteCommand {
      * @param tankSubsystem The tank subsystem.
      * @param trajectory The trajectory to follow.
      */
+    /*
     public FollowPathCommand(TankSubsystem tankSubsystem, Trajectory trajectory) {
         super(
             trajectory,
@@ -72,6 +73,7 @@ public class FollowPathCommand extends RamseteCommand {
 
         tankSubsystem.resetPosition(trajectory.getInitialPose());
     }
+    */
 
     /**
      * Creates a FollowPathCommand from a given start point, list of waypoints, and end point.
@@ -81,6 +83,7 @@ public class FollowPathCommand extends RamseteCommand {
      * @param waypoints A list of waypoints the robot must pass through as a List<Translation2d>.
      * @param end The end point of the trajectory as a Pose2d.
      */
+    /*
     public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Translation2d> waypoints, Pose2d end) {
         this(
             tankSubsystem,
@@ -96,4 +99,5 @@ public class FollowPathCommand extends RamseteCommand {
             )
         );
     }
+    */
 }

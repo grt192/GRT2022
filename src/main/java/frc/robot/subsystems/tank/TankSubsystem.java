@@ -35,7 +35,7 @@ public class TankSubsystem extends GRTSubsystem {
     private final CANSparkMax rightMiddle;
     private final CANSparkMax rightBack;
 
-    private final PoseEstimatorThread poseEstimatorThread;
+    //private final PoseEstimatorThread poseEstimatorThread;
 
     private final ShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry shuffleX;
@@ -93,10 +93,10 @@ public class TankSubsystem extends GRTSubsystem {
 
         // Initialize navX AHRS
         // https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
-        AHRS ahrs = new AHRS(SPI.Port.kMXP);
+        //AHRS ahrs = new AHRS(SPI.Port.kMXP);
 
         // Start pose estimator thread
-        poseEstimatorThread = new PoseEstimatorThread(ahrs, leftEncoder, rightEncoder);
+        //poseEstimatorThread = new PoseEstimatorThread(ahrs, leftEncoder, rightEncoder);
 
         // Initialize Shuffleboard entries
         shuffleboardTab = Shuffleboard.getTab("Drivetrain");
@@ -171,6 +171,7 @@ public class TankSubsystem extends GRTSubsystem {
         rightMain.setVoltage(rightVoltage);
     }
 
+    /*
     @Override
     public void periodic() {
         // Update Shuffleboard entries
@@ -181,11 +182,13 @@ public class TankSubsystem extends GRTSubsystem {
         shuffleHeading.setValue(pose.getRotation().getRadians());
         shuffleboardField.setRobotPose(pose);
     }
+    */
 
     /**
      * Gets the estimated current position of the robot.
      * @return The estimated position of the robot as a Pose2d.
      */
+    /*
     public Pose2d getRobotPosition() {
         return poseEstimatorThread.getPosition();
     }
@@ -193,22 +196,27 @@ public class TankSubsystem extends GRTSubsystem {
     public DifferentialDriveWheelSpeeds getWheelSpeeds() {
         return poseEstimatorThread.getWheelSpeeds();
     }
+    */
 
     /**
      * Reset the robot's position to a given Pose2d.
      * @param position The position to reset the pose estimator to.
      */
+    /*
     public void resetPosition(Pose2d position) {
         poseEstimatorThread.setPosition(position);
     }
+    */
 
     /**
      * Zeros the robot's position.
      * This method zeros both the robot's translation *and* rotation.
      */
+    /*
     public void resetPosition() {
         resetPosition(new Pose2d());
     }
+    */
 
     /**
      * Squares an input value while retaining the original sign.

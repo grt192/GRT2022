@@ -219,7 +219,7 @@ public class TurretSubsystem extends GRTSubsystem {
             desiredFlywheelSpeed = 0;
         } else {
             if (jetson != null) {
-                Pose2d currentPosition = tankSubsystem.getRobotPosition();
+                Pose2d currentPosition = /* tankSubsystem.getRobotPosition() */ new Pose2d();
 
                 // If the hub is in vision range, use vision's `r` and `theta` as ground truth
                 if (jetson.turretVisionWorking()) {

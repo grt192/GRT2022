@@ -66,7 +66,7 @@ public class Robot extends TimedRobot {
         if (autonomousCommand != null) autonomousCommand.schedule();
 
         // Set InternalSubsystem initial ball count
-        robotContainer.getInternalSubsystem().setAutonInitialBallCount();
+        //robotContainer.getInternalSubsystem().setAutonInitialBallCount();
     }
 
     /** This function is called periodically during autonomous. */

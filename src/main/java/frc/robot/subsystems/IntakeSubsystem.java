@@ -16,7 +16,7 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import frc.robot.GRTSubsystem;
 import frc.robot.brownout.PowerController;
 import frc.robot.shuffleboard.GRTNetworkTableEntry;
-import frc.robot.subsystems.internals.InternalSubsystem;
+//import frc.robot.subsystems.internals.InternalSubsystem;
 
 public class IntakeSubsystem extends GRTSubsystem {
     /**
@@ -34,7 +34,7 @@ public class IntakeSubsystem extends GRTSubsystem {
         }
     }
 
-    private final InternalSubsystem internalSubsystem;
+    //private final InternalSubsystem internalSubsystem;
     // private final JetsonConnection jetson;
 
     private final CANSparkMax intake;
@@ -59,11 +59,11 @@ public class IntakeSubsystem extends GRTSubsystem {
     // TODO: measure this
     // private static final double DEGREES_TO_ENCODER_TICKS = 1.0;
 
-    public IntakeSubsystem(InternalSubsystem internalSubsystem /* , JetsonConnection jetson */) {
+    public IntakeSubsystem(/*InternalSubsystem internalSubsystem /* , JetsonConnection jetson */) {
         // TODO: measure this
         super(50);
 
-        this.internalSubsystem = internalSubsystem;
+        //this.internalSubsystem = internalSubsystem;
         // this.jetson = jetson;
 
         // Initialize the intake (roller) motor

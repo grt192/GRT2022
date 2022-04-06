@@ -19,11 +19,11 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.brownout.PowerController;
 import frc.robot.commands.internals.RequestShotCommand;
-import frc.robot.commands.tank.FollowPathCommand;
+//import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.jetson.JetsonConnection;
 import frc.robot.subsystems.IntakeSubsystem;
-import frc.robot.subsystems.TurretSubsystem;
-import frc.robot.subsystems.internals.InternalSubsystem;
+//import frc.robot.subsystems.TurretSubsystem;
+//import frc.robot.subsystems.internals.InternalSubsystem;
 import frc.robot.subsystems.tank.TankSubsystem;
 
 /**
@@ -37,9 +37,9 @@ public class RobotContainer {
 
     // Subsystems
     private final TankSubsystem tankSubsystem;
-    private final TurretSubsystem turretSubsystem = null;
-    private final IntakeSubsystem intakeSubsystem;
-    private final InternalSubsystem internalSubsystem = null;
+    //private final TurretSubsystem turretSubsystem = null;
+    //private final IntakeSubsystem intakeSubsystem;
+    //private final InternalSubsystem internalSubsystem = null;
 
     private final JetsonConnection jetson = null;
     private final PowerController powerController = null;
@@ -68,7 +68,7 @@ public class RobotContainer {
     public RobotContainer() {
         // Instantiate subsystems
         tankSubsystem = new TankSubsystem();
-        intakeSubsystem = new IntakeSubsystem(internalSubsystem);
+        //intakeSubsystem = new IntakeSubsystem(internalSubsystem);
 
         // Instantiate commands
         autonCommand = new InstantCommand();
@@ -101,6 +101,7 @@ public class RobotContainer {
         tankSubsystem.setDefaultCommand(new RunCommand(tank, tankSubsystem));
 
         // TODO: tune deadband
+        /*
         Runnable intake = () -> {
             intakeSubsystem.setIntakePower(driveController.getRightTriggerAxis() - driveController.getLeftTriggerAxis());
 
@@ -113,6 +114,7 @@ public class RobotContainer {
             intakeSubsystem.setDeployPower(deployPow);
         };
         intakeSubsystem.setDefaultCommand(new RunCommand(intake, intakeSubsystem));
+        */
     }
 
     /**
@@ -135,7 +137,9 @@ public class RobotContainer {
      * Gets the InternalSubsystem for setting initial ball count in `Robot.autonomousInit()`.
      * @return The InternalSubsystem instance.
      */
+    /*
     public InternalSubsystem getInternalSubsystem() {
         return internalSubsystem;
     }
+    */
 }
