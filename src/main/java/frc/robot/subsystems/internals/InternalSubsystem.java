@@ -186,10 +186,14 @@ public class InternalSubsystem extends GRTSubsystem {
         // alignment is fine.
         boolean rejecting = rejectingColor != ALLIANCE_COLOR;
         turretSubsystem.setReject(rejecting);
+        TurretMode turretMode = turretSubsystem.getMode();
         ModuleState turretState = turretSubsystem.getState();
-        if (shotRequested && (stagingDetected || skipToleranceCheck) && (skipToleranceCheck 
+        if (shotRequested 
+            && (stagingDetected || skipToleranceCheck) 
+            && turretMode != TurretMode.RETRACTED 
+            && (skipToleranceCheck 
             || turretState == ModuleState.HIGH_TOLERANCE
-            || ((rejecting || turretSubsystem.getMode() == TurretMode.LOW_HUB) && turretState == ModuleState.LOW_TOLERANCE))
+            || ((rejecting || turretMode == TurretMode.LOW_HUB) && turretState == ModuleState.LOW_TOLERANCE))
         ) {
             // Spin the top motor on a timer
             exitTimer.start();
