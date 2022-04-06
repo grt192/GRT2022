@@ -51,7 +51,7 @@ public class RobotContainer {
     private final InternalSubsystem internalSubsystem;
     private final ClimbSubsystem climbSubsystem;
 
-    private final JetsonConnection jetson = null;
+    private final JetsonConnection jetson;
     private final PowerController powerController;
 
     // Controllers and buttons
