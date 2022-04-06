@@ -405,8 +405,8 @@ public class TurretSubsystem extends GRTSubsystem {
 
             // TODO tune
             if (this.mode == TurretMode.LOW_HUB) {
-                desiredFlywheelRPM = 3500;
-                desiredHoodRadians = Math.toRadians(21) * HOOD_RADIANS_TO_TICKS;
+                desiredFlywheelRPM = 3000;
+                desiredHoodRadians = Math.toRadians(16) * HOOD_RADIANS_TO_TICKS;
                 desiredTurntableRadians = Math.toRadians(180);
             }
         }

@@ -30,10 +30,11 @@ public abstract class GRTSubsystem extends SubsystemBase {
     /**
      * Gets the total current being drawn by the subsystem by summing the current drawn by the supplied motor controller
      * ports on the PDH.
+     * @param powerController The PowerController instance, for calling `getCurrentDrawnFromPDH`.
      * @return The total current being drawn by the subsystem.
      */
-    public final double getTotalCurrentDrawn() {
-        return PowerController.getCurrentDrawnFromPDH(motorPorts);
+    public final double getTotalCurrentDrawn(PowerController powerController) {
+        return powerController.getCurrentDrawnFromPDH(motorPorts);
     }
 
     /**

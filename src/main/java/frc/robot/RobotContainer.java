@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -44,6 +45,8 @@ import frc.robot.subsystems.tank.TankSubsystem;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
+    private final PowerDistribution powerDistribution;
+
     // Subsystems
     private final TankSubsystem tankSubsystem;
     private final TurretSubsystem turretSubsystem;
@@ -60,7 +63,9 @@ public class RobotContainer {
         driveAButton = new JoystickButton(driveController, XboxController.Button.kA.value),
         driveBButton = new JoystickButton(driveController, XboxController.Button.kB.value),
         driveXButton = new JoystickButton(driveController, XboxController.Button.kX.value),
-        driveYButton = new JoystickButton(driveController, XboxController.Button.kY.value);
+        driveYButton = new JoystickButton(driveController, XboxController.Button.kY.value),
+        driveLBumper = new JoystickButton(driveController, XboxController.Button.kLeftBumper.value),
+        driveRBumper = new JoystickButton(driveController, XboxController.Button.kRightBumper.value);
 
     private final XboxController mechController = new XboxController(1);
     private final JoystickButton 
@@ -78,6 +83,8 @@ public class RobotContainer {
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
+        powerDistribution = new PowerDistribution();
+
         // Instantiate the Jetson connection
         jetson = new JetsonConnection();
         
@@ -90,6 +97,7 @@ public class RobotContainer {
 
         // Instantiate power controller
         powerController = new PowerController(
+            powerDistribution,
             tankSubsystem,
             turretSubsystem,
             internalSubsystem,
@@ -148,6 +156,10 @@ public class RobotContainer {
         // driveYButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
         driveXButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
 
+        driveRBumper.whenPressed(new InstantCommand(() -> {
+            turretSubsystem.setR(140);
+        }));
+
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechBButton.whenPressed(new InstantCommand(intakeSubsystem::togglePosition));
         mechXButton.whenPressed(new InstantCommand(turretSubsystem::resetOffsets));
@@ -159,9 +171,7 @@ public class RobotContainer {
             () -> turretSubsystem.setDriverOverrideFlywheel(false), 
             turretSubsystem
         ));
-        mechRBumper.whenPressed(new InstantCommand(() -> {
-            turretSubsystem.setR(140);
-        }));
+        
 
         // Car drive with the left Y axis controlling y power and the right X axis controlling angular
         tankSubsystem.setDefaultCommand(new RunCommand(() -> {
@@ -221,6 +231,10 @@ public class RobotContainer {
     public void setInitialPosition(Pose2d position) {
         tankSubsystem.resetPosition(position);
         turretSubsystem.setInitialPose(position);
+    }
+
+    public PowerDistribution getPowerDistribution() {
+        return powerDistribution;
     }
 
     /**

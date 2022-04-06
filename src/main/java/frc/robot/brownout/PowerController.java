@@ -1,24 +1,58 @@
 package frc.robot.brownout;
 
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Set;
 
 import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import frc.robot.GRTSubsystem;
+import frc.robot.shuffleboard.GRTNetworkTableEntry;
+import frc.robot.shuffleboard.GRTShuffleboardTab;
 
 /**
  * A power controller which dynamically sets current limits for subsystems to avoid brownout situations.
  */
 public class PowerController {
-    private static PowerDistribution PDH = new PowerDistribution();
+    private final PowerDistribution PDH;
 
-    private GRTSubsystem[] subsystems;
+    private final GRTSubsystem[] subsystems;
+
+    private final GRTShuffleboardTab shuffleboardTab;
+    private final Hashtable<String, GRTNetworkTableEntry> limitEntries;
+    private final Hashtable<String, GRTNetworkTableEntry> drawEntries;
 
     // TODO: Calculate total sustainable current
     private static final double totalSustainableCurrent = 200.0;
 
-    public PowerController(GRTSubsystem... subsystems) {
+    public PowerController(PowerDistribution PDH, GRTSubsystem... subsystems) {
+        this.PDH = PDH;
         this.subsystems = subsystems;
+
+        /**
+         * Drive right trigger -> freeze turret
+         */
+
+        // Dynamically initialize shuffleboard limit entries
+        shuffleboardTab = new GRTShuffleboardTab("Brownout");
+        this.limitEntries = new Hashtable<>();
+        this.drawEntries = new Hashtable<>();
+
+        for (int i = 0; i < subsystems.length; i++) {
+            GRTSubsystem subsystem = subsystems[i];
+            limitEntries.put(
+                subsystem.getName(), 
+                shuffleboardTab.addEntry(subsystem.getName() + " limit", subsystem.getMinCurrent())
+                    .at(i, 0)
+                    .widget(BuiltInWidgets.kNumberBar)
+            );
+            drawEntries.put(
+                subsystem.getName(), 
+                shuffleboardTab.addEntry(subsystem.getName() + " draw", subsystem.getTotalCurrentDrawn(this))
+                    .at(i, 1)
+                    .widget(BuiltInWidgets.kVoltageView)
+            );
+        }
     }
 
     /**
@@ -53,11 +87,14 @@ public class PowerController {
         // Check each subsystem to see if they cannot be scaled (if the resultant limit would be below their minimum current).
         // If this is the case, limit the system by its minimum and adjust the ideal ratio accordingly.
         for (GRTSubsystem subsystem : remaining) {
-            double drawn = subsystem.getTotalCurrentDrawn();
+            double drawn = subsystem.getTotalCurrentDrawn(this);
             double min = subsystem.getMinCurrent();
+
+            drawEntries.get(subsystem.getName()).setValue(drawn);
 
             if (drawn * idealRatio < min) {
                 subsystem.setCurrentLimit(min);
+                limitEntries.get(subsystem.getName()).setValue(min);
 
                 // Adjust the ratio to as if the below-minimum subsystem were excluded entirely from the calculation
                 HashSet<GRTSubsystem> cloned = new HashSet<GRTSubsystem>(remaining);
@@ -71,7 +108,9 @@ public class PowerController {
         // This acts to distribute unused limit to subsystems which are approaching their limits while maintaining that the
         // sum of all the current limits adds up to the total sustainable threshold.
         for (GRTSubsystem subsystem : remaining) {
-            subsystem.setCurrentLimit(subsystem.getTotalCurrentDrawn() * idealRatio);
+            double limit = subsystem.getTotalCurrentDrawn(this) * idealRatio;
+            subsystem.setCurrentLimit(limit);
+            limitEntries.get(subsystem.getName()).setValue(limit);
         }
     }
 
@@ -80,7 +119,7 @@ public class PowerController {
      * @param channels The channels to sum.
      * @return The total current drawn by the provided channels.
      */
-    public static double getCurrentDrawnFromPDH(int... channels) {
+    public double getCurrentDrawnFromPDH(int... channels) {
         double sum = 0;
         for (int channel : channels) {
             sum += PDH.getCurrent(channel);

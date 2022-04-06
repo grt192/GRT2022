@@ -5,7 +5,6 @@
 package frc.robot;
 
 import edu.wpi.first.cameraserver.CameraServer;
-import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -23,10 +22,8 @@ import frc.robot.subsystems.tank.TankSubsystem;
  * project.
  */
 public class Robot extends TimedRobot {
-    private Command autonomousCommand;
-
     private RobotContainer robotContainer;
-    private PowerDistribution powerDistribution;
+    private Command autonomousCommand;
 
     /**
      * This function is run when the robot is first started up and should be used for any
@@ -37,7 +34,6 @@ public class Robot extends TimedRobot {
         // Instantiate our RobotContainer. This will perform all our button bindings, and put our
         // autonomous chooser on the dashboard.
         robotContainer = new RobotContainer();
-        powerDistribution = new PowerDistribution();
 
         // Start camera server automatic capture and disable livewindow telemetry
         CameraServer.startAutomaticCapture();
@@ -67,7 +63,7 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledInit() {
         // Turn off the ring light when the robot disables
-        powerDistribution.setSwitchableChannel(false);
+        robotContainer.getPowerDistribution().setSwitchableChannel(false);
     }
 
     @Override
@@ -81,7 +77,7 @@ public class Robot extends TimedRobot {
         if (autonomousCommand != null) autonomousCommand.schedule();
 
         // Turn on the ring light
-        powerDistribution.setSwitchableChannel(true);
+        robotContainer.getPowerDistribution().setSwitchableChannel(true);
     }
 
     /** This function is called periodically during autonomous. */
@@ -97,7 +93,7 @@ public class Robot extends TimedRobot {
         if (autonomousCommand != null) autonomousCommand.cancel();
 
         // Turn on the ring light
-        powerDistribution.setSwitchableChannel(true);
+        robotContainer.getPowerDistribution().setSwitchableChannel(true);
     }
 
     /** This function is called periodically during operator control. */
@@ -114,7 +110,7 @@ public class Robot extends TimedRobot {
         CommandScheduler.getInstance().cancelAll();
 
         // Turn on the ring light
-        powerDistribution.setSwitchableChannel(true);
+        robotContainer.getPowerDistribution().setSwitchableChannel(true);
 
         // Run DT turning left and right alternating
         tankSubsystem.setCarDrivePowers(0, 1); // Rotate DT right
