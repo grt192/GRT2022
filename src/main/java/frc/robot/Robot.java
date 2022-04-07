@@ -56,7 +56,7 @@ public class Robot extends TimedRobot {
         CommandScheduler.getInstance().run();
 
         // Calculate current limits for subsystems
-        robotContainer.getPowerController().calculateLimits();
+        // robotContainer.getPowerController().calculateLimits();
     }
 
     /** This function is called once each time the robot enters Disabled mode. */

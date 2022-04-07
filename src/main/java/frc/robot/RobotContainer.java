@@ -163,11 +163,11 @@ public class RobotContainer {
         // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
         // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
         mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleLow));
-        mechLBumper.toggleWhenPressed(new StartEndCommand(
-            () -> turretSubsystem.setDriverOverrideFlywheel(true),
-            () -> turretSubsystem.setDriverOverrideFlywheel(false), 
-            turretSubsystem
-        ));
+        // mechLBumper.toggleWhenPressed(new StartEndCommand(
+        //     () -> turretSubsystem.setDriverOverrideFlywheel(true),
+        //     () -> turretSubsystem.setDriverOverrideFlywheel(false), 
+        //     turretSubsystem
+        // ));
         
 
         // Car drive with the left Y axis controlling y power and the right X axis controlling angular
@@ -203,6 +203,8 @@ public class RobotContainer {
             }
 
             turretSubsystem.setFreeze(driveController.getLeftTriggerAxis() > 0.2);
+
+            turretSubsystem.setDriverOverrideFlywheel(mechController.getLeftBumper());
         }, turretSubsystem));
 
         // Manual climb control with the right mech joystick:
