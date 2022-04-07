@@ -167,6 +167,7 @@ public class TurretSubsystem extends GRTSubsystem {
     private boolean driverOverrideFlywheel = false;
 
     private boolean ballReady = false;
+    private boolean driving = false;
     private TurretMode mode = TurretMode.SHOOTING;
 
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
@@ -358,7 +359,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // if (rightLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MAX_RADIANS);
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
-        boolean runFlywheel = (/* !tankSubsystem.isMoving() && */ ballReady) || driverOverrideFlywheel;
+        boolean runFlywheel = (!driving && ballReady) || driverOverrideFlywheel;
         runFlywheelEntry.setValue(runFlywheel);
 
         // Set turntable lazy tracking if a ball isn't ready
@@ -676,6 +677,14 @@ public class TurretSubsystem extends GRTSubsystem {
      */
     public TurretMode getMode() {
         return this.mode;
+    }
+
+    /**
+     * Sets whether the robot is currently being driven by controller input.
+     * @param driving Whethe rthe robot is being driven.
+     */
+    public void setDriving(boolean driving) {
+        this.driving = driving;
     }
 
     /**

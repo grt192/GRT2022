@@ -155,10 +155,7 @@ public class RobotContainer {
         // driveBButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
         // driveYButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
         driveXButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
-
-        driveRBumper.whenPressed(new InstantCommand(() -> {
-            turretSubsystem.setR(140);
-        }));
+        driveRBumper.whenPressed(new InstantCommand(() -> turretSubsystem.setR(140)));
 
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechBButton.whenPressed(new InstantCommand(intakeSubsystem::togglePosition));
@@ -186,8 +183,9 @@ public class RobotContainer {
                 turnPow *= 0.3;
             }
 
+            turretSubsystem.setDriving(Math.abs(yPow) + Math.abs(turnPow) > 0.1);
             tankSubsystem.setCarDrivePowers(yPow, turnPow);
-        }, tankSubsystem));
+        }, tankSubsystem, turretSubsystem));
 
         // Driver-override intake command
         intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, mechController));

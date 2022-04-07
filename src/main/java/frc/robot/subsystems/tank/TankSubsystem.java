@@ -203,19 +203,6 @@ public class TankSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Gets whether the robot is currently moving, according to the NavX's linear acceleration values
-     * and the left and right wheel speeds.
-     * @return Whether the robot is moving.
-     * TODO: is there a better way to find this?
-     */
-    public boolean isMoving() {
-        DifferentialDriveWheelSpeeds wheelSpeeds = poseEstimator.getLastWheelSpeeds();
-        return ahrs.isMoving() 
-            && Math.abs(wheelSpeeds.leftMetersPerSecond) > 0 
-            && Math.abs(wheelSpeeds.rightMetersPerSecond) > 0;
-    }
-
-    /**
      * Reset the robot's position to a given Pose2d.
      * @param position The position to reset the pose estimator to.
      */
