@@ -29,10 +29,6 @@ public class PowerController {
         this.PDH = PDH;
         this.subsystems = subsystems;
 
-        /**
-         * Drive right trigger -> freeze turret
-         */
-
         // Dynamically initialize shuffleboard limit entries
         shuffleboardTab = new GRTShuffleboardTab("Brownout");
         this.limitEntries = new Hashtable<>();

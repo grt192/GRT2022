@@ -742,7 +742,7 @@ public class TurretSubsystem extends GRTSubsystem {
     }
 
     public void setFreeze(boolean frozen) {
-        if (frozen) {
+        if (frozen && !this.frozen) {
             this.frozenR = this.rFeedForward;
             this.frozenTheta = this.thetaFeedForward;
         }

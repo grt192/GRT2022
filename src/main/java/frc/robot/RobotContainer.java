@@ -203,6 +203,8 @@ public class RobotContainer {
                 case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-3)); break;
                 default: break;
             }
+
+            turretSubsystem.setFreeze(driveController.getLeftTriggerAxis() > 0.2);
         }, turretSubsystem));
 
         // Manual climb control with the right mech joystick:
