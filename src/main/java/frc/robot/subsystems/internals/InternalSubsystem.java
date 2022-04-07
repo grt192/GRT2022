@@ -57,6 +57,10 @@ public class InternalSubsystem extends GRTSubsystem {
     private boolean rejectingChecked = false;
     private boolean skipToleranceCheck = false;
 
+    private double topPower = 0;
+    private double bottomPower = 0;
+    private boolean driverOverrideInternals = false;
+
     // Shuffleboard
     private final GRTShuffleboardTab shuffleboardTab;
     private final GRTNetworkTableEntry ballCountEntry, shotRequestedEntry, skipToleranceEntry;
@@ -136,14 +140,14 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // If there is a ball in the entrance, run the bottom motor.
         if (entranceDetected && !storageDetected) {
-            motorBottom.set(0.3);
+            bottomPower = 0.3;
             entranceTimer.start();
             entranceStorageBall = true;
         }
 
         // If 5 seconds have elapsed or the ball has progressed past entrance, stop the bottom motor
         if ((storageDetected || entranceTimer.hasElapsed(5)) && entranceTimer.get() > 0) {
-            motorBottom.set(0);
+            bottomPower = 0;
             entranceTimer.stop();
             entranceTimer.reset();
             entranceStorageBall = false;
@@ -155,8 +159,8 @@ public class InternalSubsystem extends GRTSubsystem {
         if (storageDetected && !stagingDetected && (storageColor == rejectingColor || !stagingExitBall)) {
             // Spin the bottom and top motors on a timer
             storageTimer.start();
-            motorTop.set(0.5);
-            motorBottom.set(0.3);
+            topPower = 0.5;
+            bottomPower = 0.3;
             storageStagingBall = true;
 
             if (!rejectingChecked) {
@@ -167,8 +171,8 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // If 0.5 seconds have elapsed or staging has detected the ball, stop the motors
         if (storageTimer.hasElapsed(0.5)) {
-            motorTop.set(0);
-            motorBottom.set(0);
+            topPower = 0;
+            bottomPower = 0;
             storageTimer.stop();
             storageTimer.reset();
             storageStagingBall = false;
@@ -176,7 +180,7 @@ public class InternalSubsystem extends GRTSubsystem {
 
         // If there is a ball in staging, we don't want to push it into turret, especially if there is a shot going
         if (stagingDetected) {
-            motorTop.set(0);
+            topPower = 0;
             storageStagingBall = false;
         }
 
@@ -196,8 +200,9 @@ public class InternalSubsystem extends GRTSubsystem {
             || ((rejecting || turretMode == TurretMode.LOW_HUB) && turretState == ModuleState.LOW_TOLERANCE))
         ) {
             // Spin the top motor on a timer
+            exitTimer.reset();
             exitTimer.start();
-            motorTop.set(0.5);
+            topPower = 0.5;
             stagingExitBall = true;
         }
 
@@ -205,7 +210,7 @@ public class InternalSubsystem extends GRTSubsystem {
         if (exitTimer.hasElapsed(0.5)) {
             exitTimer.stop();
             exitTimer.reset();
-            motorTop.set(0);
+            topPower = 0;
 
             // Reset states
             // If the only ball in the system is the one we just shot, mark the shot as completed
@@ -222,6 +227,10 @@ public class InternalSubsystem extends GRTSubsystem {
             + (stagingDetected ? 1 : 0)
             + (stagingExitBall ? 1 : 0);
         turretSubsystem.setBallReady(ballCount > 0);
+
+        // Set motor powers
+        motorTop.set(driverOverrideInternals ? 0.5 : topPower);
+        motorBottom.set(driverOverrideInternals ? 0.3 : bottomPower);
 
         // Display system state on shuffleboard
         entranceStorageEntry.setValue(entranceStorageBall);
@@ -241,12 +250,11 @@ public class InternalSubsystem extends GRTSubsystem {
     }
 
     /**
-     * Temporary testing function to run the internals motors at a set power.
+     * Runs the internals motors at a set power.
      * @param pow The power to run the bottom roller at.
      */
-    public void setPower(double pow) {
-        motorBottom.set(pow);
-        motorTop.set(pow);
+    public void setDriverOverride(boolean driverOverrideInternals) {
+        this.driverOverrideInternals = driverOverrideInternals;
     }
 
     /**

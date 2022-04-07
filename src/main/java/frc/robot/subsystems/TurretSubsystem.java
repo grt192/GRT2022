@@ -167,12 +167,13 @@ public class TurretSubsystem extends GRTSubsystem {
     private boolean driverOverrideFlywheel = false;
 
     private boolean ballReady = false;
-    private boolean driving = false;
+    //private boolean driving = false;
+    private final Timer drivingTimer = new Timer();
     private TurretMode mode = TurretMode.SHOOTING;
 
     private static final double TURNTABLE_ROTATIONS_TO_RADIANS = (Math.PI / 2.) / 3.142854928970337;
-    private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(47);
-    private static final double TURNTABLE_MAX_RADIANS = Math.toRadians(320);
+    private static final double TURNTABLE_MIN_RADIANS = Math.toRadians(41);
+    private static final double TURNTABLE_MAX_RADIANS = Math.toRadians(315);
 
     private static final double HOOD_RADIANS_TO_TICKS = 243732.0 / Math.toRadians(35.8029900116);
     public static final double HOOD_MIN_POS = 0.0;
@@ -359,7 +360,7 @@ public class TurretSubsystem extends GRTSubsystem {
         // if (rightLimitSwitch.get()) turntableEncoder.setPosition(TURNTABLE_MAX_RADIANS);
 
         Pose2d currentPosition = tankSubsystem.getRobotPosition();
-        boolean runFlywheel = (!driving && ballReady) || driverOverrideFlywheel;
+        boolean runFlywheel = (drivingTimer.hasElapsed(0.5) && ballReady) || driverOverrideFlywheel;
         runFlywheelEntry.setValue(runFlywheel);
 
         // Set turntable lazy tracking if a ball isn't ready
@@ -378,8 +379,8 @@ public class TurretSubsystem extends GRTSubsystem {
             r = data.getFirst();
             theta = Math.PI + data.getSecond() - turntableEncoder.getPosition();
 
-            // Reset offsets when we refresh rtheta from vision.
-            //resetOffsets();
+            // Reset theta offset when we refresh rtheta from vision.
+            turntableOffset = 0;
         } else {
             // Otherwise, update our `r` and `theta` state system from the previous `r` and
             // `theta` values and the delta X and Y since our last position. We do this instead of using
@@ -613,7 +614,7 @@ public class TurretSubsystem extends GRTSubsystem {
         double diffRPM = Math.abs(flywheelEncoder.getVelocity() 
             - (MANUAL_CONTROL ? flywheelRefVel : desiredFlywheelRPM));
 
-        return diffRPM < 75 ? ModuleState.HIGH_TOLERANCE
+        return diffRPM < 50 ? ModuleState.HIGH_TOLERANCE
             : diffRPM < 150 ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
@@ -626,8 +627,8 @@ public class TurretSubsystem extends GRTSubsystem {
         // Thresholding in units of radians
         double diffRads = Math.abs(turntableEncoder.getPosition() 
             - (MANUAL_CONTROL ? Math.toRadians(turntableRefPos) : desiredTurntableRadians));
-        return diffRads < Math.toRadians(5) ? ModuleState.HIGH_TOLERANCE
-            : diffRads < Math.toRadians(10) ? ModuleState.LOW_TOLERANCE
+        return diffRads < Math.toRadians(2.5) ? ModuleState.HIGH_TOLERANCE
+            : diffRads < Math.toRadians(7.5) ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
 
@@ -639,8 +640,8 @@ public class TurretSubsystem extends GRTSubsystem {
         // Thesholding in units of encoder ticks
         double diffTicks = Math.abs(hood.getSelectedSensorPosition() 
             - ((MANUAL_CONTROL ? hoodRefPos : desiredHoodRadians) * HOOD_RADIANS_TO_TICKS));
-        return diffTicks < Math.toRadians(8) * HOOD_RADIANS_TO_TICKS ? ModuleState.HIGH_TOLERANCE
-            : diffTicks < Math.toRadians(10) * HOOD_RADIANS_TO_TICKS ? ModuleState.LOW_TOLERANCE
+        return diffTicks < Math.toRadians(2.5) * HOOD_RADIANS_TO_TICKS ? ModuleState.HIGH_TOLERANCE
+            : diffTicks < Math.toRadians(7.5) * HOOD_RADIANS_TO_TICKS ? ModuleState.LOW_TOLERANCE
             : ModuleState.UNALIGNED;
     }
 
@@ -684,7 +685,13 @@ public class TurretSubsystem extends GRTSubsystem {
      * @param driving Whethe rthe robot is being driven.
      */
     public void setDriving(boolean driving) {
-        this.driving = driving;
+        if (!driving) {
+            drivingTimer.start();
+        } else {
+            drivingTimer.stop();
+            drivingTimer.reset();
+        }
+        //this.driving = driving;
     }
 
     /**

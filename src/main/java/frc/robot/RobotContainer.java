@@ -183,9 +183,10 @@ public class RobotContainer {
                 turnPow *= 0.3;
             }
 
-            turretSubsystem.setDriving(Math.abs(yPow) + Math.abs(turnPow) > 0.1);
+            turretSubsystem.setDriving(Math.abs(yPow) + Math.abs(turnPow) > 0.3);
+
             tankSubsystem.setCarDrivePowers(yPow, turnPow);
-        }, tankSubsystem, turretSubsystem));
+        }, tankSubsystem));
 
         // Driver-override intake command
         intakeSubsystem.setDefaultCommand(new RunIntakeCommand(intakeSubsystem, mechController));
@@ -204,8 +205,14 @@ public class RobotContainer {
 
             turretSubsystem.setFreeze(driveController.getLeftTriggerAxis() > 0.2);
 
+            // System.out.println
             turretSubsystem.setDriverOverrideFlywheel(mechController.getLeftBumper());
         }, turretSubsystem));
+
+        // Override internals power on mech right bumper
+        internalSubsystem.setDefaultCommand(new RunCommand(() -> {
+            internalSubsystem.setDriverOverride(mechController.getRightBumper());
+        }, internalSubsystem));
 
         // Manual climb control with the right mech joystick:
         // Push up to extend, down to retract; brakes are automatically set when manual control 
