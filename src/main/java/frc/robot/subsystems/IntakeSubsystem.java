@@ -35,7 +35,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     public enum IntakePosition {
         START(0), RAISED(0), DEPLOYED(107891), BOTTOM(107891);
 
-        public final double value;
+        public double value;
 
         private IntakePosition(double value) {
             this.value = value;
@@ -52,6 +52,9 @@ public class IntakeSubsystem extends GRTSubsystem {
     private final Timer topTimer = new Timer();
     private final DigitalInput bottomLimitSwitch;
     private final Timer bottomTimer = new Timer();
+
+    private double intakePosOffset = 0;
+    private boolean forcing = false;
 
     private static final double TOP_LIMIT_DELAY = 0.01;
     private static final double BOTTOM_LIMIT_DELAY = 0.01;
@@ -161,6 +164,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     @Override
     public void periodic() {
         delayLimitSwitchReset(bottomLimitSwitch, bottomTimer, BOTTOM_LIMIT_DELAY, IntakePosition.BOTTOM.value);
+        // TODO: is a top delay even necessary?
         delayLimitSwitchReset(topLimitSwitch, topTimer, TOP_LIMIT_DELAY, IntakePosition.START.value);
 
         // If the ball count is greater than 2, don't run intake.
@@ -177,14 +181,42 @@ public class IntakeSubsystem extends GRTSubsystem {
         }
 
         intake.set(power);
+
+        // boolean bottomLimitSwitchHit = !bottomLimitSwitch.get();
+
+        // // If we're at the deployed position and not in contact with the bottom limit
+        // // switch, force the intake down until it hits.
+        // if ((deploy.getSelectedSensorPosition() - IntakePosition.DEPLOYED.value) > -100 && !bottomLimitSwitchHit) {
+        //     forcing = true;
+        // }
+
+        // if (bottomLimitSwitchHit) {
+        //     // If we've contacted the bottom limit switch after forcing it down, 
+        //     // set the new reference for deploy.
+        //     if (forcing) {
+        //         // TODO: this intake forcing code assumes that the DEPLOYED and BOTTOM position
+        //         // are the same (deployed is when the intake is in contact with the hard stop).
+        //         // If this is true, we can remove BOTTOM entirely. If the deployed position needs
+        //         // to be above the hard stop, this code needs to be scrapped.
+        //         IntakePosition.DEPLOYED.value = IntakePosition.BOTTOM.value = deploy.getSelectedSensorPosition();
+        //         forcing = false;
+        //     }
+
+        //     deploy.setSelectedSensorPosition(IntakePosition.BOTTOM.value);
+        // }
+
         /*
         moveDeployTo(autoDeployIntake && power > 0.1
             ? IntakePosition.DEPLOYED.value
             : targetPosition.value);
         */
-        deploy.set(ControlMode.MotionMagic, autoDeployIntake && power > 0.1
-            ? IntakePosition.DEPLOYED.value
-            : targetPosition.value);
+        // if (forcing) {
+        //     deploy.set(0.03);
+        // } else {
+            deploy.set(ControlMode.MotionMagic, autoDeployIntake && power > 0.1
+                ? IntakePosition.DEPLOYED.value
+                : targetPosition.value);
+        // }
 
         deployPosEntry.setValue(deploy.getSelectedSensorPosition());
         deployVelEntry.setValue(deploy.getSelectedSensorVelocity());
@@ -196,6 +228,7 @@ public class IntakeSubsystem extends GRTSubsystem {
         autoOverrideEntry.setValue(autoOverride);
     }
 
+    /*
     private void moveDeployTo(double targPos) {
         double currentPos = deploy.getSelectedSensorPosition();
 
@@ -216,6 +249,7 @@ public class IntakeSubsystem extends GRTSubsystem {
             }
         }
     }
+    */
 
     /**
      * Checks the target limit switch for whether the intake is touching it and resets the encoder on

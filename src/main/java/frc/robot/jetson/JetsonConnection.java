@@ -87,9 +87,14 @@ public class JetsonConnection {
         @Override
         public void run() {
             while (true) {
+                System.out.println(socket == null 
+                    ? "socket is null"
+                    : "connected: " + socket.isConnected() + " closed: " + socket.isClosed() + " bound: " + socket.isBound()
+                );
                 try {
                     // If thread interrupted
-                    if (Thread.interrupted()) return;
+                    if (Thread.interrupted()) continue;
+                    System.out.println("not interrupted");
 
                     // Check if we need to connect
                     if (stdIn == null || socket == null || socket.isClosed() || !socket.isConnected() || !socket.isBound()) {
@@ -108,7 +113,7 @@ public class JetsonConnection {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
                     // If interrupted, exit
-                    return;
+                    continue;
                 } catch (Exception e) {
                     System.out.println("Outer exception caught in CAMERA code. Unknown error. Will keep trying to connect to socket");
                 }
@@ -159,6 +164,9 @@ public class JetsonConnection {
                     hubDistance = Double.parseDouble(data[2]);
                     ballDetected = strToBool(data[3]);
                     consumed = false;
+                } else {
+                    // FI we're not receiving prints, assume the jetsn has died
+                    socket = null;
                 }
             } catch (IOException e) {
                 e.printStackTrace();

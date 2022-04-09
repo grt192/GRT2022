@@ -63,10 +63,12 @@ public class InternalSubsystem extends GRTSubsystem {
 
     // Shuffleboard
     private final GRTShuffleboardTab shuffleboardTab;
-    private final GRTNetworkTableEntry ballCountEntry, shotRequestedEntry, skipToleranceEntry;
+    private final GRTNetworkTableEntry 
+        ballCountEntry, shotRequestedEntry, skipToleranceEntry, driverOverrideEntry;
     private final GRTNetworkTableEntry 
         entranceEntry, entranceStorageEntry, storageEntry, storageStagingEntry, stagingEntry, stagingExitEntry;
     private final GRTNetworkTableEntry entranceRawEntry, storageRawEntry, stagingRawEntry;
+    private final GRTNetworkTableEntry bottomPowerEntry, topPowerEntry;
 
     public InternalSubsystem(TurretSubsystem turretSubsystem) {
         super(15, motorPortBottom, motorPortTop);
@@ -121,10 +123,14 @@ public class InternalSubsystem extends GRTSubsystem {
         ballCountEntry = shuffleboardTab.addEntry("Ball count", ballCount).at(0, 2);
         shotRequestedEntry = shuffleboardTab.addEntry("Shot requested", shotRequested).at(1, 2);
         skipToleranceEntry = shuffleboardTab.addEntry("Skip tolerance", skipToleranceCheck).at(2, 2);
+        driverOverrideEntry = shuffleboardTab.addEntry("Driver override", driverOverrideInternals).at(3, 2);
 
         entranceRawEntry = shuffleboardTab.addEntry("Entrance raw", entrance.get()).at(0, 1);
         storageRawEntry = shuffleboardTab.addEntry("Storage color", colorToString(matchColor(colorSensorThread.getLastStorage()))).at(2, 1);
         stagingRawEntry = shuffleboardTab.addEntry("Staging raw", staging.get()).at(4, 1);
+
+        bottomPowerEntry = shuffleboardTab.addEntry("Bottom pow", bottomPower).at(0, 3);
+        topPowerEntry = shuffleboardTab.addEntry("Top pow", topPower).at(1, 3);
     }
 
     @Override
@@ -229,8 +235,11 @@ public class InternalSubsystem extends GRTSubsystem {
         turretSubsystem.setBallReady(ballCount > 0);
 
         // Set motor powers
-        motorTop.set(driverOverrideInternals ? 0.5 : topPower);
-        motorBottom.set(driverOverrideInternals ? 0.3 : bottomPower);
+        double finalTopPower = driverOverrideInternals ? 0.5 : topPower;
+        double finalBottomPower = driverOverrideInternals ? 0.3 : bottomPower;
+
+        motorTop.set(finalTopPower);
+        motorBottom.set(finalBottomPower);
 
         // Display system state on shuffleboard
         entranceStorageEntry.setValue(entranceStorageBall);
@@ -247,6 +256,10 @@ public class InternalSubsystem extends GRTSubsystem {
         ballCountEntry.setValue(ballCount);
         shotRequestedEntry.setValue(shotRequested);
         skipToleranceEntry.setValue(skipToleranceCheck);
+        driverOverrideEntry.setValue(driverOverrideInternals);
+
+        topPowerEntry.setValue(finalTopPower);
+        bottomPowerEntry.setValue(finalBottomPower);
     }
 
     /**
@@ -255,6 +268,10 @@ public class InternalSubsystem extends GRTSubsystem {
      */
     public void setDriverOverride(boolean driverOverrideInternals) {
         this.driverOverrideInternals = driverOverrideInternals;
+
+        // Turn off shotRequested if we're overriding to prevent autoshooting the 
+        // next ball.
+        if (driverOverrideInternals) shotRequested = false;
     }
 
     /**
@@ -264,7 +281,7 @@ public class InternalSubsystem extends GRTSubsystem {
      * to force a shot by skiping the tolerance check.
      */
     public void requestShot() {
-        if (shotRequested) skipToleranceCheck = true;
+        //if (shotRequested) skipToleranceCheck = true;
         shotRequested = true;
     }
 

@@ -20,7 +20,7 @@ public class RunIntakeCommand extends RunCommand {
             double leftTrigger = xboxController.getLeftTriggerAxis();
             double rightTrigger = xboxController.getRightTriggerAxis();
 
-            intakeSubsystem.setDriverPower((rightTrigger - leftTrigger) * 0.75);
+            intakeSubsystem.setDriverPower((rightTrigger - leftTrigger) * 0.85);
 
             // If the driver is supplying intake power with the triggers, override intake control
             if (leftTrigger > 0 || rightTrigger > 0) {

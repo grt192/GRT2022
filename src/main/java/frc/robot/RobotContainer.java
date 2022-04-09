@@ -176,7 +176,7 @@ public class RobotContainer {
 
             // double turn_stick = driveController.getRightX();
             double yPow = -driveController.getLeftY();
-            double turnPow = driveController.getRightX() * 0.7;
+            double turnPow = driveController.getRightX() * 0.65;
 
             if (slowMode) {
                 yPow *= 0.3;
@@ -196,9 +196,9 @@ public class RobotContainer {
         // right/left to increase/decrease theta offset.
         turretSubsystem.setDefaultCommand(new RunCommand(() -> {
             switch (mechController.getPOV()) {
-                case 0: turretSubsystem.changeDistanceOffset(3); break;
+                case 0: turretSubsystem.changeDistanceOffset(1.5); break;
                 case 90: turretSubsystem.changeTurntableOffset(Math.toRadians(3)); break;
-                case 180: turretSubsystem.changeDistanceOffset(-3); break;
+                case 180: turretSubsystem.changeDistanceOffset(-1.5); break;
                 case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-3)); break;
                 default: break;
             }
@@ -206,7 +206,7 @@ public class RobotContainer {
             turretSubsystem.setFreeze(driveController.getLeftTriggerAxis() > 0.2);
 
             // System.out.println
-            turretSubsystem.setDriverOverrideFlywheel(mechController.getLeftBumper());
+            turretSubsystem.setDriverOverrideFlywheel(mechController.getLeftBumper() || mechController.getRightBumper());
         }, turretSubsystem));
 
         // Override internals power on mech right bumper
@@ -219,8 +219,7 @@ public class RobotContainer {
         // is supplied.
         climbSubsystem.setDefaultCommand(new RunCommand(() -> {
             double pow = -mechController.getRightY();
-            climbSubsystem.setSixPower(pow);
-            climbSubsystem.setSixBrake(pow == 0);
+            climbSubsystem.driveSixArm(pow);
         }, climbSubsystem));
     }
 

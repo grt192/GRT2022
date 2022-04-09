@@ -58,8 +58,7 @@ public class ClimbSubsystem extends SubsystemBase {
     private static final double maxVel = 150;
     private static final double maxAccel = 300;
 
-    private static final double SIX_MIN_POS = 0;
-    private static final double SIX_MAX_POS = 208.7743377685547;
+    private static final double SIX_MAX_POS = 208.7743377685547 + 14.000019073486328;
     private static final double SIX_RETRACTED_POS = 50;
 
     // Ten point arm position PID constants
@@ -97,9 +96,7 @@ public class ClimbSubsystem extends SubsystemBase {
         lastRetracted = true;
 
         six.setSoftLimit(SoftLimitDirection.kForward, (float) SIX_MAX_POS);
-        //six.setSoftLimit(SoftLimitDirection.kReverse, (float) SIX_MIN_POS);
-        //six.enableSoftLimit(SoftLimitDirection.kForward, true);
-        //six.enableSoftLimit(SoftLimitDirection.kReverse, true);
+        six.enableSoftLimit(SoftLimitDirection.kForward, true);
 
         sixEncoder = six.getEncoder();
         sixEncoder.setPosition(0);
@@ -181,12 +178,13 @@ public class ClimbSubsystem extends SubsystemBase {
      * Manually sets the six winch power.
      * @param pow The power to set.
      */
-    public void setSixPower(double pow) {
+    public void driveSixArm(double pow) {
         double power = pow;
         if (power < 0) {
+            if (sixEncoder.getPosition() <= 0) return;
             lastRetracted = true;
         }
-        
+
         if (lastRetracted && brakeLastEngaged && (power > 0)) {
             System.out.println();
             brakeSwitch.start();
@@ -199,18 +197,26 @@ public class ClimbSubsystem extends SubsystemBase {
 
         //stop retracting and start extending
         if (retractToExtend && brakeSwitch.hasElapsed(0.15)) {
-            sixBrake.set(1);
             sixBrakeEngaged = false;
             brakeLastEngaged = false;
             retractToExtend = false;
             brakeSwitch.stop();
             brakeSwitch.reset();
         }
-        
-        // set power and brake mode
-        six.set(power);
-        // brake engaged -> not powered, disengaged -> powered
-        sixBrake.set(sixBrakeEngaged ? 0 : 1);
+
+        // Set power and brake mode
+        setSixPower(power);
+    }
+
+    /**
+     * Sets the six arm power, automaticaly disengaging the brake when going up.
+     * @param pow The power to set.
+     */
+    private void setSixPower(double pow) {
+        six.set(pow);
+
+        // Disengage the brake when the six motor is going up (positive power).
+        sixBrake.set(pow > 0 ? 1 : 0);
     }
 
     /**

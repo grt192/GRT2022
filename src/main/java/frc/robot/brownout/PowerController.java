@@ -2,6 +2,7 @@ package frc.robot.brownout;
 
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
 
 import edu.wpi.first.wpilibj.PowerDistribution;
@@ -39,14 +40,24 @@ public class PowerController {
             limitEntries.put(
                 subsystem.getName(), 
                 shuffleboardTab.addEntry(subsystem.getName() + " limit", subsystem.getMinCurrent())
-                    .at(i, 0)
+                    .at(i * 2, 0)
+                    .withSize(2, 1)
                     .widget(BuiltInWidgets.kNumberBar)
+                    .properties(
+                        Map.entry("Min", 0),
+                        Map.entry("Max", totalSustainableCurrent)
+                    )
             );
             drawEntries.put(
                 subsystem.getName(), 
                 shuffleboardTab.addEntry(subsystem.getName() + " draw", subsystem.getTotalCurrentDrawn(this))
-                    .at(i, 1)
-                    .widget(BuiltInWidgets.kVoltageView)
+                    .at(i * 2, 1)
+                    .withSize(2, 1)
+                    .widget(BuiltInWidgets.kNumberBar)
+                    .properties(
+                        Map.entry("Min", 0),
+                        Map.entry("Max", totalSustainableCurrent)
+                    )
             );
         }
     }

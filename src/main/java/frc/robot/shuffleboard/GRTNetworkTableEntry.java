@@ -1,5 +1,7 @@
 package frc.robot.shuffleboard;
 
+import java.util.Map;
+
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableValue;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
@@ -77,6 +79,18 @@ public class GRTNetworkTableEntry {
      */
     public GRTNetworkTableEntry withSize(int width, int height) {
         tableEntryWidget.withSize(width, height);
+        return this;
+    }
+
+    /**
+     * Sets the given properties of this entry.
+     * 
+     * @param properties The properties, as a list of map entries.
+     * @return The shuffeboard entry, for call chaining.
+     */
+    @SafeVarargs
+    public final GRTNetworkTableEntry properties(Map.Entry<? extends String, ? extends Object>... properties) {
+        tableEntryWidget.withProperties(Map.ofEntries(properties));
         return this;
     }
 
