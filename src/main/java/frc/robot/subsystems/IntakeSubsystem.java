@@ -53,7 +53,7 @@ public class IntakeSubsystem extends GRTSubsystem {
     private final DigitalInput bottomLimitSwitch;
     private final Timer bottomTimer = new Timer();
 
-    private double intakePosOffset = 0;
+    public double intakePosOffset = 0;
     private boolean forcing = false;
 
     private static final double TOP_LIMIT_DELAY = 0.01;
@@ -213,9 +213,11 @@ public class IntakeSubsystem extends GRTSubsystem {
         // if (forcing) {
         //     deploy.set(0.03);
         // } else {
-            deploy.set(ControlMode.MotionMagic, autoDeployIntake && power > 0.1
-                ? IntakePosition.DEPLOYED.value
-                : targetPosition.value);
+            deploy.set(ControlMode.MotionMagic, 
+                (autoDeployIntake && power > 0.1
+                    ? IntakePosition.DEPLOYED.value
+                    : targetPosition.value) 
+                + intakePosOffset);
         // }
 
         deployPosEntry.setValue(deploy.getSelectedSensorPosition());
@@ -268,8 +270,10 @@ public class IntakeSubsystem extends GRTSubsystem {
             timer.reset();
         }
 
-        if (timer.hasElapsed(delay))
+        if (timer.hasElapsed(delay)) {
             deploy.setSelectedSensorPosition(resetPos);
+            intakePosOffset = 0;
+        }
     }
 
     /**
