@@ -58,7 +58,7 @@ public class ClimbSubsystem extends SubsystemBase {
     private static final double maxVel = 150;
     private static final double maxAccel = 300;
 
-    private static final double SIX_MAX_POS = 208.7743377685547 + 14.000019073486328;
+    private static final double SIX_MAX_POS = 175;
     private static final double SIX_RETRACTED_POS = 50;
 
     // Ten point arm position PID constants
@@ -72,6 +72,8 @@ public class ClimbSubsystem extends SubsystemBase {
     private boolean retractToExtend = false;
     private boolean brakeLastEngaged = true;
     private Timer brakeSwitch;
+    private boolean lowerLimit = true;
+
 
     // Fifteen point arm position PID constants
     private static final double fifteenP = 0.125;
@@ -109,52 +111,11 @@ public class ClimbSubsystem extends SubsystemBase {
         sixBrake = new WPI_TalonSRX(sixBrakePort);
         sixBrake.configFactoryDefault();
 
-        // Initialize ten point arm NEO, encoder PID, and solenoid brake
-        /*
-        ten = new CANSparkMax(tenMotorPort, MotorType.kBrushless);
-        ten.restoreFactoryDefaults();
-        ten.setIdleMode(IdleMode.kBrake);
-
-        tenEncoder = ten.getEncoder();
-        tenEncoder.setPosition(0);
-
-        tenPidController = ten.getPIDController();
-        tenPidController.setP(tenP);
-        tenPidController.setI(tenI);
-        tenPidController.setD(tenD);
-
-        tenBrake = new WPI_TalonSRX(tenBrakePort);
-        tenBrake.configFactoryDefault();
-
-        // Initialize ten point arm solenoid release mechanisms
-        tenSolenoidMain = new WPI_TalonSRX(tenLeftSolenoidPort);
-        tenSolenoidMain.configFactoryDefault();
-
-        tenSolenoidFollow = new WPI_TalonSRX(tenRightSolenoidPort);
-        tenSolenoidFollow.configFactoryDefault();
-        tenSolenoidFollow.follow(tenSolenoidMain);
-
-        // Initialize fifteen point arm 775, encoder PID, and follower
-        fifteenMain = new WPI_TalonSRX(fifteenLeftPort);
-        fifteenMain.configFactoryDefault();
-        fifteenMain.setNeutralMode(NeutralMode.Brake);
-
-        fifteenMain.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-        fifteenMain.setSelectedSensorPosition(0);
-        fifteenMain.setSensorPhase(false);
-        fifteenMain.config_kP(0, fifteenP);
-        fifteenMain.config_kI(0, fifteenI);
-        fifteenMain.config_kD(0, fifteenD);
-
-        fifteenFollow = new WPI_TalonSRX(fifteenRightPort);
-        fifteenFollow.configFactoryDefault();
-        fifteenFollow.follow(fifteenMain);
-        fifteenMain.setNeutralMode(NeutralMode.Brake);
-        */
-
         // Initialize Shuffleboard entries
         shuffleboardTab = new GRTShuffleboardTab("Climb");
         sixPosEntry = shuffleboardTab.addEntry("Six pos", sixEncoder.getPosition());
+        shuffleboardTab.addToggle("lower limit on", lowerLimit, this::setLowerLimit, 4, 0);
+
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
@@ -181,8 +142,17 @@ public class ClimbSubsystem extends SubsystemBase {
     public void driveSixArm(double pow) {
         double power = pow;
         if (power < 0) {
-            if (sixEncoder.getPosition() <= 0) return;
+            if (lowerLimit && sixEncoder.getPosition() <= 0) {
+                setSixPower(0);
+                lastRetracted = true;
+                return;
+            }
             lastRetracted = true;
+        }
+
+        if (power > 0 && sixEncoder.getPosition() >= SIX_MAX_POS) {
+            setSixPower(0);
+            return;
         }
 
         if (lastRetracted && brakeLastEngaged && (power > 0)) {
@@ -293,4 +263,9 @@ public class ClimbSubsystem extends SubsystemBase {
     private void setSixMaxAccel(EntryNotification change) {
         sixPidController.setSmartMotionMaxAccel(change.value.getDouble(), 0);
     }
+
+    private void setLowerLimit(EntryNotification change) {
+        lowerLimit = change.value.getBoolean();
+    }
+    
 }

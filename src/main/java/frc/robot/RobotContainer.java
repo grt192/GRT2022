@@ -21,6 +21,7 @@ import frc.robot.brownout.PowerController;
 import frc.robot.commands.intake.DeployIntakeCommand;
 import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.commands.intake.RunIntakeCommand;
+import frc.robot.commands.internals.OverrideInternalsCommand;
 import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.AutonBlueBottomSequence;
 import frc.robot.commands.tank.AutonBlueMiddleSequence;
@@ -184,7 +185,6 @@ public class RobotContainer {
             }
 
             turretSubsystem.setDriving(Math.abs(yPow) + Math.abs(turnPow) > 0.3);
-
             tankSubsystem.setCarDrivePowers(yPow, turnPow);
         }, tankSubsystem));
 
@@ -204,15 +204,10 @@ public class RobotContainer {
             }
 
             turretSubsystem.setFreeze(driveController.getLeftTriggerAxis() > 0.2);
-
-            // System.out.println
-            turretSubsystem.setDriverOverrideFlywheel(mechController.getLeftBumper() || mechController.getRightBumper());
         }, turretSubsystem));
 
-        // Override internals power on mech right bumper
-        internalSubsystem.setDefaultCommand(new RunCommand(() -> {
-            internalSubsystem.setDriverOverride(mechController.getRightBumper());
-        }, internalSubsystem));
+        // Override internals and flywheel on mech left and right bumpers
+        internalSubsystem.setDefaultCommand(new OverrideInternalsCommand(internalSubsystem, turretSubsystem, mechController));
 
         // Manual climb control with the right mech joystick:
         // Push up to extend, down to retract; brakes are automatically set when manual control 
