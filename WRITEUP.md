@@ -158,21 +158,29 @@ While vision is out of range (in the turntable's blind spot) or not working (fly
 modify its internal states from `TankSubsystem` localization deltas. This is done by creating a polar coordinate system 
 with the robot lying on the x-axis a distance `r` and facing an angle `theta` from the hub.
 
-![IMG-4283](https://user-images.githubusercontent.com/60120929/162667303-702bf9a9-b417-4350-889b-60ed466afa7b.jpg)
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/60120929/162667303-702bf9a9-b417-4350-889b-60ed466afa7b.jpg" width="700px">
+</p>
 
 When the robot moves, the delta x and y can be retrieved from localization. Using the deltas, we can calculate `h = Math.hypot(dx, dy)`
 and `alpha = Math.atan2(-dy, dx)`.
 
-![IMG-4284](https://user-images.githubusercontent.com/60120929/162667299-c2bad0ce-bbdf-40a9-a784-e955f1690d7f.jpg)
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/60120929/162667299-c2bad0ce-bbdf-40a9-a784-e955f1690d7f.jpg" width="700px">
+</p>
 
 Using `h` and `alpha`, we can calculate the new `r` value, as well as the angle `phi`.
 
-![IMG-4285](https://user-images.githubusercontent.com/60120929/162667295-cbf1ac42-8360-4374-a973-cfbdae04e4ef.jpg)
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/60120929/162667295-cbf1ac42-8360-4374-a973-cfbdae04e4ef.jpg" width="700px">
+</p>
 
 To calculate the new `theta`, take the total angle `theta + dtheta` and subtract the angle `phi` between the old and new 
 "x-axes". 
 
-![IMG-4286](https://user-images.githubusercontent.com/60120929/162668298-190d8620-19c3-4eb8-ae65-847828932742.jpg)
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/60120929/162668298-190d8620-19c3-4eb8-ae65-847828932742.jpg" width="700px">
+</p>
 
 The turntable reference is the supplemental angle to `theta`, or `Math.PI - theta` radians.
 
@@ -219,7 +227,76 @@ private Pair<Double, Double> calculateRThetaDeltas(Pose2d lastPosition, Pose2d c
 ##### [`TurretSubsystem` L462-496](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L462-L496)
 
 ### Interpolation
-[...]
+To find the flywheel speed and hood angle that would work for the turret's current hub distance, `TurretSubsystem` 
+linearly interpolates flywheel RPM and hood degrees from known manual testing data points, recorded in the following
+[spreadsheet](https://docs.google.com/spreadsheets/d/1hAsBn0KIxucuwOv96UMS3bZOrim03YxqXL-2-pBrjzI/edit?usp=sharing).
+
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/60120929/162670097-63f1183c-8f15-473d-a90d-0830b2b6153e.png" width="700px">
+    <img src="https://user-images.githubusercontent.com/60120929/162670129-8a0280be-02f1-44d2-b035-4bf4287bdeaf.png" width="700px">
+</p>
+
+In code, these values were stored in a `double[][]` interpolation table representing tuples of `[hub dist (in), 
+flywheel speed (RPM), hood angle (degs)]`.
+```java
+private static final double[][] INTERPOLATION_TABLE = {
+    { 59, 4600, 0 },
+    // { 69, 5000, 7 },
+    { 75, 4800, 8 },
+    { 88, 5100, 13.5 },
+    // { 91, 4950, 10 },
+    { 112, 5300, 17 },
+    { 139, 5600, 20 },
+    { 175, 6000, 25 },
+    { 202, 6400, 30 },
+    { 221, 6800, 36 }
+};
+```
+##### [`TurretSubsystem` L132-143](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L132-L143)
+
+<!-- reword -->
+To interpolate values for any hub distance, draw a line from the immediately lower distance known data point to the 
+immediately greater distance known data point; the intersection of that line and the current hub distance is the interpolated
+value.
+```java
+/**
+ * Interpolate the hood angle and flywheel RPM from the hub distance and interpolation 
+ * table. If rejecting, scale down flywheel speed to prevent scoring.
+ */
+private void interpolateFlywheelHoodRefs(double r) {
+    // Apply offset and clamp between minimum and maximum hub distance entries
+    // TODO: clamp slightly below min and above max?
+    double hubDistance = Math.min(Math.max(r + distanceOffset, 
+        INTERPOLATION_TABLE[0][0]), INTERPOLATION_TABLE[INTERPOLATION_TABLE.length - 1][0]);
+
+    for (int i = 1; i < INTERPOLATION_TABLE.length; i++) {
+        double[] above = INTERPOLATION_TABLE[i];
+        double[] below = INTERPOLATION_TABLE[i - 1];
+
+        double rTop = above[0], flywheelTop = above[1], hoodAngleTop = above[2];
+        double rBottom = below[0], flywheelBottom = below[1], hoodAngleBottom = below[2];
+
+        // If the entry's distance is above the current distance, the current distance
+        // is between the entry and the previous entry.
+        if (rTop > hubDistance) {
+            // Where x axis is distance d, y axis is flywheel RPM f, the top and bottom
+            // points are A and B, and the interpolated point is C:
+            // m = (f_A - f_B) / (d_A - d_B)
+            // C = (d_B + (d_C - d_B), mx) = (d_C, md_C)
+            double flywheelSlope = (flywheelTop - flywheelBottom) / (rTop - rBottom);
+            desiredFlywheelRPM = flywheelBottom + flywheelSlope * (hubDistance - rBottom);
+            if (mode == TurretMode.REJECTING && !SKIP_REJECTION) desiredFlywheelRPM *= 0.5;
+
+            double hoodSlope = (hoodAngleTop - hoodAngleBottom) / (rTop - rBottom);
+            desiredHoodRadians = Math.toRadians(hoodAngleBottom + hoodSlope * (hubDistance - rBottom));
+            return;
+        }
+    }
+}
+```
+##### [`TurretSubsystem` L517-550](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L517-L550)
+
+While [...], [...].
 
 ## Vision
 [...]
