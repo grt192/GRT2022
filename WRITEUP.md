@@ -297,5 +297,74 @@ private void interpolateFlywheelHoodRefs(double r) {
 
 While [...], [...].
 
+### PID and Alignment
+When the desired hood, flywheel, and turntable references are calculated from `rtheta` and interpolation, the motors are 
+set using PID control. The flywheel NEO is controlled with `kVelocity` PID in units of flywheel RPM (converting from NEO
+to flywheel RPM with the gear ratio) and the turntable with `kSmartMotion` in units of radians. Talons don't support the
+conversion factor API, but the hood uses `Position` PID with references converted from radians to ticks before being set.
+```java
+flywheelPidController.setReference(runFlywheel ? desiredFlywheelRPM : 0, ControlType.kVelocity);
+turntablePidController.setReference(desiredTurntableRadians, ControlType.kSmartMotion);
+hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
+```
+##### [`TurretSubsystem` L423-425](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L423-L425)
+
+To represent whether a module (hood, flywheel, turntable) is aligned and ready to shoot, their current position or velocity
+is thresholded against the target value and converted into a `ModuleState` enum representing whether they are in `HIGH_TOLERANCE` 
+alignment, `LOW_TOLERANCE` alignment, or completely unaligned.
+```java
+public enum ModuleState {
+    HIGH_TOLERANCE, LOW_TOLERANCE, UNALIGNED;
+
+    @Override
+    public String toString() {
+        switch (this) {
+            case HIGH_TOLERANCE: return "HIGH_TOLERANCE";
+            case LOW_TOLERANCE: return "LOW_TOLERANCE";
+            case UNALIGNED: return "UNALIGNED";
+        }
+        return "UNKNOWN";
+    }
+}
+```
+##### [`TurretSubsystem` L69-81](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L69-L81)
+```java
+/**
+ * Gets the state of the turntable (whether it is aligned to the hub). 
+ * @return The state of the turntable.
+ */
+private ModuleState turntableAligned() {
+    // Thresholding in units of radians
+    double diffRads = Math.abs(turntableEncoder.getPosition()
+        - (MANUAL_CONTROL ? Math.toRadians(turntableRefPos) : desiredTurntableRadians));
+    return diffRads < Math.toRadians(2.5) ? ModuleState.HIGH_TOLERANCE
+        : diffRads < Math.toRadians(7.5) ? ModuleState.LOW_TOLERANCE
+        : ModuleState.UNALIGNED;
+}
+```
+##### [`TurretSubsystem` L622-633](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L622-L633), similar for `hoodReady()` and `flywheelReady()`
+
+The state of the entire subsystem (for use in internals) is the lowest module state. [...]
+
+### Debug flags
+<!-- necessary? -->
+To make testing and feature toggling easier, instead of repeatedly commenting and uncommenting code debug flags were used.
+[...]
+```java
+// Whether rtheta (`r`, `theta`, `dx`, `dy`, `dtheta`, `alpha`, `beta`, `x`, `y`, `h`) system states 
+// should be printed.
+private static boolean PRINT_STATES = false;
+// Whether current system tolerances (flywheel, hood, turntable) should be printed.
+private static boolean PRINT_TOLERANCES = false;
+// Whether PID tuning shuffleboard entries should be displayed.
+private static boolean DEBUG_PID = true;
+// Whether rtheta logic should be skipped and the turntable, hood, and flywheel references 
+// should be manually set through shuffleboard.
+private static boolean MANUAL_CONTROL = false;
+// Whether the turret should fire at full speed regardless of rejection logic.
+private static boolean SKIP_REJECTION = true;
+```
+##### [`TurretSubsystem` L195-206](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L195-L206)
+
 ## Vision
 [...]
