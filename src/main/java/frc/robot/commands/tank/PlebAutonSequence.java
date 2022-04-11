@@ -31,6 +31,7 @@ public class PlebAutonSequence extends CommandBase {
 
     private final Timer autonTimer = new Timer();
     private final Timer forceTimer = new Timer();
+    private final Timer internalsTimer = new Timer();
 
     private int shotsRequested = 0;
     private boolean complete = false;
@@ -101,20 +102,25 @@ public class PlebAutonSequence extends CommandBase {
         // This runs once immediately and after every successful shot.
         // If we're not requesting a shot, request one and reset the force timer.
         // End the command after shooting twice.
-        if (!internalSubsystem.getShotRequested()) {
+        if ((!internalSubsystem.getDriverOverride() && !internalSubsystem.getShotRequested()) || internalsTimer.hasElapsed(1)) {
             if (doneDriving && shotsRequested == 2) {
-                intakeSubsystem.setPosition(IntakePosition.RAISED);
+                intakeSubsystem.setPosition(IntakePosition.RAISED); // TODO: is this needed? we;re already composed within the sequence to be followed by a RaiseIntakeCommand
                 completedEntry.setValue(true);
                 complete = true;
             }
             forceTimer.reset();
+            internalsTimer.stop();
+            internalsTimer.reset();
+
+            internalSubsystem.setDriverOverride(false);
             internalSubsystem.requestShot();
             shotsRequested++;
         }
 
         // Force a shot if we haven't shot in 4 seconds
         if (forceTimer.hasElapsed(4)) {
-            internalSubsystem.requestShot();
+            internalSubsystem.setDriverOverride(true);
+            internalsTimer.start();
         }
     }
 

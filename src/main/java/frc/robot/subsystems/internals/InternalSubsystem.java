@@ -275,6 +275,14 @@ public class InternalSubsystem extends GRTSubsystem {
     }
 
     /**
+     * Gets whether the driver is overriding internals.
+     * @return Whether driver override is active.
+     */
+    public boolean getDriverOverride() {
+        return driverOverrideInternals;
+    }
+
+    /**
      * Request that a ball be loaded and shot.
      * The ball will *actually* be shot when the turret is aimed and ready.
      * Calling this while a shot is already requested will tell internals
