@@ -19,7 +19,7 @@ public class AutonRedBottomSequence extends GRTAutonSequence {
         Units.inchesToMeters(41.328), 
         Units.inchesToMeters(-44.575), 
         Rotation2d.fromDegrees(-66)); // TODO: are negative angles ok?
-    private static final Pose2d ballOnePose = localizeBallCoordinate(RIGHT_BOTTOM_RED, -32.2517702051);
+    private static final Pose2d ballOnePose = localizeToRobotFront(RIGHT_BOTTOM_RED, -32.2517702051);
 
     public AutonRedBottomSequence(RobotContainer robotContainer) {
         super(robotContainer, initialPose, ballOnePose);

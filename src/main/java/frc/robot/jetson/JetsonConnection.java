@@ -9,6 +9,7 @@ import java.util.Arrays;
 
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.HttpCamera;
+import edu.wpi.first.math.Pair;
 
 import static frc.robot.Constants.JetsonConstants.*;
 
@@ -17,7 +18,7 @@ public class JetsonConnection {
 
     public JetsonConnection() {
         // Start turret HTTP stream
-        HttpCamera turretCam = createCamera("10.1.92.94", 5801);
+        HttpCamera turretCam = createCamera(jetsonIP, 5801);
         CameraServer.startAutomaticCapture(turretCam);
 
         runnable = new JetsonConnectionRunnable();
@@ -36,28 +37,29 @@ public class JetsonConnection {
     }
 
     /**
-     * Gets the calculated turret angle.
-     * @return The desired turntable angle.
+     * Gets the jetson data as a pair representing [hub dist, turret theta].
+     * Calling this method automatically marks the current jetson data as consumed and stale.
+     * @return The jetson data, in the form of [hub dist (in), turret theta (rads)].
      */
-    public double getTurretTheta() { 
-        return runnable.getTurretTheta(); 
-    }
-
-    /**
-     * Gets the calculated hub distance.
-     * @return The distance from the camera to the hub.
-     */
-    public double getHubDistance() { 
-        return runnable.getHubDistance(); 
+    public Pair<Double, Double> getData() {
+        return runnable.getData();
     }
 
     /**
      * Gets whether a ball is in range of the intake camera.
      * @return Whether a ball is in intake range.
      */
-    public boolean ballDetected() { 
-        return runnable.ballDetected(); 
-    } 
+    public boolean ballDetected() {
+        return runnable.ballDetected();
+    }
+
+    /**
+     * Gets whether the current jetson data is stale (already consumed).
+     * @return Whether the jetson data is stale.
+     */
+    public boolean getConsumed() {
+        return runnable.getConsumed();
+    }
 
     /**
      * Creates an MJPEG camera over the Jetson connection.
@@ -73,8 +75,9 @@ public class JetsonConnection {
         private BufferedReader stdIn;
     
         // Bool for connection status
-        public boolean isConnected = false;
-    
+        private boolean isConnected = false;
+        private boolean consumed = false;
+
         // Camera data
         private boolean turretVisionStatus = false; // Can the camera provide turret vision data?
         private double turretTheta = 0; // Delta theta of turret to target
@@ -84,9 +87,14 @@ public class JetsonConnection {
         @Override
         public void run() {
             while (true) {
+                System.out.println(socket == null 
+                    ? "socket is null"
+                    : "connected: " + socket.isConnected() + " closed: " + socket.isClosed() + " bound: " + socket.isBound()
+                );
                 try {
                     // If thread interrupted
-                    if (Thread.interrupted()) return;
+                    if (Thread.interrupted()) continue;
+                    System.out.println("not interrupted");
 
                     // Check if we need to connect
                     if (stdIn == null || socket == null || socket.isClosed() || !socket.isConnected() || !socket.isBound()) {
@@ -105,7 +113,7 @@ public class JetsonConnection {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
                     // If interrupted, exit
-                    return;
+                    continue;
                 } catch (Exception e) {
                     System.out.println("Outer exception caught in CAMERA code. Unknown error. Will keep trying to connect to socket");
                 }
@@ -149,12 +157,16 @@ public class JetsonConnection {
                 if (in != null) {
                     String[] data = in.replace("(", "").replace(")", "").split(",");
 
-                    // System.out.println(Arrays.toString(data));
+                    System.out.println(Arrays.toString(data));
 
                     turretVisionStatus = strToBool(data[0]);
                     turretTheta = Double.parseDouble(data[1]);
                     hubDistance = Double.parseDouble(data[2]);
                     ballDetected = strToBool(data[3]);
+                    consumed = false;
+                } else {
+                    // FI we're not receiving prints, assume the jetsn has died
+                    socket = null;
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -179,33 +191,21 @@ public class JetsonConnection {
          * hub is currently in the turntable blind spot.
          * @return Whether turret vision is working.
          */
-        public boolean turretVisionWorking() { 
-            return turretVisionStatus; 
+        public boolean turretVisionWorking() {
+            return isConnected && turretVisionStatus; 
         }
 
-        /**
-         * Gets the calculated turret angle.
-         * @return The desired turntable angle.
-         */
-        public double getTurretTheta() { 
-            return turretTheta; 
+        public Pair<Double, Double> getData() {
+            consumed = true;
+            return new Pair<>(hubDistance, turretTheta);
         }
 
-        /**
-         * Gets the calculated hub distance.
-         * @return The distance from the camera to the hub.
-         */
-        public double getHubDistance() { 
-            return hubDistance; 
-        }
-
-        /**
-         * Gets whether a ball is in range of the intake camera.
-         * @return Whether a ball is in intake range.
-         */
-        public boolean ballDetected() { 
+        public boolean ballDetected() {
             return ballDetected; 
         }
 
+        public boolean getConsumed() {
+            return consumed;
+        }
     }
 }

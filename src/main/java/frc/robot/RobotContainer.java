@@ -4,17 +4,13 @@
 
 package frc.robot;
 
-import java.util.List;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.EntryListenerFlags;
-import edu.wpi.first.networktables.EntryNotification;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -25,6 +21,7 @@ import frc.robot.brownout.PowerController;
 import frc.robot.commands.intake.DeployIntakeCommand;
 import frc.robot.commands.intake.RaiseIntakeCommand;
 import frc.robot.commands.intake.RunIntakeCommand;
+import frc.robot.commands.internals.OverrideInternalsCommand;
 import frc.robot.commands.internals.RequestShotCommand;
 import frc.robot.commands.tank.AutonBlueBottomSequence;
 import frc.robot.commands.tank.AutonBlueMiddleSequence;
@@ -32,9 +29,9 @@ import frc.robot.commands.tank.AutonBlueTopSequence;
 import frc.robot.commands.tank.AutonRedBottomSequence;
 import frc.robot.commands.tank.AutonRedMiddleSequence;
 import frc.robot.commands.tank.AutonRedTopSequence;
-import frc.robot.commands.tank.FollowPathCommand;
 import frc.robot.commands.tank.PlebAutonSequence;
 import frc.robot.jetson.JetsonConnection;
+import frc.robot.shuffleboard.GRTShuffleboardTab;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
@@ -49,6 +46,8 @@ import frc.robot.subsystems.tank.TankSubsystem;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
+    private final PowerDistribution powerDistribution;
+
     // Subsystems
     private final TankSubsystem tankSubsystem;
     private final TurretSubsystem turretSubsystem;
@@ -57,7 +56,7 @@ public class RobotContainer {
     private final ClimbSubsystem climbSubsystem;
 
     private final JetsonConnection jetson;
-    private final PowerController powerController = null;
+    private final PowerController powerController;
 
     // Controllers and buttons
     private final XboxController driveController = new XboxController(0);
@@ -65,7 +64,9 @@ public class RobotContainer {
         driveAButton = new JoystickButton(driveController, XboxController.Button.kA.value),
         driveBButton = new JoystickButton(driveController, XboxController.Button.kB.value),
         driveXButton = new JoystickButton(driveController, XboxController.Button.kX.value),
-        driveYButton = new JoystickButton(driveController, XboxController.Button.kY.value);
+        driveYButton = new JoystickButton(driveController, XboxController.Button.kY.value),
+        driveLBumper = new JoystickButton(driveController, XboxController.Button.kLeftBumper.value),
+        driveRBumper = new JoystickButton(driveController, XboxController.Button.kRightBumper.value);
 
     private final XboxController mechController = new XboxController(1);
     private final JoystickButton 
@@ -77,16 +78,14 @@ public class RobotContainer {
         mechRBumper = new JoystickButton(mechController, XboxController.Button.kRightBumper.value);
 
     // Commands
-    private Command autonCommand;
-
-    // Debug flags
-    // Whether to run an auton path or skip auton and set starting position manually.
-    private static final boolean SKIP_AUTON = false;
+    private final SendableChooser<Command> autonChooser;
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
+        powerDistribution = new PowerDistribution();
+
         // Instantiate the Jetson connection
         jetson = new JetsonConnection();
         
@@ -98,39 +97,42 @@ public class RobotContainer {
         climbSubsystem = new ClimbSubsystem();
 
         // Instantiate power controller
-        /*
         powerController = new PowerController(
+            powerDistribution,
             tankSubsystem,
             turretSubsystem,
             internalSubsystem,
             intakeSubsystem
-            //, climbSubsystem
         );
-        */
 
         // Configure the button bindings
         configureButtonBindings();
 
-        // Instantiate auton command.
-        // If skipping autonomous, run an empty command in auton and set initial position
-        // from a manual hub distance. This assumes we are facing directly away from the hub
-        // at 0 degrees with a distance of `hubDist` between the robot and the hub.
-        if (SKIP_AUTON) {
-            double hubDist = 70;
-            Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
-            setInitialPosition(initialPose);
+        // Add auton sequences to the chooser and add the chooser to shuffleboard
+        autonChooser = new SendableChooser<>();
+        autonChooser.addOption("Red top", new AutonRedTopSequence(this));
+        autonChooser.addOption("Red middle", new AutonRedMiddleSequence(this));
+        autonChooser.addOption("Red bottom", new AutonRedBottomSequence(this));
+        autonChooser.addOption("Blue top", new AutonBlueTopSequence(this));
+        autonChooser.addOption("Blue middle", new AutonBlueMiddleSequence(this));
+        autonChooser.addOption("Blue bottom", new AutonBlueBottomSequence(this));
+        autonChooser.setDefaultOption("Pleb auton", PlebAutonSequence.from(this));
+        autonChooser.addOption("Skip auton", new InstantCommand());
 
-            autonCommand = new InstantCommand();
-        } else {
-            // Set the auton command from the shuffleboard int.
-            // 1, 2, 3 -> red top, middle, bottom
-            // 4, 5, 6 -> blue top, middle, bottom
-            // 7 -> pleb auton sequence
-            // 8 -> InstantCommand (skip auton)
-            int autonSequence = 7;
-            Shuffleboard.getTab("Drivetrain").add("Auton sequence", autonSequence).getEntry()
-                .addListener(this::setAutonCommand, EntryListenerFlags.kImmediate | EntryListenerFlags.kUpdate | EntryListenerFlags.kNew);
-        }
+        new GRTShuffleboardTab("Drivetrain").addWidget("Auton sequence", autonChooser);
+
+        double hubDist = 70;
+        Pose2d initialPose = new Pose2d(Units.inchesToMeters(hubDist), 0, new Rotation2d());
+
+        // Setting initial position assuming we are facing the hub
+        // at a distance `hubDist` inches and 0 on the y axis.
+        setInitialPosition(initialPose);
+
+        // Shuffleboard manual reset button
+        new GRTShuffleboardTab("Turret").addWidget("Zero position", new InstantCommand(() -> {
+            setInitialPosition(initialPose);
+            turretSubsystem.zeroEncoders();
+        }, turretSubsystem, tankSubsystem));
     }
 
     /**
@@ -150,10 +152,11 @@ public class RobotContainer {
      * X button -> start climb sequence (climb)
      */
     private void configureButtonBindings() {
-        // driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
+        driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         // driveBButton.whenPressed(new DeployIntakeCommand(intakeSubsystem));
         // driveYButton.whenPressed(new RaiseIntakeCommand(intakeSubsystem));
         driveXButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
+        driveRBumper.whenPressed(new InstantCommand(() -> turretSubsystem.setR(140)));
 
         mechAButton.whenPressed(new RequestShotCommand(internalSubsystem));
         mechBButton.whenPressed(new InstantCommand(intakeSubsystem::togglePosition));
@@ -161,14 +164,12 @@ public class RobotContainer {
         // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleFreeze));
         // mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
         mechYButton.whenPressed(new InstantCommand(turretSubsystem::toggleLow));
-        mechLBumper.toggleWhenPressed(new StartEndCommand(
-            () -> turretSubsystem.setDriverOverrideFlywheel(true),
-            () -> turretSubsystem.setDriverOverrideFlywheel(false), 
-            turretSubsystem
-        ));
-        mechRBumper.whenPressed(new InstantCommand(() -> {
-            turretSubsystem.setR(140);
-        }));
+        // mechLBumper.toggleWhenPressed(new StartEndCommand(
+        //     () -> turretSubsystem.setDriverOverrideFlywheel(true),
+        //     () -> turretSubsystem.setDriverOverrideFlywheel(false), 
+        //     turretSubsystem
+        // ));
+        
 
         // Car drive with the left Y axis controlling y power and the right X axis controlling angular
         tankSubsystem.setDefaultCommand(new RunCommand(() -> {
@@ -176,13 +177,14 @@ public class RobotContainer {
 
             // double turn_stick = driveController.getRightX();
             double yPow = -driveController.getLeftY();
-            double turnPow = driveController.getRightX() * 0.7;
+            double turnPow = driveController.getRightX() * 0.65;
 
             if (slowMode) {
                 yPow *= 0.3;
                 turnPow *= 0.3;
             }
 
+            turretSubsystem.setDriving(Math.abs(yPow) + Math.abs(turnPow) > 0.3);
             tankSubsystem.setCarDrivePowers(yPow, turnPow);
         }, tankSubsystem));
 
@@ -194,39 +196,26 @@ public class RobotContainer {
         // right/left to increase/decrease theta offset.
         turretSubsystem.setDefaultCommand(new RunCommand(() -> {
             switch (mechController.getPOV()) {
-                case 0: turretSubsystem.changeDistanceOffset(3); break;
+                case 0: turretSubsystem.changeDistanceOffset(1.5); break;
                 case 90: turretSubsystem.changeTurntableOffset(Math.toRadians(3)); break;
-                case 180: turretSubsystem.changeDistanceOffset(-3); break;
+                case 180: turretSubsystem.changeDistanceOffset(-1.5); break;
                 case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-3)); break;
                 default: break;
             }
+
+            turretSubsystem.setFreeze(driveController.getLeftTriggerAxis() > 0.2);
         }, turretSubsystem));
+
+        // Override internals and flywheel on mech left and right bumpers
+        internalSubsystem.setDefaultCommand(new OverrideInternalsCommand(internalSubsystem, turretSubsystem, mechController));
 
         // Manual climb control with the right mech joystick:
         // Push up to extend, down to retract; brakes are automatically set when manual control 
         // is supplied.
         climbSubsystem.setDefaultCommand(new RunCommand(() -> {
             double pow = -mechController.getRightY();
-            climbSubsystem.setSixPower(pow);
-            climbSubsystem.setSixBrake(pow == 0);
+            climbSubsystem.driveSixArm(pow);
         }, climbSubsystem));
-    }
-
-    /**
-     * Sets the selected auton command from the shuffleboard integer value.
-     * @param change The EntryNotification representing a shuffleboard value change.
-     */
-    private void setAutonCommand(EntryNotification change) {
-        switch ((int) change.value.getDouble()) {
-            case 1: autonCommand = new AutonRedTopSequence(this); break;
-            case 2: autonCommand = new AutonRedMiddleSequence(this); break;
-            case 3: autonCommand = new AutonRedBottomSequence(this); break;
-            case 4: autonCommand = new AutonBlueTopSequence(this); break;
-            case 5: autonCommand = new AutonBlueMiddleSequence(this); break;
-            case 6: autonCommand = new AutonBlueBottomSequence(this); break;
-            case 7: autonCommand = new PlebAutonSequence(this); break;
-            case 8: autonCommand = new InstantCommand(); break;
-        }
     }
 
     /**
@@ -234,7 +223,7 @@ public class RobotContainer {
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return autonCommand;
+        return autonChooser.getSelected();
     }
 
     /**
@@ -245,6 +234,10 @@ public class RobotContainer {
     public void setInitialPosition(Pose2d position) {
         tankSubsystem.resetPosition(position);
         turretSubsystem.setInitialPose(position);
+    }
+
+    public PowerDistribution getPowerDistribution() {
+        return powerDistribution;
     }
 
     /**

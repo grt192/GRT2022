@@ -20,9 +20,12 @@ import frc.robot.subsystems.tank.TankSubsystem;
  * The superclass for all auton sequences, containing helper methods and shared constructor logic.
  */
 public abstract class GRTAutonSequence extends SequentialCommandGroup {
+    private final RobotContainer robotContainer;
     private final TankSubsystem tankSubsystem;
     private final InternalSubsystem internalSubsystem;
     private final IntakeSubsystem intakeSubsystem;
+
+    private final Pose2d initialPose;
 
     /**
      * Creates a GRTAutonSequence from an initial and ball one pose. This is used for shared initialization logic
@@ -34,15 +37,17 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
      * @param ballOnePose The first ball pose of the sequence.
      */
     public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose, Pose2d ballOnePose) {
+        this.robotContainer = robotContainer;
+        this.initialPose = initialPose;
+
         tankSubsystem = robotContainer.getTankSubsystem();
         internalSubsystem = robotContainer.getInternalSubsystem();
         intakeSubsystem = robotContainer.getIntakeSubsystem();
 
         addRequirements(tankSubsystem, internalSubsystem, intakeSubsystem);
-        robotContainer.setInitialPosition(initialPose);
 
         addCommands(
-            new DeployIntakeCommand(intakeSubsystem), // TODO: actually supply power to intake and rely on autodeploy
+            new DeployIntakeCommand(intakeSubsystem),
             new FollowPathCommand(tankSubsystem, initialPose, List.of(), ballOnePose)
                 .withTimeout(5),
             new ShootCommand(internalSubsystem),
@@ -50,15 +55,21 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
         );
     }
 
+    @Override
+    public void initialize() {
+        robotContainer.setInitialPosition(initialPose);
+    }
+
     /**
      * Creates a GRTAutonSequence from an initial, ball one, back, and final pose. This is used for the red top and 
      * blue bottom paths, where we may not taxi if we just drive to the ball; the wall is too close. Drives to
-     * the ball, shoots twice, then drives in reverse through the back waypoint to the final (taxi) pose.
+     * the ball, shoots twice, then drives to the final pose.
      * 
      * @param robotContainer The RobotContainer instance, for calling `.setInitialPose()`.
      * @param initialPose The initial pose of the sequence.
      * @param ballOnePose The first ball pose of the sequence.
      * @param finalPose The ending pose of the sequence.
+     * @param finalReversed Whether the command should drive to the final pose in reverse.
      */
     public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose, Pose2d ballOnePose, Pose2d finalPose, boolean finalReversed) {
         this(robotContainer, initialPose, ballOnePose);
@@ -99,24 +110,48 @@ public abstract class GRTAutonSequence extends SequentialCommandGroup {
     }
 
     /**
-     * Localizes a ball coordinate to a robot pose used in path following. The robot cannot path follow
-     * directly to the ball coordinate, as the robot's position is based on the center of the chassis;
-     * instead, the robot should path follow to the Pose2d localized from the intake and chassis width.
+     * Localizes a ball coordinate to a robot pose used in path following by using the coordinate of the ball
+     * touching the front of the robot at an approach of `angleOfApproach` degrees.
      * 
      * @param ball The ball coordinate, represented as a Translation2d.
      * @param angleOfApproach The angle the robot should approach the ball, in degrees.
      * @return The Pose2d to path follow to.
      */
-    protected static Pose2d localizeBallCoordinate(Translation2d ball, double angleOfApproach) {
-        // Robot length / 2
-        double h = 34 / 2;
+    protected static Pose2d localizeToRobotFront(Translation2d ball, double angleOfApproach) {
+        return localize(ball, angleOfApproach, 34 / 2); // Robot width / 2
+    }
 
-        double rads = Math.toRadians(angleOfApproach);
+    /**
+     * Localizes a ball coordinate to a robot pose used in path following by using the coordinate of the ball
+     * touching the front of the intake at an approach of `angleOfApproach` degrees.
+     * 
+     * @param ball The ball coordinate, represented as a Translation2d.
+     * @param angleOfApproach The angle the robot should approach the ball, in degrees.
+     * @return The Pose2d to path follow to.
+     */
+    protected static Pose2d localizeToIntakeFront(Translation2d ball, double angleOfApproach) {
+        return localize(ball, angleOfApproach, 34 / 2 + 11.743); // Robot width / 2 + intake width
+    }
+
+    /**
+     * Localizes a ball coordinate to a robot pose used in path following by using the coordinate of the ball
+     * touching the center of the robot at an approach of `angleOfApproach` degrees.
+     * 
+     * @param ball The ball coordinate, represented as a Translation2d.
+     * @param angleOfApproach The angle the robot should approach the ball, in degrees.
+     * @return The Pose2d to path follow to.
+     */
+    protected static Pose2d localizeToRobotCenter(Translation2d ball, double angleOfApproach) {
+        return localize(ball, angleOfApproach, 0);
+    }
+
+    private static Pose2d localize(Translation2d trans, double angle, double h) {
+        double rads = Math.toRadians(angle);
         double dx = Units.inchesToMeters(h * Math.cos(rads));
         double dy = Units.inchesToMeters(h * Math.sin(rads));
 
-        double x = ball.getX() - dx;
-        double y = ball.getY() - dy;
+        double x = trans.getX() - dx;
+        double y = trans.getY() - dy;
         return new Pose2d(x, y, new Rotation2d(rads));
     }
 }

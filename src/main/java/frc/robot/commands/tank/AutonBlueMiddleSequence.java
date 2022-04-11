@@ -21,8 +21,8 @@ public class AutonBlueMiddleSequence extends GRTAutonSequence {
         Units.inchesToMeters(-44.575), 
         Units.inchesToMeters(-41.328), 
         Rotation2d.fromDegrees(204));
-    private static Pose2d ballOnePose = localizeBallCoordinate(LEFT_MID_BLUE, 215.248230);
-    private static Pose2d ballTwoPose = localizeBallCoordinate(TERMINAL_BLUE, 225);
+    private static Pose2d ballOnePose = localizeToRobotFront(LEFT_MID_BLUE, 215.248230);
+    private static Pose2d ballTwoPose = localizeToIntakeFront(TERMINAL_BLUE, 225);
 
     public AutonBlueMiddleSequence(RobotContainer robotContainer) {
         super(robotContainer, initialPose, ballOnePose, ballTwoPose);

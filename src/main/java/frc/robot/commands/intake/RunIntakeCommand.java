@@ -20,8 +20,8 @@ public class RunIntakeCommand extends RunCommand {
             double leftTrigger = xboxController.getLeftTriggerAxis();
             double rightTrigger = xboxController.getRightTriggerAxis();
 
-            intakeSubsystem.setIntakePower(rightTrigger - leftTrigger);
-            
+            intakeSubsystem.setDriverPower((rightTrigger - leftTrigger) * 0.85);
+
             // If the driver is supplying intake power with the triggers, override intake control
             if (leftTrigger > 0 || rightTrigger > 0) {
                 intakeSubsystem.setDriverOverride(true);
@@ -32,6 +32,8 @@ public class RunIntakeCommand extends RunCommand {
                 // Otherwise, if 2 seconds have passed without driver input, resume automatic intake control
                 intakeSubsystem.setDriverOverride(false);
             }
+
+            intakeSubsystem.intakePosOffset += -xboxController.getLeftY() * 100;
         }, intakeSubsystem);
     }
 }

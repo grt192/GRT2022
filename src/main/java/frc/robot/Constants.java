@@ -52,7 +52,9 @@ public final class Constants {
     public static final class IntakeConstants {
         public static final int intakePort = 12;
         public static final int deploymentPort = 11;
-        public static final int limitSwitchPort = 3;
+
+        public static final int tLimitSwitchPort = 3;
+        public static final int bLimitSwitchPort = 2;
     }
 
     public static final class ClimbConstants {
@@ -73,7 +75,7 @@ public final class Constants {
         public static final int turretCameraPort = 1181;
         public static final int intakeCameraPort = 1182;
         public static final int jetsonPort = 5800;
-        public static final String jetsonIP = "10.1.92.94";
+        public static final String jetsonIP = "10.1.92.12";
     }
 
     public static final class ShuffleboardConstants {

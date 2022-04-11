@@ -1,35 +1,41 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.brownout.PowerController;
 
 /**
  * A convenience class wrapping SubsystemBase for brownout and other shared subsystem logic.
  */
 public abstract class GRTSubsystem extends SubsystemBase {
     protected final double minCurrent;
+    private final int[] motorPorts;
 
     /**
-     * Creates a GRTSubsystem from the given minimum current.
+     * Creates a GRTSubsystem from the given minimum current and motor ports to be checked for subsystem current draw.
      * @param minCurrent The minimum current.
      */
-    public GRTSubsystem(double minCurrent) {
+    public GRTSubsystem(double minCurrent, int... motorPorts) {
         this.minCurrent = minCurrent;
+        this.motorPorts = motorPorts;
     }
 
     /**
      * Gets the subsystem's minimum current.
      * @return The minimum current.
      */
-    public double getMinCurrent() {
+    public final double getMinCurrent() {
         return minCurrent;
     }
 
     /**
-     * Gets the total current being drawn by the subsystem. Implementers should use `PowerController.getCurrentDrawnFromPDH`
-     * with all the subsystem's motor controller ports.
+     * Gets the total current being drawn by the subsystem by summing the current drawn by the supplied motor controller
+     * ports on the PDH.
+     * @param powerController The PowerController instance, for calling `getCurrentDrawnFromPDH`.
      * @return The total current being drawn by the subsystem.
      */
-    abstract public double getTotalCurrentDrawn();
+    public final double getTotalCurrentDrawn(PowerController powerController) {
+        return powerController.getCurrentDrawnFromPDH(motorPorts);
+    }
 
     /**
      * Sets the subsystem's current limit. Implementers should split the subsystem's limit between their motor controllers and 

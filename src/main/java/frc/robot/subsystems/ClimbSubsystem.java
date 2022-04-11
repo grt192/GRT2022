@@ -3,7 +3,6 @@ package frc.robot.subsystems;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import com.revrobotics.CANSparkMax;
@@ -23,14 +22,16 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 
 import frc.robot.GRTSubsystem;
-import frc.robot.brownout.PowerController;
+import frc.robot.shuffleboard.GRTNetworkTableEntry;
+import frc.robot.shuffleboard.GRTShuffleboardTab;
 
 import static frc.robot.Constants.ClimbConstants.*;
 
-public class ClimbSubsystem extends GRTSubsystem {
+public class ClimbSubsystem extends SubsystemBase {
     private final CANSparkMax six;
     private final RelativeEncoder sixEncoder;
     private final SparkMaxPIDController sixPidController;
@@ -57,8 +58,7 @@ public class ClimbSubsystem extends GRTSubsystem {
     private static final double maxVel = 150;
     private static final double maxAccel = 300;
 
-    private static final double SIX_MIN_POS = 0;
-    private static final double SIX_MAX_POS = 199.32318115234375;
+    private static final double SIX_MAX_POS = 175;
     private static final double SIX_RETRACTED_POS = 50;
 
     // Ten point arm position PID constants
@@ -72,22 +72,22 @@ public class ClimbSubsystem extends GRTSubsystem {
     private boolean retractToExtend = false;
     private boolean brakeLastEngaged = true;
     private Timer brakeSwitch;
+    private boolean lowerLimit = true;
+
 
     // Fifteen point arm position PID constants
     private static final double fifteenP = 0.125;
     private static final double fifteenI = 0;
     private static final double fifteenD = 0;
 
-    private final ShuffleboardTab shuffleboardTab;
+    private final GRTShuffleboardTab shuffleboardTab;
+    private final GRTNetworkTableEntry sixPosEntry;
 
     // Debug flags
     // Whether PID tuning shuffleboard entries should be displayed
-    private static boolean DEBUG_PID = false;
+    private static boolean DEBUG_PID = true;
 
     public ClimbSubsystem() {
-        // TODO: measure this
-        super(20);
-
         // Initialize six point arm NEO, encoder PID, and solenoid brake
         six = new CANSparkMax(sixMotorPort, MotorType.kBrushless);
         six.restoreFactoryDefaults();
@@ -98,9 +98,7 @@ public class ClimbSubsystem extends GRTSubsystem {
         lastRetracted = true;
 
         six.setSoftLimit(SoftLimitDirection.kForward, (float) SIX_MAX_POS);
-        six.setSoftLimit(SoftLimitDirection.kReverse, (float) SIX_MIN_POS);
-        //six.enableSoftLimit(SoftLimitDirection.kForward, true);
-        //six.enableSoftLimit(SoftLimitDirection.kReverse, true);
+        six.enableSoftLimit(SoftLimitDirection.kForward, true);
 
         sixEncoder = six.getEncoder();
         sixEncoder.setPosition(0);
@@ -113,88 +111,51 @@ public class ClimbSubsystem extends GRTSubsystem {
         sixBrake = new WPI_TalonSRX(sixBrakePort);
         sixBrake.configFactoryDefault();
 
-        // Initialize ten point arm NEO, encoder PID, and solenoid brake
-        /*
-        ten = new CANSparkMax(tenMotorPort, MotorType.kBrushless);
-        ten.restoreFactoryDefaults();
-        ten.setIdleMode(IdleMode.kBrake);
-
-        tenEncoder = ten.getEncoder();
-        tenEncoder.setPosition(0);
-
-        tenPidController = ten.getPIDController();
-        tenPidController.setP(tenP);
-        tenPidController.setI(tenI);
-        tenPidController.setD(tenD);
-
-        tenBrake = new WPI_TalonSRX(tenBrakePort);
-        tenBrake.configFactoryDefault();
-
-        // Initialize ten point arm solenoid release mechanisms
-        tenSolenoidMain = new WPI_TalonSRX(tenLeftSolenoidPort);
-        tenSolenoidMain.configFactoryDefault();
-
-        tenSolenoidFollow = new WPI_TalonSRX(tenRightSolenoidPort);
-        tenSolenoidFollow.configFactoryDefault();
-        tenSolenoidFollow.follow(tenSolenoidMain);
-
-        // Initialize fifteen point arm 775, encoder PID, and follower
-        fifteenMain = new WPI_TalonSRX(fifteenLeftPort);
-        fifteenMain.configFactoryDefault();
-        fifteenMain.setNeutralMode(NeutralMode.Brake);
-
-        fifteenMain.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
-        fifteenMain.setSelectedSensorPosition(0);
-        fifteenMain.setSensorPhase(false);
-        fifteenMain.config_kP(0, fifteenP);
-        fifteenMain.config_kI(0, fifteenI);
-        fifteenMain.config_kD(0, fifteenD);
-
-        fifteenFollow = new WPI_TalonSRX(fifteenRightPort);
-        fifteenFollow.configFactoryDefault();
-        fifteenFollow.follow(fifteenMain);
-        fifteenMain.setNeutralMode(NeutralMode.Brake);
-        */
-
         // Initialize Shuffleboard entries
-        shuffleboardTab = Shuffleboard.getTab("Climb");
+        shuffleboardTab = new GRTShuffleboardTab("Climb");
+        sixPosEntry = shuffleboardTab.addEntry("Six pos", sixEncoder.getPosition());
+        shuffleboardTab.addToggle("lower limit on", lowerLimit, this::setLowerLimit, 4, 0);
+
 
         // If DEBUG_PID is set, allow for PID tuning on shuffleboard
         if (DEBUG_PID) {
-            shuffleboardTab.add("Six kP", sixP).getEntry()
-                .addListener(this::setSixP, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Six kI", sixI).getEntry()
-                .addListener(this::setSixI, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Six kD", sixD).getEntry()
-                .addListener(this::setSixD, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Six kFF", sixFF).getEntry()
-                .addListener(this::setSixFF, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Six maxVel", maxVel).getEntry()
-                .addListener(this::setSixMaxVel, EntryListenerFlags.kUpdate);
-            shuffleboardTab.add("Six maxAccel", maxAccel).getEntry()
-                .addListener(this::setSixMaxAccel, EntryListenerFlags.kUpdate);
+            shuffleboardTab
+                .list("Six PID")
+                .addListener("kP", sixP, this::setSixP)
+                .addListener("kI", sixI, this::setSixI)
+                .addListener("kD", sixD, this::setSixD)
+                .addListener("kFF", sixFF, this::setSixFF)
+                .addListener("Max vel", maxVel, this::setSixMaxVel)
+                .addListener("Max accel", maxAccel, this::setSixMaxAccel);
         }
+    }
+
+    @Override
+    public void periodic() {
+        sixPosEntry.setValue(sixEncoder.getPosition());
     }
 
     /**
      * Manually sets the six winch power.
      * @param pow The power to set.
      */
-    public void setSixPower(double pow) {
-      /*
-        double power = pow;
-        if (power > 0) {
-            lastRetracted = true;
-        }
-        six.set(pow);
-        */
-
+    public void driveSixArm(double pow) {
         double power = pow;
         if (power < 0) {
+            if (lowerLimit && sixEncoder.getPosition() <= 0) {
+                setSixPower(0);
+                lastRetracted = true;
+                return;
+            }
             lastRetracted = true;
         }
-        
-       if (lastRetracted && brakeLastEngaged && (power > 0)) {
+
+        if (power > 0 && sixEncoder.getPosition() >= SIX_MAX_POS) {
+            setSixPower(0);
+            return;
+        }
+
+        if (lastRetracted && brakeLastEngaged && (power > 0)) {
             System.out.println();
             brakeSwitch.start();
             lastRetracted = false;
@@ -205,20 +166,27 @@ public class ClimbSubsystem extends GRTSubsystem {
         }
 
         //stop retracting and start extending
-        if (retractToExtend && brakeSwitch.hasElapsed(0.3)) {
-            sixBrake.set(1);
+        if (retractToExtend && brakeSwitch.hasElapsed(0.15)) {
             sixBrakeEngaged = false;
             brakeLastEngaged = false;
             retractToExtend = false;
             brakeSwitch.stop();
             brakeSwitch.reset();
         }
-        
-        // set power and brake mode
-        six.set(power);
-        // brake engaged -> not powered, disengaged -> powered
-        sixBrake.set(sixBrakeEngaged ? 0 : 1);
 
+        // Set power and brake mode
+        setSixPower(power);
+    }
+
+    /**
+     * Sets the six arm power, automaticaly disengaging the brake when going up.
+     * @param pow The power to set.
+     */
+    private void setSixPower(double pow) {
+        six.set(pow);
+
+        // Disengage the brake when the six motor is going up (positive power).
+        sixBrake.set(pow > 0 ? 1 : 0);
     }
 
     /**
@@ -268,23 +236,6 @@ public class ClimbSubsystem extends GRTSubsystem {
         return new ClimbPhase1Command();
     }
 
-    @Override
-    public double getTotalCurrentDrawn() {
-        return PowerController.getCurrentDrawnFromPDH(
-            sixMotorPort, sixBrakePort, tenMotorPort, tenBrakePort, 
-            fifteenLeftPort, fifteenRightPort, tenLeftSolenoidPort, tenRightSolenoidPort
-        );
-    }
-
-    @Override
-    public void setCurrentLimit(double limit) {
-        int motorLimit = (int) Math.floor(limit);
-
-        six.setSmartCurrentLimit(motorLimit);
-        // ten.setSmartCurrentLimit(motorLimit);
-        // fifteenMain.configSupplyCurrentLimit(new SupplyCurrentLimitConfiguration(true, motorLimit, 0, 0));
-    }
-
     /**
      * Climb PID tuning NetworkTable callbacks.
      * @param change The `EntryNotification` representing the NetworkTable entry change.
@@ -312,4 +263,9 @@ public class ClimbSubsystem extends GRTSubsystem {
     private void setSixMaxAccel(EntryNotification change) {
         sixPidController.setSmartMotionMaxAccel(change.value.getDouble(), 0);
     }
+
+    private void setLowerLimit(EntryNotification change) {
+        lowerLimit = change.value.getBoolean();
+    }
+    
 }
