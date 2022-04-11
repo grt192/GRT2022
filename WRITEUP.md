@@ -232,8 +232,7 @@ linearly interpolates flywheel RPM and hood degrees from known manual testing da
 [spreadsheet](https://docs.google.com/spreadsheets/d/1hAsBn0KIxucuwOv96UMS3bZOrim03YxqXL-2-pBrjzI/edit?usp=sharing).
 
 <p align="center">
-    <img src="https://user-images.githubusercontent.com/60120929/162670097-63f1183c-8f15-473d-a90d-0830b2b6153e.png" width="700px">
-    <img src="https://user-images.githubusercontent.com/60120929/162670129-8a0280be-02f1-44d2-b035-4bf4287bdeaf.png" width="700px">
+    <img src="https://user-images.githubusercontent.com/60120929/162670097-63f1183c-8f15-473d-a90d-0830b2b6153e.png" height="300px"> <img src="https://user-images.githubusercontent.com/60120929/162670129-8a0280be-02f1-44d2-b035-4bf4287bdeaf.png" height="300px">
 </p>
 
 In code, these values were stored in a `double[][]` interpolation table representing tuples of `[hub dist (in), 
