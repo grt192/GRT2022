@@ -140,16 +140,85 @@ public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Transla
 While using WPILib builtins greatly reduced the time required to write and start testing localization and path following
 code, the fact that they were essentially black boxes [...]. [...].
 
+### Auton ([#22](https://github.com/grt192/GRTCommandBased/pull/22), merged into #27)
+[...]
+
 ## Intake
 [...]
 
 ## Internals
 [...]
 
-## Turret
-[...]
+## Turret ([#16](https://github.com/grt192/GRTCommandBased/pull/16), [#27](https://github.com/grt192/GRTCommandBased/pull/27), [#32](https://github.com/grt192/GRTCommandBased/pull/32))
+[...]. To aim the turret, `TurretSubsystem` maintains a hub distance (`r`) and turntable angle (`theta`) to constantly
+align the turret with the hub and set the hood position and flywheel velocity [...].
 
-### The `rtheta` state system
+### The `rtheta` state system ([#24](https://github.com/grt192/GRTCommandBased/pull/24), merged into #27)
+While vision is out of range (in the turntable's blind spot) or not working (flywheel on), `TurretSubsystem` continues to
+modify its internal states from `TankSubsystem` localization deltas. This is done by creating a polar coordinate system 
+with the robot lying on the x-axis a distance `r` and facing an angle `theta` from the hub.
+
+![IMG-4283](https://user-images.githubusercontent.com/60120929/162667303-702bf9a9-b417-4350-889b-60ed466afa7b.jpg)
+
+When the robot moves, the delta x and y can be retrieved from localization. Using the deltas, we can calculate `h = Math.hypot(dx, dy)`
+and `alpha = Math.atan2(-dy, dx)`.
+
+![IMG-4284](https://user-images.githubusercontent.com/60120929/162667299-c2bad0ce-bbdf-40a9-a784-e955f1690d7f.jpg)
+
+Using `h` and `alpha`, we can calculate the new `r` value, as well as the angle `phi`.
+
+![IMG-4285](https://user-images.githubusercontent.com/60120929/162667295-cbf1ac42-8360-4374-a973-cfbdae04e4ef.jpg)
+
+To calculate the new `theta`, take the total angle `theta + dtheta` and subtract the angle `phi` between the old and new 
+"x-axes". 
+
+![IMG-4286](https://user-images.githubusercontent.com/60120929/162668298-190d8620-19c3-4eb8-ae65-847828932742.jpg)
+
+The turntable reference is the supplemental angle to `theta`, or `Math.PI - theta` radians.
+
+<!-- explain feedforward? -->
+For feedforward purposes, the turret calculates delta r and theta instead of just the new values. When vision is out of 
+range, these deltas are added to the current state values to update them.
+```java
+/**
+ * Calculates the deltas of the `r` and `theta` coordinate system from odometry deltas.
+ * Used for `rtheta` feedforward, as well as `rtheta` state updating while vision is
+ * out of range.
+ * 
+ * @param lastPosition The previous odometry position.
+ * @param currentPosition The current odometry position.
+ * @return The `rtheta` deltas, as a pair of [dr (in), dtheta (rads)].
+ */
+private Pair<Double, Double> calculateRThetaDeltas(Pose2d lastPosition, Pose2d currentPosition) {
+    Pose2d deltas = currentPosition.relativeTo(lastPosition);
+
+    double dx = Units.metersToInches(deltas.getX());
+    double dy = Units.metersToInches(deltas.getY());
+    double dTheta = deltas.getRotation().getRadians();
+
+    double h = Math.hypot(dx, dy);
+    double alpha = Math.atan2(-dy, dx);
+    double beta = alpha + this.theta;
+
+    double x = r + h * Math.cos(beta);
+    double y = h * Math.sin(beta);
+
+    if (PRINT_STATES) System.out.println(
+        "dx: " + dx + " dy: " + dy + " dtheta: " + dTheta
+        + "\npose: " + currentPosition + " last: " + lastPosition
+        + "\nh: " + h + " alpha: " + alpha + " beta: " + beta
+        + "\nx: " + x + " y: " + y
+        + "\nr: " + r + ", theta: " + Math.toDegrees(theta)
+    );
+
+    double deltaR = Math.hypot(x, y) - r;
+    double deltaTheta = dTheta - Math.atan2(y, x);
+    return new Pair<>(deltaR, deltaTheta);
+}
+```
+##### [`TurretSubsystem` L462-496](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L462-L496)
+
+### Interpolation
 [...]
 
 ## Vision
