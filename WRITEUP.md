@@ -344,12 +344,104 @@ private ModuleState turntableAligned() {
 ```
 ##### [`TurretSubsystem` L622-633](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L622-L633), similar for `hoodReady()` and `flywheelReady()`
 
-The state of the entire subsystem (for use in internals) is the lowest module state. [...]
+The state of the entire subsystem is the lowest module state. [...]
+
+The idea behind maintaining a state enum instead of a simple boolean was that, while a shot that the robot is trying to 
+score requires a tight alignment tolerance for the turntable, hood, and flywheel, a ball that is being rejected can be 
+fired much sooner and without having to wait for the flywheel to spin up all the way or the turntable to reach perfect 
+alignment with the hub. Therefore, a rejected ball could be shot while the subsystem state was `LOW_TOLERANCE`, while a 
+ball intended to be scored needed to wait for `HIGH_TOLERANCE`.
+
+An issue with thresholding was lack of testing time. During Monterey, many shots we took were waiting forever for too-tight 
+tolerances and had to be forced. We repeatedly blanket-increased the tolerances in response without the time to test if
+a ball fired when the flywheel was 150 RPM off would still make it in the hub. [...]
+
+### Turret Mode and Rejection
+`TurretSubsystem` maintains a `mode` enum representing what mode it is in and how it should behave.
+```java
+public enum TurretMode {
+    SHOOTING, LOW_HUB, REJECTING, RETRACTED;
+
+    @Override
+    public String toString() {
+        switch (this) {
+            case SHOOTING: return "SHOOTING";
+            case REJECTING: return "REJECTING";
+            case LOW_HUB: return "LOW_HUB";
+            case RETRACTED: return "RETRACTED";
+        }
+        return "UNKNOWN";
+    }
+}
+```
+##### [`TurretSubsystem` L46-59](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L46-L59)
+
+In `SHOOTING` mode, the turret behaves as normal, continuously tracking the hub while positioning the flywheel and hood 
+to score shots in the hub.
+
+In `RETRACTED` mode, the turret retracts itself, setting the hood and flywheel reference to 0 and the turntable to 180
+degrees.
+```java
+// If retracted, skip interpolation calculations
+if (mode == TurretMode.RETRACTED) {
+    desiredTurntableRadians = Math.toRadians(180);
+    desiredHoodRadians = 0;
+    desiredFlywheelRPM = 0;
+} else {
+```
+##### [`TurretSubsystem` L397-402](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L397-L402)
+
+<!-- citation needed on usage -->
+This was originally created to retract everything before climb, but ended up as a power conservation feature for playing
+defense as well as a method to get everything back to their starting positions before a code redeploy.
+
+`LOW_HUB` was a mode quickly added before Monterey as a failsafe in case upper hub interpolation stopped working during
+a match. `LOW_HUB` functions similarly to `RETRACTED`, except instead of setting references back to their starting positions,
+references are set to static values for "dumping" balls into the lower hub from the hub wall.
+```java
+// TODO tune
+if (this.mode == TurretMode.LOW_HUB) {
+    desiredFlywheelRPM = 3000;
+    desiredHoodRadians = Math.toRadians(16);
+    desiredTurntableRadians = Math.toRadians(180);
+}
+```
+##### [`TurretSubsystem` L552-561](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L552-L561)
+
+[...]
+
+In `REJECTING` mode, the turret scales down the flywheel RPM by 0.5 during interpolation to intentionally miss wrong-colored 
+balls (but still cause them to bounce and be difficult to intake). This mode would be set by internals if it detected that
+the current ball color did not match the current alliance color.
+```java
+if (mode == TurretMode.REJECTING && !SKIP_REJECTION) desiredFlywheelRPM *= 0.5;
+```
+##### [`TurretSubsystem` L543](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L543)
+
+Rejection logic was heavily untested, and remained disabled for the majority of Monterey and the entirety of SVR. Though
+it may not have directly caused problems, disabling it allowed further isolation of where a problem originated. As we didn't
+end up making many shots (or even intaking wrong colored balls at all), rejection logic didn't end up being all too necessary.
+
+In retrospect as well, rejection could have been made a separate boolean which was ignored in `LOW_HUB` and `RETRACTED`, 
+as it was basically just `SHOOTING` mode with an extra step in interpolation.
+```java
+/**
+ * Set whether the turret should reject the current ball.
+ * @param reject Whether to reject the ball.
+ */
+public void setReject(boolean reject) {
+    // Don't do anything if the turret is retracted
+    if (mode == TurretMode.RETRACTED) return;
+    if (mode == TurretMode.LOW_HUB) return;
+    mode = reject ? TurretMode.REJECTING : TurretMode.SHOOTING;
+}
+```
+##### [`TurretSubsystem` L552-561](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L552-L561), not the prettiest code
 
 ### Debug flags
-<!-- necessary? -->
-To make testing and feature toggling easier, instead of repeatedly commenting and uncommenting code debug flags were used.
-[...]
+A feature that made testing and feature isolation / toggling much easier was debug flags. Instead of repeatedly commenting 
+and uncommenting code, static booleans could be toggled to quickly disable untested or problematic logic or expose debug
+interfaces like prints or shuffleboard entries.
 ```java
 // Whether rtheta (`r`, `theta`, `dx`, `dy`, `dtheta`, `alpha`, `beta`, `x`, `y`, `h`) system states 
 // should be printed.
@@ -365,6 +457,8 @@ private static boolean MANUAL_CONTROL = false;
 private static boolean SKIP_REJECTION = true;
 ```
 ##### [`TurretSubsystem` L195-206](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L195-L206)
+
+[...]
 
 ## Vision
 [...]
