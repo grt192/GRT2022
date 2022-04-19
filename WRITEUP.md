@@ -140,6 +140,12 @@ public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Transla
 ```
 ##### [`FollowPathCommand` L52-104](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/tank/FollowPathCommand.java#L52-L104)
 
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/60120929/164111907-db77cab4-0e1b-4ccb-abf3-93ae2c0e1da2.jpg" width="700px">
+</p>
+
+##### [Pathfollowing testing on the old DT base](https://drive.google.com/file/d/10scxpLwNVB7aSsjQ-AoTtCNd0iGscWOs/view?usp=sharing)
+
 While using WPILib builtins greatly reduced the time required to write and start testing localization and path following
 code, the fact that they were essentially black boxes [...]. [...].
 
