@@ -92,10 +92,13 @@ public class FollowPathCommand extends RamseteCommand {
                 new TrajectoryConfig(MAX_VEL, MAX_ACCEL)
                     .setReversed(reversed)
                     .setKinematics(KINEMATICS)
-                    .addConstraint(new DifferentialDriveVoltageConstraint(
-                        new SimpleMotorFeedforward(Ks, Kv, Ka), 
-                        KINEMATICS, 
-                        10))
+                    .addConstraint(
+                        new DifferentialDriveVoltageConstraint(
+                            new SimpleMotorFeedforward(Ks, Kv, Ka), 
+                            KINEMATICS, 
+                            10
+                        )
+                    )
             )
         );
     }

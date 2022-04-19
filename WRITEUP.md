@@ -59,7 +59,7 @@ public void setCarDrivePowers(double yScale, double angularScale, boolean square
 
 ### Localization and Path Following ([#9](https://github.com/grt192/GRTCommandBased/pull/9))
 For localization, we decided that writing our own pose estimation would take too much time considering our relative lack
-of experience and decided to use WPILib's built-in [`DifferentialDrivePoseEstimator`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/estimator/DifferentialDrivePoseEstimator.html) 
+of experience and decided to use WPILib's built-in [`DifferentialDrivePoseEstimator`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/estimator/DifferentialDrivePoseEstimator.html)
 instead. The `DifferentialDrivePoseEstimator` wraps a Kalman filter around raw encoder, gyro, and vision measurements to
 more accurately estimate the robot's position on the field.
 ```java
@@ -74,13 +74,13 @@ public void update() {
 ```
 ##### [`PoseEstimator` L41-48](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/tank/PoseEstimator.java#L41-L48)
 
-Similarly, path following code used the builtin WPILib [`RamseteCommand`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj2/command/RamseteCommand.html) 
+Similarly, path following code used the builtin WPILib [`RamseteCommand`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/wpilibj2/command/RamseteCommand.html)
 and [`TrajectoryGenerator`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/trajectory/TrajectoryGenerator.html) utilities.
-`TrajectoryGenerator` generates a clamped cubic spline path [`Trajectory`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/trajectory/Trajectory.html) 
+`TrajectoryGenerator` generates a clamped cubic spline path [`Trajectory`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/trajectory/Trajectory.html)
 (essentially a list of wheel speeds and positions) between two points with constraints dictated by config parameters, and
 `RamseteCommand` feeds the trajectory into the [`RamseteController`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/controller/RamseteController.html),
 which consumes the localization robot pose to adjust PID references to maintain the desired trajectory-state pose. `RamseteCommand`
-uses a [`SimpleMotorFeedForward`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/controller/SimpleMotorFeedforward.html) 
+uses a [`SimpleMotorFeedForward`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/controller/SimpleMotorFeedforward.html)
 to calculate inputs to maintain the desired trajectory velocity and acceleration, then performs PID for motor voltage which
 is supplied to `TankSubsystem`.
 ```java
@@ -127,15 +127,18 @@ public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Transla
             new TrajectoryConfig(MAX_VEL, MAX_ACCEL)
                 .setReversed(reversed)
                 .setKinematics(KINEMATICS)
-                .addConstraint(new DifferentialDriveVoltageConstraint(
-                    new SimpleMotorFeedforward(Ks, Kv, Ka), 
-                    KINEMATICS, 
-                    10))
+                    .addConstraint(
+                        new DifferentialDriveVoltageConstraint(
+                            new SimpleMotorFeedforward(Ks, Kv, Ka), 
+                            KINEMATICS, 
+                            10
+                        )
+                    )
         )
     );
 }
 ```
-##### [`FollowPathCommand` L52-101](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/tank/FollowPathCommand.java#L52-L101)
+##### [`FollowPathCommand` L52-104](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/tank/FollowPathCommand.java#L52-L104)
 
 While using WPILib builtins greatly reduced the time required to write and start testing localization and path following
 code, the fact that they were essentially black boxes [...]. [...].
@@ -155,7 +158,7 @@ align the turret with the hub and set the hood position and flywheel velocity [.
 
 ### The `rtheta` state system ([#24](https://github.com/grt192/GRTCommandBased/pull/24), merged into #27)
 While vision is out of range (in the turntable's blind spot) or not working (flywheel on), `TurretSubsystem` continues to
-modify its internal states from `TankSubsystem` localization deltas. This is done by creating a polar coordinate system 
+modify its internal states from `TankSubsystem` localization deltas. This is done by creating a polar coordinate system
 with the robot lying on the x-axis a distance `r` and facing an angle `theta` from the hub.
 
 <p align="center">
@@ -175,8 +178,8 @@ Using `h` and `alpha`, we can calculate the new `r` value, as well as the angle 
     <img src="https://user-images.githubusercontent.com/60120929/162667295-cbf1ac42-8360-4374-a973-cfbdae04e4ef.jpg" width="700px">
 </p>
 
-To calculate the new `theta`, take the total angle `theta + dtheta` and subtract the angle `phi` between the old and new 
-"x-axes". 
+To calculate the new `theta`, take the total angle `theta + dtheta` and subtract the angle `phi` between the old and new
+"x-axes".
 
 <p align="center">
     <img src="https://user-images.githubusercontent.com/60120929/162668298-190d8620-19c3-4eb8-ae65-847828932742.jpg" width="700px">
@@ -185,7 +188,7 @@ To calculate the new `theta`, take the total angle `theta + dtheta` and subtract
 The turntable reference is the supplemental angle to `theta`, or `Math.PI - theta` radians.
 
 <!-- explain feedforward? -->
-For feedforward purposes, the turret calculates delta r and theta instead of just the new values. When vision is out of 
+For feedforward purposes, the turret calculates delta r and theta instead of just the new values. When vision is out of
 range, these deltas are added to the current state values to update them.
 ```java
 /**
@@ -227,7 +230,7 @@ private Pair<Double, Double> calculateRThetaDeltas(Pose2d lastPosition, Pose2d c
 ##### [`TurretSubsystem` L462-496](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L462-L496)
 
 ### Interpolation
-To find the flywheel speed and hood angle that would work for the turret's current hub distance, `TurretSubsystem` 
+To find the flywheel speed and hood angle that would work for the turret's current hub distance, `TurretSubsystem`
 linearly interpolates flywheel RPM and hood degrees from known manual testing data points, recorded in the following
 [spreadsheet](https://docs.google.com/spreadsheets/d/1hAsBn0KIxucuwOv96UMS3bZOrim03YxqXL-2-pBrjzI/edit?usp=sharing).
 
@@ -235,7 +238,7 @@ linearly interpolates flywheel RPM and hood degrees from known manual testing da
     <img src="https://user-images.githubusercontent.com/60120929/162670097-63f1183c-8f15-473d-a90d-0830b2b6153e.png" height="300px"> <img src="https://user-images.githubusercontent.com/60120929/162670129-8a0280be-02f1-44d2-b035-4bf4287bdeaf.png" height="300px">
 </p>
 
-In code, these values were stored in a `double[][]` interpolation table representing tuples of `[hub dist (in), 
+In code, these values were stored in a `double[][]` interpolation table representing tuples of `[hub dist (in),
 flywheel speed (RPM), hood angle (degs)]`.
 ```java
 private static final double[][] INTERPOLATION_TABLE = {
@@ -254,7 +257,7 @@ private static final double[][] INTERPOLATION_TABLE = {
 ##### [`TurretSubsystem` L132-143](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L132-L143)
 
 <!-- reword -->
-To interpolate values for any hub distance, draw a line from the immediately lower distance known data point to the 
+To interpolate values for any hub distance, draw a line from the immediately lower distance known data point to the
 immediately greater distance known data point; the intersection of that line and the current hub distance is the interpolated
 value.
 ```java
@@ -298,7 +301,7 @@ private void interpolateFlywheelHoodRefs(double r) {
 While [...], [...].
 
 ### PID and Alignment
-When the desired hood, flywheel, and turntable references are calculated from `rtheta` and interpolation, the motors are 
+When the desired hood, flywheel, and turntable references are calculated from `rtheta` and interpolation, the motors are
 set using PID control. The flywheel NEO is controlled with `kVelocity` PID in units of flywheel RPM (converting from NEO
 to flywheel RPM with the gear ratio) and the turntable with `kSmartMotion` in units of radians. Talons don't support the
 conversion factor API, but the hood uses `Position` PID with references converted from radians to ticks before being set.
@@ -310,7 +313,7 @@ hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
 ##### [`TurretSubsystem` L423-425](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L423-L425)
 
 To represent whether a module (hood, flywheel, turntable) is aligned and ready to shoot, their current position or velocity
-is thresholded against the target value and converted into a `ModuleState` enum representing whether they are in `HIGH_TOLERANCE` 
+is thresholded against the target value and converted into a `ModuleState` enum representing whether they are in `HIGH_TOLERANCE`
 alignment, `LOW_TOLERANCE` alignment, or completely unaligned.
 ```java
 public enum ModuleState {
@@ -346,13 +349,13 @@ private ModuleState turntableAligned() {
 
 The state of the entire subsystem is the lowest module state. [...]
 
-The idea behind maintaining a state enum instead of a simple boolean was that, while a shot that the robot is trying to 
-score requires a tight alignment tolerance for the turntable, hood, and flywheel, a ball that is being rejected can be 
-fired much sooner and without having to wait for the flywheel to spin up all the way or the turntable to reach perfect 
-alignment with the hub. Therefore, a rejected ball could be shot while the subsystem state was `LOW_TOLERANCE`, while a 
+The idea behind maintaining a state enum instead of a simple boolean was that, while a shot that the robot is trying to
+score requires a tight alignment tolerance for the turntable, hood, and flywheel, a ball that is being rejected can be
+fired much sooner and without having to wait for the flywheel to spin up all the way or the turntable to reach perfect
+alignment with the hub. Therefore, a rejected ball could be shot while the subsystem state was `LOW_TOLERANCE`, while a
 ball intended to be scored needed to wait for `HIGH_TOLERANCE`.
 
-An issue with thresholding was lack of testing time. During Monterey, many shots we took were waiting forever for too-tight 
+An issue with thresholding was lack of testing time. During Monterey, many shots we took were waiting forever for too-tight
 tolerances and had to be forced. We repeatedly blanket-increased the tolerances in response without the time to test if
 a ball fired when the flywheel was 150 RPM off would still make it in the hub. [...]
 
@@ -376,7 +379,7 @@ public enum TurretMode {
 ```
 ##### [`TurretSubsystem` L46-59](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L46-L59)
 
-In `SHOOTING` mode, the turret behaves as normal, continuously tracking the hub while positioning the flywheel and hood 
+In `SHOOTING` mode, the turret behaves as normal, continuously tracking the hub while positioning the flywheel and hood
 to score shots in the hub.
 
 In `RETRACTED` mode, the turret retracts itself, setting the hood and flywheel reference to 0 and the turntable to 180
@@ -406,11 +409,11 @@ if (this.mode == TurretMode.LOW_HUB) {
     desiredTurntableRadians = Math.toRadians(180);
 }
 ```
-##### [`TurretSubsystem` L552-561](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L552-L561)
+##### [`TurretSubsystem` L408-413](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L408-L413)
 
 [...]
 
-In `REJECTING` mode, the turret scales down the flywheel RPM by 0.5 during interpolation to intentionally miss wrong-colored 
+In `REJECTING` mode, the turret scales down the flywheel RPM by 0.5 during interpolation to intentionally miss wrong-colored
 balls (but still cause them to bounce and be difficult to intake). This mode would be set by internals if it detected that
 the current ball color did not match the current alliance color.
 ```java
@@ -422,7 +425,7 @@ Rejection logic was heavily untested, and remained disabled for the majority of 
 it may not have directly caused problems, disabling it allowed further isolation of where a problem originated. As we didn't
 end up making many shots (or even intaking wrong colored balls at all), rejection logic didn't end up being all too necessary.
 
-In retrospect as well, rejection could have been made a separate boolean which was ignored in `LOW_HUB` and `RETRACTED`, 
+In retrospect as well, rejection could have been made a separate boolean which was ignored in `LOW_HUB` and `RETRACTED`,
 as it was basically just `SHOOTING` mode with an extra step in interpolation.
 ```java
 /**
@@ -439,7 +442,7 @@ public void setReject(boolean reject) {
 ##### [`TurretSubsystem` L552-561](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L552-L561), not the prettiest code
 
 ### Debug flags
-A feature that made testing and feature isolation / toggling much easier was debug flags. Instead of repeatedly commenting 
+A feature that made testing and feature isolation / toggling much easier was debug flags. Instead of repeatedly commenting
 and uncommenting code, static booleans could be toggled to quickly disable untested or problematic logic or expose debug
 interfaces like prints or shuffleboard entries.
 ```java

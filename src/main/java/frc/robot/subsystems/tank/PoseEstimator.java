@@ -29,13 +29,16 @@ public class PoseEstimator {
         this.rightEncoder.setPosition(0);
 
         // https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-pose_state-estimators.html
-        poseEstimator = new DifferentialDrivePoseEstimator(new Rotation2d(), new Pose2d(),
-                // State measurement standard deviations. X, Y, theta, dist_l, dist_r.
-                new MatBuilder<>(Nat.N5(), Nat.N1()).fill(0.02, 0.02, 0.01, 0.02, 0.02),
-                // Odometry measurement standard deviations. Left encoder, right encoder, gyro.
-                new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01),
-                // Vision measurement standard deviations. X, Y, and theta.
-                new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01));
+        poseEstimator = new DifferentialDrivePoseEstimator(
+            new Rotation2d(), 
+            new Pose2d(),
+            // State measurement standard deviations. X, Y, theta, dist_l, dist_r.
+            new MatBuilder<>(Nat.N5(), Nat.N1()).fill(0.02, 0.02, 0.01, 0.02, 0.02),
+            // Odometry measurement standard deviations. Left encoder, right encoder, gyro.
+            new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.02, 0.02, 0.01),
+            // Vision measurement standard deviations. X, Y, and theta.
+            new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0.1, 0.1, 0.01)
+        );
     }
 
     public void update() {
@@ -49,7 +52,6 @@ public class PoseEstimator {
 
     /**
      * Gets the estimated current position of the robot.
-     * 
      * @return The estimated position of the robot as a Pose2d.
      */
     public Pose2d getPosition() {
@@ -58,7 +60,6 @@ public class PoseEstimator {
 
     /**
      * Resets the robot's position to a given Pose2D.
-     * 
      * @param pose The pose to reset the pose estimator to.
      */
     public void setPosition(Pose2d pose) {
@@ -70,9 +71,7 @@ public class PoseEstimator {
     }
 
     /**
-     * Gets the gyro angle given by the NavX AHRS, inverted to be counterclockwise
-     * positive.
-     * 
+     * Gets the gyro angle given by the NavX AHRS, inverted to be counterclockwise positive.
      * @return The robot heading as a Rotation2d.
      */
     private Rotation2d getGyroHeading() {
@@ -81,20 +80,18 @@ public class PoseEstimator {
 
     /**
      * Gets the wheel speeds of the drivetrain.
-     * 
      * @return The drivetrain wheel speeds as a DifferentialDriveWheelSpeeds object.
      */
     private DifferentialDriveWheelSpeeds getWheelSpeeds() {
         return new DifferentialDriveWheelSpeeds(
-                leftEncoder.getVelocity(),
-                rightEncoder.getVelocity());
+            leftEncoder.getVelocity(),
+            rightEncoder.getVelocity()
+        );
     }
 
     /**
      * Gets the last measured wheel speeds of the drivetrain.
-     * 
-     * @return The last measured drivetrain wheel speeds as a
-     *         DifferentialDriveWheelSpeeds object.
+     * @return The last measured drivetrain wheel speeds as a DifferentialDriveWheelSpeeds object.
      */
     public DifferentialDriveWheelSpeeds getLastWheelSpeeds() {
         return this.lastWheelSpeeds;
