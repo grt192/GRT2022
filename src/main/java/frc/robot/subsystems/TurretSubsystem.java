@@ -682,7 +682,7 @@ public class TurretSubsystem extends GRTSubsystem {
 
     /**
      * Sets whether the robot is currently being driven by controller input.
-     * @param driving Whethe rthe robot is being driven.
+     * @param driving Whether the robot is being driven.
      */
     public void setDriving(boolean driving) {
         if (!driving) {

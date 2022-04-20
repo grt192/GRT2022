@@ -140,11 +140,13 @@ public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Transla
 ```
 ##### [`FollowPathCommand` L52-104](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/tank/FollowPathCommand.java#L52-L104)
 
-<p align="center">
-    <img src="https://user-images.githubusercontent.com/60120929/164111907-db77cab4-0e1b-4ccb-abf3-93ae2c0e1da2.jpg" width="700px">
-</p>
+<a href="https://drive.google.com/file/d/10scxpLwNVB7aSsjQ-AoTtCNd0iGscWOs/view?usp=sharing" target="_blank" rel="noopener noreferrer">
+    <p align="center">
+        <img src="https://user-images.githubusercontent.com/60120929/164111907-db77cab4-0e1b-4ccb-abf3-93ae2c0e1da2.jpg" width="700px">
+    </p>
+</a>
 
-##### [Pathfollowing testing on the old DT base](https://drive.google.com/file/d/10scxpLwNVB7aSsjQ-AoTtCNd0iGscWOs/view?usp=sharing)
+##### Pathfollowing testing on the old DT base [VIDEO]
 
 While using WPILib builtins greatly reduced the time required to write and start testing localization and path following
 code, the fact that they were essentially black boxes [...]. [...].
@@ -235,6 +237,15 @@ private Pair<Double, Double> calculateRThetaDeltas(Pose2d lastPosition, Pose2d c
 ```
 ##### [`TurretSubsystem` L462-496](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L462-L496)
 
+<!-- TODO -->
+<a href="..." target="_blank" rel="noopener noreferrer">
+    <p align="center">
+        <img src="..." width="700px">
+    </p>
+</a>
+
+##### Pure `rtheta` hub locking [VIDEO]
+
 ### Interpolation
 To find the flywheel speed and hood angle that would work for the turret's current hub distance, `TurretSubsystem`
 linearly interpolates flywheel RPM and hood degrees from known manual testing data points, recorded in the following
@@ -304,9 +315,18 @@ private void interpolateFlywheelHoodRefs(double r) {
 ```
 ##### [`TurretSubsystem` L517-550](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L517-L550)
 
+<!-- TODO -->
+<a href="..." target="_blank" rel="noopener noreferrer">
+    <p align="center">
+        <img src="..." width="700px">
+    </p>
+</a>
+
+##### Shooter testing [VIDEO]
+
 While [...], [...].
 
-### PID and Alignment
+### PID and Flywheel Logic
 When the desired hood, flywheel, and turntable references are calculated from `rtheta` and interpolation, the motors are
 set using PID control. The flywheel NEO is controlled with `kVelocity` PID in units of flywheel RPM (converting from NEO
 to flywheel RPM with the gear ratio) and the turntable with `kSmartMotion` in units of radians. Talons don't support the
@@ -318,6 +338,44 @@ hood.set(ControlMode.Position, desiredHoodRadians * HOOD_RADIANS_TO_TICKS);
 ```
 ##### [`TurretSubsystem` L423-425](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L423-L425)
 
+The flywheel cannot be run all the time however; it is loud, consumes power, and more importantly vibrates the entire 
+turntable and distorts the vision camera stream while running. Instead, the flywheel only runs while a ball is ready in
+internals and after 0.5 seconds have elapsed after stopping driving.
+```java
+boolean runFlywheel = (drivingTimer.hasElapsed(0.5) && ballReady) || driverOverrideFlywheel;
+```
+##### [`TurretSubsystem` L363](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L363)
+```java
+/**
+ * Sets whether the robot is currently being driven by controller input.
+ * @param driving Whether the robot is being driven.
+ */
+public void setDriving(boolean driving) {
+    if (!driving) {
+        drivingTimer.start();
+    } else {
+        drivingTimer.stop();
+        drivingTimer.reset();
+    }
+    //this.driving = driving;
+}
+```
+##### [`TurretSubsystem` L683-695](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L683-L695)
+
+Originally, `driving` was a boolean which was set to false immediately after controller input ceased. This, however,
+meant that the flywheel would turn on as soon as the robot stopped, killing vision before it could lock on. A timer was
+added to add a delay before enabling the flywheel and give vision more time to detect the hub.
+
+<!-- TODO -->
+<a href="..." target="_blank" rel="noopener noreferrer">
+    <p align="center">
+        <img src="..." width="700px">
+    </p>
+</a>
+
+##### Early flywheel logic testing [VIDEO]
+
+### Module Alignment
 To represent whether a module (hood, flywheel, turntable) is aligned and ready to shoot, their current position or velocity
 is thresholded against the target value and converted into a `ModuleState` enum representing whether they are in `HIGH_TOLERANCE`
 alignment, `LOW_TOLERANCE` alignment, or completely unaligned.
