@@ -3,8 +3,9 @@
 
 ## Tank ([#1](https://github.com/grt192/GRTCommandBased/pull/1), [#6](https://github.com/grt192/GRTCommandBased/pull/6))
 The tank subsystem [`TankSubsystem`](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/tank/TankSubsystem.java)
-[...]. Our robot had a west-coast (drop center) tank drivetrain, controlled by a gearbox on each side with 3 NEOs each.
-The system was controlled by a left and right main NEO, and 2 follower NEOs which mirrored the leader's inputs.
+controls the robot's west-coast (drop center) tank drive, supplying power to the 3-NEO gearboxes on each side.
+In code, each side of the drive train was controlled by a "main" SparkMax, with two followers mirroring the output of the
+main to the other NEO motors.
 
 During shop project, we tested two different control schemes for the drivetrain. In tank drive, the driver supplies directly
 a left and right power for the robot. To drive forward, supply the same power to the left and right motors. To turn in one
@@ -27,8 +28,9 @@ public void setTankDrivePowers(double leftScale, double rightScale, boolean squa
 }
 ```
 ##### [`TankSubsystem` L143-157](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/tank/TankSubsystem.java#L143-L157)
-This was deemed [...] by the drivers. Instead, we used car (arcade) drive, where the driver supplies a forward and angular
-power. To drive forwards, supply only forward power. To turn, supply angular power in the direction of turning.
+
+From driver input, we instead used car (arcade) drive, where the driver supplies a forward and angular power. To drive 
+forwards, supply only forward power. To turn, supply angular power in the direction of turning.
 ```java
 public void setCarDrivePowers(double yScale, double angularScale, boolean squareInput) {
     // Square the input if needed for finer control
@@ -55,6 +57,7 @@ public void setCarDrivePowers(double yScale, double angularScale, boolean square
 }
 ```
 ##### [`TankSubsystem` L119-141](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/tank/TankSubsystem.java#L119-L141)
+
 [...]
 
 ### Localization and Path Following ([#9](https://github.com/grt192/GRTCommandBased/pull/9))
@@ -140,7 +143,7 @@ public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Transla
 ```
 ##### [`FollowPathCommand` L52-104](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/tank/FollowPathCommand.java#L52-L104)
 
-<a href="https://drive.google.com/file/d/10scxpLwNVB7aSsjQ-AoTtCNd0iGscWOs/view?usp=sharing" target="_blank" rel="noopener noreferrer">
+<a href="https://drive.google.com/file/d/10scxpLwNVB7aSsjQ-AoTtCNd0iGscWOs/view?usp=sharing">
     <p align="center">
         <img src="https://user-images.githubusercontent.com/60120929/164111907-db77cab4-0e1b-4ccb-abf3-93ae2c0e1da2.jpg" width="700px">
     </p>
@@ -152,7 +155,108 @@ While using WPILib builtins greatly reduced the time required to write and start
 code, the fact that they were essentially black boxes [...]. [...].
 
 ### Auton ([#22](https://github.com/grt192/GRTCommandBased/pull/22), merged into #27)
-[...]
+Originally, auton consisted of 6 paths: a top, middle, and bottom red sequence, and a top, middle, and bottom blue sequence.
+These sequences lowered the intake, pathfollowed from a known starting point to the closest ball, then shot two balls.
+
+<a href="https://pausd.onshape.com/documents/8003f7997b588f082d72c477/w/14e5661479750659f282841e/e/4af5ee78827743d1d23aca5f">
+    <p align="center">
+        <img src="https://user-images.githubusercontent.com/60120929/164557932-f1ac9991-af44-412d-affb-11d4e6715ccf.png" width="700px">
+    </p>
+</a>
+
+##### Auton path and ball location document [CAD]
+
+To reuse shared auton logic, all sequences inherited from `GRTAutonSequence` and invoked super constructors to define 
+their path.
+```java
+/**
+ * Creates a GRTAutonSequence from an initial and ball one pose. This is used for shared initialization logic
+ * between all auton paths, as well as one-ball sequences like the top and bottom paths. Drives to the ball, 
+ * then shoots twice.
+ * 
+ * @param robotContainer The RobotContainer instance, for calling `.setInitialPose()`.
+ * @param initialPose The initial pose of the sequence.
+ * @param ballOnePose The first ball pose of the sequence.
+ */
+public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose, Pose2d ballOnePose) {
+    this.robotContainer = robotContainer;
+    this.initialPose = initialPose;
+
+    tankSubsystem = robotContainer.getTankSubsystem();
+    internalSubsystem = robotContainer.getInternalSubsystem();
+    intakeSubsystem = robotContainer.getIntakeSubsystem();
+
+    addRequirements(tankSubsystem, internalSubsystem, intakeSubsystem);
+
+    addCommands(
+        new DeployIntakeCommand(intakeSubsystem),
+        new FollowPathCommand(tankSubsystem, initialPose, List.of(), ballOnePose)
+            .withTimeout(5),
+        new ShootCommand(internalSubsystem),
+        new ShootCommand(internalSubsystem)
+    );
+}
+```
+##### [`GRTAutonSequence` L30-56](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/tank/GRTAutonSequence.java#L30-L56)
+
+Before Monterey, however, it was decided that there wasn't enough time to tune the path following and make it work and to
+instead rewrite auton to be simpler and less reliant on perfectly functioning internals and turret logic.
+
+The revised "pleb" auton lowers the intake, drives forwards for 55 inches or 8 seconds (whichever triggered first),
+and shoots two balls, using overrides and timers to guarantee system activation.
+```java
+@Override
+public void execute() {
+    forceTimerEntry.setValue(forceTimer.get());
+    shotsRequestedEntry.setValue(shotsRequested);
+
+    // We are done driving if: we are beyond 55 inches of our starting position,
+    // or 8 seconds have passed.
+    boolean doneDriving = tankSubsystem.distance(start) > Units.inchesToMeters(55) 
+        || autonTimer.hasElapsed(8);
+
+    // If we're not done driving, drive forwards at 0.4 power
+    // If we are done driving, start the timer to force a shot.
+    tankSubsystem.setCarDrivePowers(!doneDriving ? 0.4 : 0, 0);
+    if (doneDriving) forceTimer.start();
+
+    // This runs once immediately and after every successful shot.
+    // If we're not requesting a shot, request one and reset the force timer.
+    // End the command after shooting twice.
+    if ((!internalSubsystem.getDriverOverride() && !internalSubsystem.getShotRequested()) || internalsTimer.hasElapsed(1)) {
+        if (doneDriving && shotsRequested == 2) {
+            intakeSubsystem.setPosition(IntakePosition.RAISED); // TODO: is this needed? we;re already composed within the sequence to be followed by a RaiseIntakeCommand
+            completedEntry.setValue(true);
+            complete = true;
+        }
+        forceTimer.reset();
+        internalsTimer.stop();
+        internalsTimer.reset();
+
+        internalSubsystem.setDriverOverride(false);
+        internalSubsystem.requestShot();
+        shotsRequested++;
+    }
+
+    // Force a shot if we haven't shot in 4 seconds
+    if (forceTimer.hasElapsed(4)) {
+        internalSubsystem.setDriverOverride(true);
+        internalsTimer.start();
+    }
+}
+```
+##### [`PlebAutonSequence` L87-125](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/tank/PlebAutonSequence.java#L87-L125)
+
+<!-- TODO -->
+<a href="...">
+    <p align="center">
+        <img src="..." width="700px">
+    </p>
+</a>
+
+##### Two ball pleb auton [VIDEO]
+
+At Monterey, [...]. Auton performed a lot more consistently at SVR.
 
 ## Intake
 [...]
@@ -161,8 +265,10 @@ code, the fact that they were essentially black boxes [...]. [...].
 [...]
 
 ## Turret ([#16](https://github.com/grt192/GRTCommandBased/pull/16), [#27](https://github.com/grt192/GRTCommandBased/pull/27), [#32](https://github.com/grt192/GRTCommandBased/pull/32))
-[...]. To aim the turret, `TurretSubsystem` maintains a hub distance (`r`) and turntable angle (`theta`) to constantly
-align the turret with the hub and set the hood position and flywheel velocity [...].
+The turret subsystem [`TurretSubsystem`](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java)
+manages the robot's turret shooter hub locking and aiming. To aim the turret,`TurretSubsystem` maintains a hub distance 
+(`r`) and turntable angle (`theta`) to constantly align the turret with the hub and set the correct hood position and 
+flywheel velocity to score shots.
 
 ### The `rtheta` state system ([#24](https://github.com/grt192/GRTCommandBased/pull/24), merged into #27)
 While vision is out of range (in the turntable's blind spot) or not working (flywheel on), `TurretSubsystem` continues to
@@ -238,7 +344,7 @@ private Pair<Double, Double> calculateRThetaDeltas(Pose2d lastPosition, Pose2d c
 ##### [`TurretSubsystem` L462-496](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L462-L496)
 
 <!-- TODO -->
-<a href="..." target="_blank" rel="noopener noreferrer">
+<a href="...">
     <p align="center">
         <img src="..." width="700px">
     </p>
@@ -316,7 +422,7 @@ private void interpolateFlywheelHoodRefs(double r) {
 ##### [`TurretSubsystem` L517-550](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L517-L550)
 
 <!-- TODO -->
-<a href="..." target="_blank" rel="noopener noreferrer">
+<a href="...">
     <p align="center">
         <img src="..." width="700px">
     </p>
@@ -367,7 +473,7 @@ meant that the flywheel would turn on as soon as the robot stopped, killing visi
 added to add a delay before enabling the flywheel and give vision more time to detect the hub.
 
 <!-- TODO -->
-<a href="..." target="_blank" rel="noopener noreferrer">
+<a href="...">
     <p align="center">
         <img src="..." width="700px">
     </p>
