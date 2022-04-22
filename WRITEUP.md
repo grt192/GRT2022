@@ -258,8 +258,75 @@ public void execute() {
 
 At Monterey, [...]. Auton performed a lot more consistently at SVR.
 
-## Intake
+## Intake ([#16](https://github.com/grt192/GRTCommandBased/pull/16), [#27](https://github.com/grt192/GRTCommandBased/pull/27), [#32](https://github.com/grt192/GRTCommandBased/pull/32))
+The intake subsystem [`IntakeSubsystem`](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java)
+controls the robot's intake. It uses a SparkMax to control the intake rollers NEO and a Talon to control the 775
+deploy mechanism.
+
+### Rollers
 [...]
+
+### Deployment logic
+To represent the intake's deploy position, an enum with the respective encoder tick position value is used.
+```java
+/**
+ * An enum representing the position of the intake, with `IntakePosition.value`
+ * representing the counterclockwise angle from straight upwards.
+ */
+public enum IntakePosition {
+    START(0), RAISED(0), DEPLOYED(107891), BOTTOM(107891);
+
+    public double value;
+
+    private IntakePosition(double value) {
+        this.value = value;
+    }
+}
+```
+##### [`IntakeSubsystem` L31-43](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L31-L43)
+
+To set the desired positions, the intake deploy uses a motion-profiling PID loop to scale up and down the desired velocities
+at the beginning and end of the trajectory.
+```java
+deploy.set(ControlMode.MotionMagic, 
+    (autoDeployIntake && power > 0.1
+        ? IntakePosition.DEPLOYED.value
+        : targetPosition.value) 
+    + intakePosOffset);
+```
+
+PID tuning of the intake deploy was rough, possibly because of the mechanical properties of the system; the loop needed to
+resist gravity going up and prevent gravity from acting too quickly on the way down. The original intake 775 motor had a
+broken encoder, something not caught until an early attempt at tuning ran the intake full power into the bottom hard stop.
+
+Initially as well, the tuned PID loop was too slow in bringing the intake up and down and attempts to increase the cruise 
+velocity and make it faster encountered mechanical issues. For Monterey, a hackier solution using set thresholds and 
+powers was implemented to raise and lower the intake quickly [...].
+```java
+private void moveDeployTo(double targPos) {
+    double currentPos = deploy.getSelectedSensorPosition();
+
+    //System.out.println("current: " + currentPos + " targ: " + targPos);
+    if (Math.abs(targPos - currentPos) < 2000) {
+        deploy.set(0);
+    } else if (targPos > currentPos || targPos == IntakePosition.DEPLOYED.value) { // going down
+        if (currentPos < 20000) {
+            deploy.set(0.1);
+        } else {
+            deploy.set(0.25);
+        }
+    } else { // going up
+        if (currentPos < 20000) {
+            deploy.set(-0.1);
+        } else {
+            deploy.set(-0.3);
+        }
+    }
+}
+```
+Unlike the PID solution however, this approach was prone to large oscillations (as seen in some Monterey qualifiers). 
+After the intake gear ratio and chain was mechanically adjusted however, the retuned PID was able to achieve "good enough"
+speeds and the intake reverted to using motion profiling closed loop control.
 
 ## Internals
 [...]
