@@ -247,10 +247,9 @@ public void execute() {
 ```
 ##### [`PlebAutonSequence` L87-125](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/tank/PlebAutonSequence.java#L87-L125)
 
-<!-- TODO -->
-<a href="...">
+<a href="https://drive.google.com/file/d/12qvF5H1EAqaNPT_eMLM5U1sfSgBAcgTB/view?usp=sharing">
     <p align="center">
-        <img src="..." width="700px">
+        <img src="https://user-images.githubusercontent.com/60120929/165888726-0966e09d-fda9-4a34-809b-5905d93c4098.jpg" width="700px">
     </p>
 </a>
 
@@ -263,7 +262,7 @@ The intake subsystem [`IntakeSubsystem`](https://github.com/grt192/GRTCommandBas
 controls the robot's intake. It uses a SparkMax to control the intake rollers NEO and a Talon to control the 775
 deploy mechanism.
 
-### Rollers
+### Roller logic
 [...]
 
 ### Deployment logic
@@ -294,6 +293,9 @@ deploy.set(ControlMode.MotionMagic,
         : targetPosition.value) 
     + intakePosOffset);
 ```
+##### [`IntakeSubsystem` L216-220](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L216-L220)
+
+<!-- TODO: explain auto deploy intake? -->
 
 PID tuning of the intake deploy was rough, possibly because of the mechanical properties of the system; the loop needed to
 resist gravity going up and prevent gravity from acting too quickly on the way down. The original intake 775 motor had a
@@ -539,10 +541,9 @@ Originally, `driving` was a boolean which was set to false immediately after con
 meant that the flywheel would turn on as soon as the robot stopped, killing vision before it could lock on. A timer was
 added to add a delay before enabling the flywheel and give vision more time to detect the hub.
 
-<!-- TODO -->
-<a href="...">
+<a href="https://drive.google.com/file/d/1y6PzbTDGo8iuTLlkWDuZbjf7fBNy__x3/view?usp=sharing">
     <p align="center">
-        <img src="..." width="700px">
+        <img src="https://user-images.githubusercontent.com/60120929/165888736-64c7dcb3-ffa0-4713-9c92-92c5ad22727d.jpg" height="600px">
     </p>
 </a>
 

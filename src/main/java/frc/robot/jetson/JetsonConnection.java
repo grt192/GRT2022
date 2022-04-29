@@ -87,14 +87,16 @@ public class JetsonConnection {
         @Override
         public void run() {
             while (true) {
+                /*
                 System.out.println(socket == null 
                     ? "socket is null"
                     : "connected: " + socket.isConnected() + " closed: " + socket.isClosed() + " bound: " + socket.isBound()
                 );
+                */
                 try {
                     // If thread interrupted
                     if (Thread.interrupted()) continue;
-                    System.out.println("not interrupted");
+                    //System.out.println("not interrupted");
 
                     // Check if we need to connect
                     if (stdIn == null || socket == null || socket.isClosed() || !socket.isConnected() || !socket.isBound()) {
