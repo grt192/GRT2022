@@ -262,11 +262,8 @@ The intake subsystem [`IntakeSubsystem`](https://github.com/grt192/GRTCommandBas
 controls the robot's intake. It uses a SparkMax to control the intake rollers NEO and a Talon to control the 775
 deploy mechanism.
 
-### Roller logic
-[...]
-
-### Deployment logic
-To represent the intake's deploy position, an enum with the respective encoder tick position value is used.
+### Deployment
+To represent the intake's deploy position, `IntakeSubsystem` uses an enum containing the respective encoder tick position value.
 ```java
 /**
  * An enum representing the position of the intake, with `IntakePosition.value`
@@ -284,7 +281,7 @@ public enum IntakePosition {
 ```
 ##### [`IntakeSubsystem` L31-43](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L31-L43)
 
-To set the desired positions, the intake deploy uses a motion-profiling PID loop to scale up and down the desired velocities
+To set the desired positions, the intake deploy uses a [motion-profiling PID loop](https://docs.ctre-phoenix.com/en/stable/ch16_ClosedLoop.html#motion-magic-control-mode) to scale up and down the desired velocities
 at the beginning and end of the trajectory.
 ```java
 deploy.set(ControlMode.MotionMagic, 
@@ -295,15 +292,15 @@ deploy.set(ControlMode.MotionMagic,
 ```
 ##### [`IntakeSubsystem` L216-220](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L216-L220)
 
-<!-- TODO: explain auto deploy intake? -->
+Initially, we experimented with automatically deploying the intake when drivers ran the rollers and keeping it raised at all other times, but the PID proved too slow for such a solution to be effective. Instead, the desired intake position is set by driver input and toggled between `RAISED` and `DEPLOYED`.
 
 PID tuning of the intake deploy was rough, possibly because of the mechanical properties of the system; the loop needed to
-resist gravity going up and prevent gravity from acting too quickly on the way down. The original intake 775 motor had a
+resist gravity both in going up and from acting too quickly on the way down. The original intake 775 motor had a
 broken encoder, something not caught until an early attempt at tuning ran the intake full power into the bottom hard stop.
 
 Initially as well, the tuned PID loop was too slow in bringing the intake up and down and attempts to increase the cruise 
 velocity and make it faster encountered mechanical issues. For Monterey, a hackier solution using set thresholds and 
-powers was implemented to raise and lower the intake quickly [...].
+powers was quickly implemented to raise and lower the intake at more reasonable speeds.
 ```java
 private void moveDeployTo(double targPos) {
     double currentPos = deploy.getSelectedSensorPosition();
@@ -326,11 +323,116 @@ private void moveDeployTo(double targPos) {
     }
 }
 ```
+##### [`IntakeSubsystem` L234-253](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L234-L253)
+
 Unlike the PID solution however, this approach was prone to large oscillations (as seen in some Monterey qualifiers). 
-After the intake gear ratio and chain was mechanically adjusted however, the retuned PID was able to achieve "good enough"
+Thankfully, after the intake gear ratio and chain was mechanically adjusted, the retuned PID was able to achieve "good enough"
 speeds and the intake reverted to using motion profiling closed loop control.
 
-## Internals
+### Limit switches
+To reset the intake's position to known values when the encoder drifts (and to prevent potentially dangerous PID overshooting), the intake features two limit switches, accessed via DIO.
+```java
+topLimitSwitch = new DigitalInput(tLimitSwitchPort);
+bottomLimitSwitch = new DigitalInput(bLimitSwitchPort);
+```
+##### [`IntakeSubsystem` L123-124](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L123-L124)
+
+When testing on robot 1, it was discovered that because the deploy motor and limit switch were on opposite sides of the intake and the limit switch side sagged more than the left, the deploy motor would move only until the right side activated the limit switch, after which the encoder would be reset to the target position and the PID would stop supplying power. <!-- reword "stop supplying power" --> This caused the left side of the intake to visibly hang above the right.
+
+<!-- reword probably -->
+To address this problem, we added a delay to the limit switch reset where activating a limit switch would only reset the position after a fraction of a second, causing the PID to keep moving the motor a bit longer before resetting the deploy position.
+```java
+/**
+ * Checks the target limit switch for whether the intake is touching it and resets the encoder on
+ * the given delay to prevent uneven tilting on the limit switch side.
+ * 
+ * @param limitSwitch The limit switch to check.
+ * @param timer The timer corresponding to that limit switch.
+ * @param delay The delay to reset to the position after, in seconds.
+ * @param resetPos The position to reset to, in encoder ticks.
+ */
+private void delayLimitSwitchReset(DigitalInput limitSwitch, Timer timer, double delay, double resetPos) {
+    if (!limitSwitch.get()) {
+        timer.start();
+    } else {
+        timer.stop();
+        timer.reset();
+    }
+
+    if (timer.hasElapsed(delay)) {
+        deploy.setSelectedSensorPosition(resetPos);
+        intakePosOffset = 0;
+    }
+}
+```
+##### [`IntakeSubsystem` L256-277](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L256-L277)
+
+```java
+delayLimitSwitchReset(bottomLimitSwitch, bottomTimer, BOTTOM_LIMIT_DELAY, IntakePosition.BOTTOM.value);
+// TODO: is a top delay even necessary?
+delayLimitSwitchReset(topLimitSwitch, topTimer, TOP_LIMIT_DELAY, IntakePosition.START.value);
+```
+##### [`IntakeSubsystem` L166-168](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L166-L168)
+
+Following intake's mechanical modifcations after Monterey, we started to run into the opposite problem: the motor side was being driven below the limit switch side, causing balls to bounce out on the left. Initially, to rectify this we split the `DEPLOYED` position into two: `BOTTOM` was set to the position at the hard stop, what the limit switch would reset to, and `DEPLOYED` would be slightly above that to keep the intake raised enough so that balls could still be consumed.
+```java
+START(0), RAISED(0), DEPLOYED(107891), BOTTOM(107891);
+```
+##### [`IntakeSubsystem` L36](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L36)
+
+<!-- reword "miraculously fixed itself"? -->
+This problem miraculously fixed itself and we never ended up employing a different value for `BOTTOM` than `DEPLOYED`.
+
+Similarly, `START` and `RAISED` were originally intended to be separate values: start would be the position of the intake all the way up (within the frame perimeter) at the start of the match, and raised would be a value slightly in front of that position to not collide with the turret mid-match. After the gear ratio and chain were changed however, it was discovered that there was enough slack in the chain such that when the motor tried to return to `0` it would return to a satisfactory raised position instead.
+
+### Rollers
+The intake rollers are controlled using various overrides supplied by drivers and auton commands. [...]
+```java
+// Otherwise, use auto input if it's overriding, driver input if they're overriding 
+// and default to running intake automatically from vision.
+power = autoOverride ? autoPower
+    : driverOverride ? driverPower
+    : jetson.ballDetected() ? 0.5 : 0;
+```
+##### [`IntakeSubsystem` L176-180](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L176-L180)
+
+The rollers depend on a ball count from internals, and won't run if internals is already full.
+```java
+// If the ball count is greater than 2, don't run intake.
+// Skip this check if disabled on shuffleboard.
+double power;
+if (internalSubsystem.getBallCount() > 2 && !skipInternalsCheck) {
+    power = 0;
+} else {
+```
+##### [`IntakeSubsystem` L170-175](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L170-L175)
+
+Initially, we experimented with using vision to detect balls and running rollers automatically from vision data, with driver input only designed to override the rollers if the detection failed. However, due to time constraints forcing the abandonment of vision ball detection, the driver override became the main way the rollers were controlled. 
+```java
+public RunIntakeCommand(IntakeSubsystem intakeSubsystem, XboxController xboxController) {
+    super(() -> {
+        double leftTrigger = xboxController.getLeftTriggerAxis();
+        double rightTrigger = xboxController.getRightTriggerAxis();
+
+        intakeSubsystem.setDriverPower((rightTrigger - leftTrigger) * 0.85);
+
+        // If the driver is supplying intake power with the triggers, override intake control
+        if (leftTrigger > 0 || rightTrigger > 0) {
+            intakeSubsystem.setDriverOverride(true);
+
+            overrideTimer.reset();
+            overrideTimer.start();
+        } else if (overrideTimer.hasElapsed(2)) {
+            // Otherwise, if 2 seconds have passed without driver input, resume automatic intake control
+            intakeSubsystem.setDriverOverride(false);
+        }
+
+        intakeSubsystem.intakePosOffset += -xboxController.getLeftY() * 100;
+    }, intakeSubsystem);
+}
+```
+##### [`RunIntakeCommand` L18-38](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/intake/RunIntakeCommand.java#L18-L38); the timer to relinquish driver control became largely irrelevant after [...]
+
 [...]
 
 ## Turret ([#16](https://github.com/grt192/GRTCommandBased/pull/16), [#27](https://github.com/grt192/GRTCommandBased/pull/27), [#32](https://github.com/grt192/GRTCommandBased/pull/32))
@@ -703,3 +805,7 @@ private static boolean SKIP_REJECTION = true;
 
 ## Vision
 [...]
+
+## Internals
+[...]
+

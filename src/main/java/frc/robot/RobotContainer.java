@@ -149,15 +149,16 @@ public class RobotContainer {
      * Right bumper (held)    -> slow mode; scales down drive powers for more precise inputs
      * 
      * Controller 2 (mech):
-     * A button (pressed)    -> request shot
-     * B button (pressed)    -> toggle intake position (raise / lower)
-     * X button (pressed)    -> reset turret offsets
-     * Y button (pressed)    -> toggle turret low hub mode
-     * Triggers (held)       -> run intake -- left backwards, right forwards
-     * Right joystick (held) -> run climb -- up to extend, down to retract
-     * Left bumper (held)    -> override flywheel only (force flywheel to run)
-     * Right bumper (held)   -> override both flywheel and internals (force flywheel to run, internals after spinup delay)
-     * Right bumper (held)   -> slow mode; scales down drive powers for more precise inputs
+     * A button (pressed)           -> request shot
+     * B button (pressed)           -> toggle intake position (raise / lower)
+     * X button (pressed)           -> reset turret offsets
+     * Y button (pressed)           -> toggle turret low hub mode
+     * Triggers (held)              -> run intake -- left backwards, right forwards
+     * Left joystick Y axis (held)  -> offset intake position if it fails to hit a hard stop
+     * Right joystick Y axis (held) -> run climb -- up to extend, down to retract
+     * Left bumper (held)           -> override flywheel only (force flywheel to run)
+     * Right bumper (held)          -> override both flywheel and internals (force flywheel to run, internals after spinup delay)
+     * Right bumper (held)          -> slow mode; scales down drive powers for more precise inputs
      */
     private void configureButtonBindings() {
         driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
