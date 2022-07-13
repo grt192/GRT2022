@@ -141,15 +141,26 @@ public class RobotContainer {
      * ({@link edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then
      * passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
      * 
-     * Controller 1 (driver):
-     * Joysticks -> car drive -- left Y -> foward, right X -> angular (tank)
-     * Triggers -> manual override intake -- left backwards, right forwards (intake)
-     * A button -> lower intake (intake)
-     * B button -> raise intake (intake)
+     * Controller 1 (drive):
+     * Joysticks (held)       -> car drive -- left Y axis controls foward power, right X axis controls angular power
+     * X button (pressed)     -> toggle turret retracted mode
+     * Left trigger (held)    -> freeze turret
+     * Right bumper (pressed) -> manual reset turret r to 140 in. (edge of tarmac)
+     * Right bumper (held)    -> slow mode; scales down drive powers for more precise inputs
      * 
-     * Controller 2 (mechanisms):
-     * A button -> request shot (internals)
-     * X button -> start climb sequence (climb)
+     * Controller 2 (mech):
+     * A button (pressed)           -> request shot
+     * B button (pressed)           -> toggle intake position (raise / lower)
+     * X button (pressed)           -> reset turret offsets
+     * Y button (pressed)           -> toggle turret low hub mode
+     * Triggers (held)              -> run intake -- left backwards, right forwards
+     * Left joystick Y axis (held)  -> offset intake position if it fails to hit a hard stop
+     * Right joystick Y axis (held) -> run climb -- up to extend, down to retract
+     * Left bumper (held)           -> override flywheel only (force flywheel to run)
+     * Right bumper (held)          -> override both flywheel and internals (force flywheel to run, internals after spinup delay)
+     * Right bumper (held)          -> slow mode; scales down drive powers for more precise inputs
+     * POV (0, 180)                 -> turret distance offsets -- 0 to increase r, 180 to decrease
+     * POV (90, 270)                -> turret turntable offsets -- 90 to increase theta, 270 to decrease
      */
     private void configureButtonBindings() {
         driveAButton.whenPressed(new RequestShotCommand(internalSubsystem));
@@ -169,7 +180,6 @@ public class RobotContainer {
         //     () -> turretSubsystem.setDriverOverrideFlywheel(false), 
         //     turretSubsystem
         // ));
-        
 
         // Car drive with the left Y axis controlling y power and the right X axis controlling angular
         tankSubsystem.setDefaultCommand(new RunCommand(() -> {
