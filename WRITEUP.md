@@ -2,8 +2,9 @@
 **Editor's note:** Hello! This writeup was mostly (entirely) written by local controls nerd Kevin Yu. Sorry for getting it out
 so late; after comps I was bogged down with projects and SAT prep and AP testing and the motivation to finish this never
 really came back. I'm not really qualified to write about vision, but every subsystem should be covered minus
-internals and climb, whose sections I never really got around to writing (sorry!). This document certainly isn't as polished 
-as I initially envisioned it as being, but I hope that even without a few subsystems this makes for an interesting read.
+internals, whose section I never really got around to writing (sorry!). If I got anything wrong (especially on the mechanical
+side of things) please let me know! This document certainly isn't as polished as I initially envisioned it as being, but 
+I hope that even missing a few sections it makes for an interesting read.
 
 PS: [these are all my photos from the 2021-2022 GRT year](https://photos.app.goo.gl/oX13EjArwBHoDxhK8). Maybe it'll be 
 interesting seeing things from a controls member's perspective, who knows.
@@ -1014,5 +1015,146 @@ private static boolean SKIP_REJECTION = true;
 <!-- ## Vision -->
 <!-- [...] -->
 
-<!-- ## Climb -->
-<!-- [...] -->
+## Climb
+The climb subsystem [`ClimbSubsystem`](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/subsystems/ClimbSubsystem.java)
+controls the robot's climb arms. While originally it would have used a SparkMax to control the six point gearbox, a Talon
+to control the six point brake, a SparkMax and Talon to control the ten point gearbox and brake, two Talons to control
+the ten point releasing hook solenoids, and two Talons to control the fifteen point arms, only the six point SparkMax
+and Talon are used in the final system.
+```java
+private final CANSparkMax six;
+private final RelativeEncoder sixEncoder;
+private final SparkMaxPIDController sixPidController;
+private final WPI_TalonSRX sixBrake;
+
+/*
+private final CANSparkMax ten;
+private final RelativeEncoder tenEncoder;
+private final SparkMaxPIDController tenPidController;
+private final WPI_TalonSRX tenBrake;
+
+private final WPI_TalonSRX tenSolenoidMain;
+private final WPI_TalonSRX tenSolenoidFollow;
+
+private final WPI_TalonSRX fifteenMain;
+private final WPI_TalonSRX fifteenFollow;
+*/
+```
+##### [`ClimbSubsystem` L35-51](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/subsystems/ClimbSubsystem.java#L35-L51)
+
+### The Climb Sequence
+Originally, the climb sequence was represented using a `SequentialCommandGroup` composed of climb phase commands. Three
+phases were written corresponding roughly to the phases outlined in the [climb plan slides](https://docs.google.com/presentation/d/1yK-8S1UiBtJzN49HR8bzo_tvsRK-iMBG_KgSOIpyElY/edit#slide=id.g10f5912692b_45_50),
+each consisting of extending and retracting the three sets of arms to reach the 6-point (phase 1), 10-point (phase 2), 
+and 15-point (phase 3) rungs.
+```java
+/**
+ * PHASE 1 (6 point rung)
+ * TODO: measure these positions (for all phases)
+ */
+public class ClimbPhase1Command extends CommandBase {
+    @Override
+    public void initialize() {
+        // Disengage the six point arm brake and extend the arm to grab the rung
+        sixBrake.set(0);
+        sixPidController.setReference(SIX_MAX_POS, ControlType.kSmartMotion);
+    }
+
+    @Override
+    public boolean isFinished() {
+        return Math.abs(sixEncoder.getPosition() - SIX_MAX_POS) < 1;
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        // Engage the brake and partially retract the arm after grabbing
+        sixBrake.set(1);
+        sixPidController.setReference(SIX_RETRACTED_POS, ControlType.kSmartMotion);
+    }
+}
+```
+##### [`ClimbSubsystem` L205-228](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/subsystems/ClimbSubsystem.java#L205-L228)
+
+To climb, the mech driver would press a button to clean up all other subsystems and start the sequential command.
+```java
+/**
+ * Gets the climb sequence as a SequentialCommandGroup.
+ * @return The command group representing the climb sequence.
+ */
+public Command climb(GRTSubsystem... subsystems) {
+    for (GRTSubsystem subsystem : subsystems) subsystem.climbInit();
+    return new ClimbPhase1Command();
+}
+```
+##### [`ClimbSubsystem` L230-237](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/subsystems/ClimbSubsystem.java#L230-L237); originally this returned a `SequentialCommandGroup` composing `ClimbPhase1Command`, `ClimbPhase2Command`, and `ClimbPhase3Command`.
+
+Climb as a sequence of commands was never tested. As it became clear that the ten and fifteen point arms would not be
+ready for Monterey, `ClimbPhase2Command` and `ClimbPhase3Command` were deleted and the `SequentialCommandGroup` removed.
+
+Even with only one command, tuning the six point arm PID was never done due to time constraints, made harder by the constant 
+repairs the arms underwent requiring their frequent removal from the robot. For testing and at Monterey, the climb arms 
+were instead bound to the mech controller's right joystick, with the brake automatically being engaged and disengaged
+based on the supplied power.
+```java
+// Manual climb control with the right mech joystick:
+// Push up to extend, down to retract; brakes are automatically set when manual control 
+// is supplied.
+climbSubsystem.setDefaultCommand(new RunCommand(() -> {
+    double pow = -mechController.getRightY();
+    climbSubsystem.driveSixArm(pow);
+}, climbSubsystem));
+```
+##### [`RobotContainer` L222-228](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/RobotContainer.java#L222-L228)
+
+An issue was encountered with initially disengaging the brake to extend where the brake would not disengage with the
+entire weight of the robot bearing down on it, so a timer was added to retract the arms a small amount to relieve pressure
+on the brake before any extension.
+```java
+/**
+ * Manually sets the six winch power.
+ * @param pow The power to set.
+ */
+public void driveSixArm(double pow) {
+    double power = pow;
+    if (power < 0) {
+        if (lowerLimit && sixEncoder.getPosition() <= 0) {
+            setSixPower(0);
+            lastRetracted = true;
+            return;
+        }
+        lastRetracted = true;
+    }
+
+    // ...
+
+    //stop retracting and start extending
+    if (retractToExtend && brakeSwitch.hasElapsed(0.15)) {
+        sixBrakeEngaged = false;
+        brakeLastEngaged = false;
+        retractToExtend = false;
+        brakeSwitch.stop();
+        brakeSwitch.reset();
+    }
+
+    // Set power and brake mode
+    setSixPower(power);
+}
+```
+##### [`ClimbSubsystem` L138-179](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/subsystems/ClimbSubsystem.java#L138-L179); the full method has been truncated here as it is 41 lines in its entirety.
+
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/60120929/178797612-5f55115b-13e4-4db0-a70c-ffdda2cf8462.JPG" width="475px"> <img src="https://user-images.githubusercontent.com/60120929/178797692-a63a1379-09bb-4e2c-8fb0-e0cfeade356d.JPG" width="475px">
+</p>
+
+##### Pre-Monterey climb testing
+
+Despite this, the climb strings continued to break throughout Monterey, putting a lot of pressure on the pit to constantly
+restring them. We successfully climbed at Monterey when we tested the restringed arms on the test field climb rungs in the 
+back, but the one time we attempted a climb in a match at Monterey the arms bent off due to their weak mounting; the sudden
+change of climb plans before Monterey from a three arm 15-point climb to a one arm 6-point climb caused a rush to make
+the six point arms rigid resulting in their 2-rivet attachment to the base.
+
+For SVR, diagonal support beams were added and the string was braided to discourage snapping, resulting in several 4-point 
+climbs that won us some ranking points. Though string issues continued to persist (attempting a 6-point climb was deemed
+too risky due to how high the arms needed to extend for one), the pit enjoyed a welcome respite from constant, stressful 
+restringing.
