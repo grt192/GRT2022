@@ -58,12 +58,10 @@ public void setCarDrivePowers(double yScale, double angularScale, boolean square
 ```
 ##### [`TankSubsystem` L119-141](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/tank/TankSubsystem.java#L119-L141)
 
-[...]
-
 ### Localization and Path Following ([#9](https://github.com/grt192/GRTCommandBased/pull/9))
-For localization, we decided that writing our own pose estimation would take too much time considering our relative lack
-of experience and decided to use WPILib's built-in [`DifferentialDrivePoseEstimator`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/estimator/DifferentialDrivePoseEstimator.html)
-instead. The `DifferentialDrivePoseEstimator` wraps a Kalman filter around raw encoder, gyro, and vision measurements to
+For localization, even before the season it had been discussed that writing our own pose estimation would take too much time considering our relative lack
+of experience, with us deciding to use WPILib's built-in [`DifferentialDrivePoseEstimator`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/estimator/DifferentialDrivePoseEstimator.html)
+instead. The `DifferentialDrivePoseEstimator` wraps a [Kalman filter](https://en.wikipedia.org/wiki/Kalman_filter) around raw encoder, gyro, and vision measurements to
 more accurately estimate the robot's position on the field.
 ```java
 public void update() {
@@ -82,7 +80,7 @@ and [`TrajectoryGenerator`](https://first.wpi.edu/wpilib/allwpilib/docs/release/
 `TrajectoryGenerator` generates a clamped cubic spline path [`Trajectory`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/trajectory/Trajectory.html)
 (essentially a list of wheel speeds and positions) between two points with constraints dictated by config parameters, and
 `RamseteCommand` feeds the trajectory into the [`RamseteController`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/controller/RamseteController.html),
-which consumes the localization robot pose to adjust PID references to maintain the desired trajectory-state pose. `RamseteCommand`
+a Pure-Pursuit-esque "nonlinear controller" which consumes the localization robot pose to adjust PID references to maintain the desired trajectory-state pose. `RamseteCommand`
 uses a [`SimpleMotorFeedForward`](https://first.wpi.edu/wpilib/allwpilib/docs/release/java/edu/wpi/first/math/controller/SimpleMotorFeedforward.html)
 to calculate inputs to maintain the desired trajectory velocity and acceleration, then performs PID for motor voltage which
 is supplied to `TankSubsystem`.
@@ -152,7 +150,7 @@ public FollowPathCommand(TankSubsystem tankSubsystem, Pose2d start, List<Transla
 ##### Pathfollowing testing on the old DT base [VIDEO]
 
 While using WPILib builtins greatly reduced the time required to write and start testing localization and path following
-code, the fact that they were essentially black boxes [...]. [...].
+code, the fact that they were essentially black boxes caused confusion and in some cases prevented perfectly ideal behavior. For example, a Kalman filter allows the pose estimator fuse both vision and odometry readings when calculating the robot position, greatly increasing the accuracy of the resulting pose. However, due to the circular (and thus symmetric) nature of this year's vision target, vision is unable to obtain an absolute robot coordinate, only being able to calculate the distance to the hub (generating a ring of possible robot positions). In an ideal world, we could pass this ring into the Kalman filter's probability matrix for a more accurate position estimate, but WPILib's `DifferentialDrivePoseEstimator` only accepts a `Pose2d` as vision measurement, so we never ended up using vision data to correct odometry.
 
 ### Auton ([#22](https://github.com/grt192/GRTCommandBased/pull/22), merged into #27)
 Originally, auton consisted of 6 paths: a top, middle, and bottom red sequence, and a top, middle, and bottom blue sequence.
@@ -199,11 +197,10 @@ public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose, Pose2
 ```
 ##### [`GRTAutonSequence` L30-56](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/tank/GRTAutonSequence.java#L30-L56)
 
-Before Monterey, however, it was decided that there wasn't enough time to tune the path following and make it work and to
-instead rewrite auton to be simpler and less reliant on perfectly functioning internals and turret logic.
+Auton was not ready for Monterey. Our first practice match, an S-curve trajectory was set as our auton routine (left over from path following testing) and we incurred a penalty during autonomous when we rammed into an opposing alliance bot. Pretty quickly following the first few matches, it was decided that there wasn't enough time to tune path following and to instead rewrite auton to be simpler and more reliable.
 
-The revised "pleb" auton lowers the intake, drives forwards for 55 inches or 8 seconds (whichever triggered first),
-and shoots two balls, using overrides and timers to guarantee system activation.
+The revised "pleb" auton lowers the intake, drives forwards for 55 inches or 8 seconds (whichever completed first),
+and shoots two balls, using overrides and timers to guarantee shooter and internals cooperate.
 ```java
 @Override
 public void execute() {
@@ -255,7 +252,9 @@ public void execute() {
 
 ##### Two ball pleb auton [VIDEO]
 
-At Monterey, [...]. Auton performed a lot more consistently at SVR.
+At Monterey, even the revised pleb auton didn't fare so well. Originally, it still relied on the driver-oriented `requestShot()` and force-shot-on-second-call override, and it seemed every other match that either internals or the flywheel wouldn't recognize the ball and try to fire it. One-ball auton was inconsistent, two-ball auton was practically nonexistent due to an uncaught bug that made auton exit after it successfully shot once, and there was much confusion around [why the flywheel was "spinning backwards" during auton, or why two-ball auton never seemed to work](https://docs.google.com/document/d/1-vH8RTIFkwTzP3HBMQ2mBGBzPsPOIh3eer36siv3sD0/edit?usp=sharing). Though we eventually managed to pinpoint and eliminate most of the issues plaguing auton at Monterey, it took us the whole regional to do so.
+
+Given two more weeks to debug and improve however, auton at SVR performed a lot more consistently. [...]
 
 ## Intake ([#16](https://github.com/grt192/GRTCommandBased/pull/16), [#27](https://github.com/grt192/GRTCommandBased/pull/27), [#32](https://github.com/grt192/GRTCommandBased/pull/32))
 The intake subsystem [`IntakeSubsystem`](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java)
@@ -386,7 +385,7 @@ This problem miraculously fixed itself and we never ended up employing a differe
 Similarly, `START` and `RAISED` were originally intended to be separate values: start would be the position of the intake all the way up (within the frame perimeter) at the start of the match, and raised would be a value slightly in front of that position to not collide with the turret mid-match. After the gear ratio and chain were changed however, it was discovered that there was enough slack in the chain such that when the motor tried to return to `0` it would return to a satisfactory raised position instead.
 
 ### Rollers
-The intake rollers are controlled using various overrides supplied by drivers and auton commands. [...]
+The intake rollers are controlled using overrides supplied by driver input and auton commands.
 ```java
 // Otherwise, use auto input if it's overriding, driver input if they're overriding 
 // and default to running intake automatically from vision.
@@ -407,7 +406,7 @@ if (internalSubsystem.getBallCount() > 2 && !skipInternalsCheck) {
 ```
 ##### [`IntakeSubsystem` L170-175](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/IntakeSubsystem.java#L170-L175)
 
-Initially, we experimented with using vision to detect balls and running rollers automatically from vision data, with driver input only designed to override the rollers if the detection failed. However, due to time constraints forcing the abandonment of vision ball detection, the driver override became the main way the rollers were controlled. 
+Initially, we experimented with using vision to detect balls and running rollers automatically from vision data, with driver input only designed to override the rollers if the detection failed. However, due to time constraints forcing the abandoning of vision ball detection, the driver override became the main way the rollers were controlled. 
 ```java
 public RunIntakeCommand(IntakeSubsystem intakeSubsystem, XboxController xboxController) {
     super(() -> {
@@ -431,9 +430,9 @@ public RunIntakeCommand(IntakeSubsystem intakeSubsystem, XboxController xboxCont
     }, intakeSubsystem);
 }
 ```
-##### [`RunIntakeCommand` L18-38](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/intake/RunIntakeCommand.java#L18-L38); the timer to relinquish driver control became largely irrelevant after [...]
+##### [`RunIntakeCommand` L18-38](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/intake/RunIntakeCommand.java#L18-L38); the timer to relinquish driver control became largely irrelevant after ditching intake vision.
 
-[...]
+Running the intake was bound to the mech controller, with the right trigger running the rollers forwards (to intake balls) and the left trigger running the rollers backwards (to reject balls).
 
 ## Turret ([#16](https://github.com/grt192/GRTCommandBased/pull/16), [#27](https://github.com/grt192/GRTCommandBased/pull/27), [#32](https://github.com/grt192/GRTCommandBased/pull/32))
 The turret subsystem [`TurretSubsystem`](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java)
@@ -472,9 +471,7 @@ To calculate the new `theta`, take the total angle `theta + dtheta` and subtract
 
 The turntable reference is the supplemental angle to `theta`, or `Math.PI - theta` radians.
 
-<!-- explain feedforward? -->
-For feedforward purposes, the turret calculates delta r and theta instead of just the new values. When vision is out of
-range, these deltas are added to the current state values to update them.
+For smoother hub tracking and possibly even shooting while moving, the turret attempts to roughly predict future system states using feedforward. Instead of calculating the absolute `r` and `theta`, the turret calculates the changes in system state, `delta r` and `delta theta`.
 ```java
 /**
  * Calculates the deltas of the `r` and `theta` coordinate system from odometry deltas.
@@ -513,6 +510,61 @@ private Pair<Double, Double> calculateRThetaDeltas(Pose2d lastPosition, Pose2d c
 }
 ```
 ##### [`TurretSubsystem` L462-496](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L462-L496)
+
+When vision is out of range, these deltas are continuously added to the current state values to update them.
+```java
+Pair<Double, Double> deltas = calculateRThetaDeltas(previousPosition, currentPosition);
+
+// If the hub is in vision range and the jetson has fresh data, use vision's `r` and `theta` as ground truth.
+// While the flywheel is running, use the manual system values instead to prevent camera issues while the 
+// flywheel shakes the turntable.
+// If the jetson has been disabled on shuffleboard, use `rtheta` instead.
+boolean jetsonWorking = jetson.turretVisionWorking();
+if (jetsonWorking && (!runFlywheel || mode == TurretMode.RETRACTED) && !jetson.getConsumed() && !jetsonDisabled) {
+    Pair<Double, Double> data = jetson.getData();
+    r = data.getFirst();
+    theta = Math.PI + data.getSecond() - turntableEncoder.getPosition();
+
+    // Reset theta offset when we refresh rtheta from vision.
+    turntableOffset = 0;
+} else {
+    // Otherwise, update our `r` and `theta` state system from the previous `r` and
+    // `theta` values and the delta X and Y since our last position. We do this instead of using
+    // raw odometry coordinates to prevent error accumulation over time; `r` and `theta` are 
+    // reset to vision values when vision is in range, so our states only accumulate error while 
+    // vision is out of range (as opposed to odometry, which accumulates error throughout the match).
+    r += deltas.getFirst();
+    theta += deltas.getSecond();
+}
+```
+##### [`TurretSubsystem` L370-392](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L370-L392)
+
+Regardless of whether vision is in range, the rtheta deltas from localization are used to calculate the immediate rate of change of the `r` and `theta` system states. These rates are then multiplied by tuned constants to predict the future state of the system.
+```java
+/**
+ * Updates `r` and `theta, applying feedforward to new `rtheta` values from manual calculation.
+ * @param states The new `rtheta` states, as a pair of [dr (in), dtheta (rads)].
+ */
+private void applyRThetaFeedForward(Pair<Double, Double> deltas) {
+    double deltaR = deltas.getFirst(), deltaTheta = deltas.getSecond();
+
+    double newTimestamp = Timer.getFPGATimestamp();
+    double deltaLoopTime = newTimestamp - previousLoopTime;
+
+    // Velocities in in/s and radians/s respectively
+    double rVel = deltaR / deltaLoopTime;
+    double thetaVel = deltaTheta / deltaLoopTime;
+
+    rFeedForward = r + rVel * R_FF;
+    thetaFeedForward = theta + thetaVel * THETA_FF;
+    previousLoopTime = Timer.getFPGATimestamp();
+}
+```
+##### [`TurretSubsystem` L498-515](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L498-L515)
+
+The advantages of feedforward (as opposed to feed*back*) control are that, if only feedback is used, systems like the turntable or flywheel will always be behind while the robot is moving; as robot's position changes, the setpoint passed to the turntable will continuously change as well, causing the turntable to keep having to rotate to catch up to a setpoint which has changed again by the time the turntable has reached it. [...]
+
+While the rtheta system was not a replacement for vision on the competition field (as demonstrated at Monterey), it performed well in short, collisionless time intervals, consistently scoring shots when testing in the shop.
 
 <!-- TODO -->
 <a href="...">
@@ -687,10 +739,10 @@ private ModuleState turntableAligned() {
 ```
 ##### [`TurretSubsystem` L622-633](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L622-L633), similar for `hoodReady()` and `flywheelReady()`
 
-The state of the entire subsystem is the lowest module state. [...]
+To represent the turret's readiness to shoot, the lowest module state is used as the state of the system.
 
-The idea behind maintaining a state enum instead of a simple boolean was that, while a shot that the robot is trying to
-score requires a tight alignment tolerance for the turntable, hood, and flywheel, a ball that is being rejected can be
+The idea behind maintaining a state enum instead of a simple "ready" boolean was that, while a shot that the robot is trying to
+score requires a tight alignment tolerance for the turntable, hood, and flywheel, a ball that is being *rejected* can be
 fired much sooner and without having to wait for the flywheel to spin up all the way or the turntable to reach perfect
 alignment with the hub. Therefore, a rejected ball could be shot while the subsystem state was `LOW_TOLERANCE`, while a
 ball intended to be scored needed to wait for `HIGH_TOLERANCE`.
@@ -781,6 +833,26 @@ public void setReject(boolean reject) {
 ```
 ##### [`TurretSubsystem` L552-561](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L552-L561), not the prettiest code
 
+### Other features (lazy tracking, [...])
+While internals doesn't have a ball ready to shoot, the turntable can be less aggressive in staying aligned. To accomplish this, the maximum output power of the turntable PID is set every loop depending on whether a ball is ready.
+```java
+// Set turntable lazy tracking if a ball isn't ready
+double pow = !ballReady ? 0.25 : 0.5;
+turntablePidController.setOutputRange(-pow, pow);
+```
+##### [`TurretSubsystem` L366-368](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L366-L368)
+
+[...]
+
+## Vision
+[...]
+
+## Internals
+[...]
+
+## General lessons
+[...]
+
 ### Debug flags
 A feature that made testing and feature isolation / toggling much easier was debug flags. Instead of repeatedly commenting
 and uncommenting code, static booleans could be toggled to quickly disable untested or problematic logic or expose debug
@@ -800,12 +872,3 @@ private static boolean MANUAL_CONTROL = false;
 private static boolean SKIP_REJECTION = true;
 ```
 ##### [`TurretSubsystem` L195-206](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L195-L206)
-
-[...]
-
-## Vision
-[...]
-
-## Internals
-[...]
-
