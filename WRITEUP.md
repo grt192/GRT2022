@@ -1,5 +1,18 @@
 # GRT Controls Writeup 2022
-[...]
+**Editor's note:** Hello! This writeup was mostly (entirely) written by local controls nerd Kevin Yu. Sorry for getting it out
+so late; after comps I was bogged down with projects and SAT prep and AP testing and the motivation to finish this never
+really came back. I'm not really qualified to write about vision, but every other subsystem should be covered minus
+internals and climb, whose sections I never really got around to writing (sorry!). This document certainly isn't as polished 
+as I initially envisioned it as being, but I hope that even without a few subsystems this makes for an interesting read.
+
+PS: [these are all my photos from the 2021-2022 GRT year](https://photos.app.goo.gl/oX13EjArwBHoDxhK8). Maybe it'll be 
+interesting seeing things from a controls member's perspective, who knows.
+
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/60120929/178671052-a44db6bd-0a31-4945-812d-c776c35df0fe.JPG" width="700px">
+</p>
+
+Remember to have an absolutely wonderful summer! (or what's left of it anyways)
 
 ## Tank ([#1](https://github.com/grt192/GRTCommandBased/pull/1), [#6](https://github.com/grt192/GRTCommandBased/pull/6))
 The tank subsystem [`TankSubsystem`](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/tank/TankSubsystem.java)
@@ -468,6 +481,9 @@ public RunIntakeCommand(IntakeSubsystem intakeSubsystem, XboxController xboxCont
 Running the intake was bound to the mech controller, with the right trigger running the rollers forwards (to intake balls) 
 and the left trigger running the rollers backwards (to reject balls).
 
+<!-- ## Internals -->
+<!-- [...] -->
+
 ## Turret ([#16](https://github.com/grt192/GRTCommandBased/pull/16), [#27](https://github.com/grt192/GRTCommandBased/pull/27), [#32](https://github.com/grt192/GRTCommandBased/pull/32))
 The turret subsystem [`TurretSubsystem`](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java)
 manages the robot's turret shooter hub locking and aiming. To aim the turret,`TurretSubsystem` maintains a hub distance
@@ -776,8 +792,9 @@ alignment with the hub. Therefore, a rejected ball could be shot while the subsy
 ball intended to be scored needed to wait for `HIGH_TOLERANCE`.
 
 An issue with thresholding was lack of testing time. During Monterey, many shots we took were waiting forever for too-tight
-tolerances and had to be forced. We repeatedly blanket-increased the tolerances in response without the time to test if
-a ball fired when the flywheel was 150 RPM off would still make it in the hub. [...]
+tolerances and had to be forced. In the pit, we repeatedly blanket-increased the tolerances in response without the time 
+to test if a ball fired when the flywheel was 150 RPM off would still make it in the hub. Though most of our inaccuracy
+at SVR can be attributed to bugs with vision hub detection, thresholding might have played a part too.
 
 ### Turret Mode and Rejection
 `TurretSubsystem` maintains a `mode` enum representing what mode it is in and how it should behave.
@@ -959,8 +976,8 @@ private static boolean SKIP_REJECTION = true;
 ```
 ##### [`TurretSubsystem` L195-206](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L195-L206)
 
-## Vision
-[...]
+<!-- ## Vision -->
+<!-- [...] -->
 
-## Internals
-[...]
+<!-- ## Climb -->
+<!-- [...] -->
