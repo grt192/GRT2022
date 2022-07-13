@@ -1015,7 +1015,7 @@ private static boolean SKIP_REJECTION = true;
 <!-- ## Vision -->
 <!-- [...] -->
 
-## Climb
+## Climb ([#16](https://github.com/grt192/GRTCommandBased/pull/16), [#27](https://github.com/grt192/GRTCommandBased/pull/27), [#32](https://github.com/grt192/GRTCommandBased/pull/32))
 The climb subsystem [`ClimbSubsystem`](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/subsystems/ClimbSubsystem.java)
 controls the robot's climb arms. While originally it would have used a SparkMax to control the six point gearbox, a Talon
 to control the six point brake, a SparkMax and Talon to control the ten point gearbox and brake, two Talons to control
