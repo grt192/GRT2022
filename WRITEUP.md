@@ -1,7 +1,7 @@
 # GRT Controls Writeup 2022
 **Editor's note:** Hello! This writeup was mostly (entirely) written by local controls nerd Kevin Yu. Sorry for getting it out
 so late; after comps I was bogged down with projects and SAT prep and AP testing and the motivation to finish this never
-really came back. I'm not really qualified to write about vision, but every other subsystem should be covered minus
+really came back. I'm not really qualified to write about vision, but every subsystem should be covered minus
 internals and climb, whose sections I never really got around to writing (sorry!). This document certainly isn't as polished 
 as I initially envisioned it as being, but I hope that even without a few subsystems this makes for an interesting read.
 
@@ -697,7 +697,12 @@ private void interpolateFlywheelHoodRefs(double r) {
 ```
 ##### [`TurretSubsystem` L517-550](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L517-L550)
 
-While [...], [...].
+As with everything, shooter testing was affected by our time crunch to get things ready for driver practice and Monterey.
+We were only able to spend one shoptime gathering data points for interpolation, and stopped once shooting proved "good 
+enough" when tested in the shop. Concerningly, after SVR we decided to gather more data points for close shots only
+to find that our new points (on the speadsheet, the green points) didn't align with our old data (orange). As we were
+running out of time before SVR, we decided to replace the old data for close shots with our new data and hope that the
+rest of the points were still valid.
 
 ### PID and Flywheel Logic
 When the desired hood, flywheel, and turntable references are calculated from `rtheta` and interpolation, the motors are
@@ -897,6 +902,35 @@ driveXButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
 ```
 ##### [`RobotContainer` L169](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/RobotContainer.java#L169)
 
+Overriding the flywheel when it isn't running, a problem encountered numerous times at monterey, can be achieved by
+holding down the mech controller's left bumper. If internals isn't detecting a ball when one was inside the robot,
+both the flywheel and the internals rollers can be overridden by holding down the right bumper. While the right
+bumper is held, the override will immediately start running the flywheel while waiting 0.25 seconds before activating
+internals to allow the flywheel to spin up before launching the stuck ball.
+```java
+boolean leftBumper = xboxController.getLeftBumper();
+boolean rightBumper = xboxController.getRightBumper();
+
+// Override the flywheel if either bumper is pressed
+turretSubsystem.setDriverOverrideFlywheel(leftBumper || rightBumper);
+
+if (rightBumper) {
+    // If the driver is overriding internals and the required spinup time for the flywheel
+    // has passed, override internals
+    if (internalTimer.hasElapsed(0.25)) {
+        internalSubsystem.setDriverOverride(true);
+    } else {
+        // If the time hasn't elapsed, start the timer
+        internalTimer.start();
+    }
+} else {
+    internalSubsystem.setDriverOverride(false);
+    internalTimer.stop();
+    internalTimer.reset();
+}
+```
+##### [`OverrideInternalsCommand` L20-39](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/commands/internals/OverrideInternalsCommand.java#L20-L39)
+
 Counteracting the error accumulated by `rtheta` could be attempted by applying offsets to `r` and `theta`, bound to the 
 mech controller's POV (4 directional arrow buttons arranged in a cross). The `r` offset could be changed with the top and 
 bottom buttons (0 and 180 degrees respectively), and the `theta` offset with the left and right buttons (90 and 270 degrees 
@@ -945,7 +979,8 @@ that admittedly happened all too often).
 
 ##### Post-Monterey driver practice [VIDEO]
 
-[...]
+<!-- TODO: something about having too many different overrides that it became confusing for drivers -->
+<!-- Alas, if only there were more motivation to write this :( -->
 
 ### Other features (lazy tracking, debug flags)
 While internals doesn't have a ball ready to shoot, the turntable can be less aggressive in staying aligned. To accomplish 
