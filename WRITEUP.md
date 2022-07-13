@@ -197,7 +197,7 @@ public GRTAutonSequence(RobotContainer robotContainer, Pose2d initialPose, Pose2
 ```
 ##### [`GRTAutonSequence` L30-56](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/commands/tank/GRTAutonSequence.java#L30-L56)
 
-Auton was not ready for Monterey. Our first practice match, an S-curve trajectory was set as our auton routine (left over from path following testing) and we incurred a penalty during autonomous when we rammed into an opposing alliance bot. Pretty quickly following the first few matches, it was decided that there wasn't enough time to tune path following and to instead rewrite auton to be simpler and more reliable.
+Auton was not ready for Monterey. Our first practice match, an S-curve trajectory was set as our auton routine (left over from path following testing) and we incurred a penalty during autonomous when we rammed into an opposing alliance bot. Pretty quickly following the first few matches it was decided that there wasn't enough time to tune path following, and that we should instead rewrite auton to be simpler and more reliable.
 
 The revised "pleb" auton lowers the intake, drives forwards for 55 inches or 8 seconds (whichever completed first),
 and shoots two balls, using overrides and timers to guarantee shooter and internals cooperate.
@@ -566,15 +566,6 @@ The advantages of feedforward (as opposed to feed*back*) control are that, if on
 
 While the rtheta system was not a replacement for vision on the competition field (as demonstrated at Monterey), it performed well in short, collisionless time intervals, consistently scoring shots when testing in the shop.
 
-<!-- TODO -->
-<a href="...">
-    <p align="center">
-        <img src="..." width="700px">
-    </p>
-</a>
-
-##### Pure `rtheta` hub locking [VIDEO]
-
 ### Interpolation
 To find the flywheel speed and hood angle that would work for the turret's current hub distance, `TurretSubsystem`
 linearly interpolates flywheel RPM and hood degrees from known manual testing data points, recorded in the following
@@ -643,15 +634,6 @@ private void interpolateFlywheelHoodRefs(double r) {
 }
 ```
 ##### [`TurretSubsystem` L517-550](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L517-L550)
-
-<!-- TODO -->
-<a href="...">
-    <p align="center">
-        <img src="..." width="700px">
-    </p>
-</a>
-
-##### Shooter testing [VIDEO]
 
 While [...], [...].
 
@@ -879,9 +861,19 @@ public void setFreeze(boolean frozen) {
 ```
 ##### [`TurretSubsystem` L760-766](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L760-L766)
 
+Putting it all together was a system that relied on vision for absolute-truth data, generated the data itself if vision couldn't be used, and could at any time be overridden by drivers if either vision or `rtheta` was acting up.
+
+<a href="https://drive.google.com/file/d/1ZiiMFkPfQoj4i31D5cdbZt8RWSbFmb5o/view?usp=sharing">
+    <p align="center">
+        <img src="https://user-images.githubusercontent.com/60120929/178643043-d173e027-26ff-473e-bab1-79de668fc637.jpg" width="700px">
+    </p>
+</a>
+
+##### Post-Monterey driver practice [VIDEO]
+
 [...]
 
-### Other features (lazy tracking, [...])
+### Other features (lazy tracking, debug flags)
 While internals doesn't have a ball ready to shoot, the turntable can be less aggressive in staying aligned. To accomplish this, the maximum output power of the turntable PID is set every loop depending on whether a ball is ready.
 ```java
 // Set turntable lazy tracking if a ball isn't ready
@@ -890,19 +882,7 @@ turntablePidController.setOutputRange(-pow, pow);
 ```
 ##### [`TurretSubsystem` L366-368](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L366-L368)
 
-[...]
-
-## Vision
-[...]
-
-## Internals
-[...]
-
-## General lessons
-[...]
-
-### Debug flags
-A feature that made testing and feature isolation / toggling much easier was debug flags. Instead of repeatedly commenting
+While this wasn't isolated to just the turret, a feature that made testing and feature isolation / toggling much easier was debug flags. Instead of repeatedly commenting
 and uncommenting code, static booleans could be toggled to quickly disable untested or problematic logic or expose debug
 interfaces like prints or shuffleboard entries.
 ```java
@@ -920,3 +900,9 @@ private static boolean MANUAL_CONTROL = false;
 private static boolean SKIP_REJECTION = true;
 ```
 ##### [`TurretSubsystem` L195-206](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L195-L206)
+
+## Vision
+[...]
+
+## Internals
+[...]
