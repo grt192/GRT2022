@@ -803,7 +803,7 @@ if (this.mode == TurretMode.LOW_HUB) {
 ```
 ##### [`TurretSubsystem` L408-413](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L408-L413)
 
-[...]
+The toggle for `LOW_HUB` mode was bound to the mech controller's Y button, but dumping was not attempted often by drivers.
 
 In `REJECTING` mode, the turret scales down the flywheel RPM by 0.5 during interpolation to intentionally miss wrong-colored
 balls (but still cause them to bounce and be difficult to intake). This mode would be set by internals if it detected that
@@ -831,7 +831,55 @@ public void setReject(boolean reject) {
     mode = reject ? TurretMode.REJECTING : TurretMode.SHOOTING;
 }
 ```
-##### [`TurretSubsystem` L552-561](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L552-L561), not the prettiest code
+##### [`TurretSubsystem` L552-561](https://github.com/grt192/GRTCommandBased/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L552-L561), not the prettiest code.
+
+### Overrides
+Because running without vision quickly accumulated `rtheta` error and faulty values could potentially render the robot unable to score for the rest of the match, several overrides were put in place for drivers to wrest control of shooting from `rtheta` autoaiming.
+
+When pressed, the drive controller's right bumper resets the turret's `r` to 140in. (approximately the distance to the hub at the edge of the tarmac).
+```java
+driveRBumper.whenPressed(new InstantCommand(() -> turretSubsystem.setR(140)));
+```
+##### [`RobotContainer` L170](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/RobotContainer.java#L170)
+
+The drive controller X button toggles `RETRACTED` mode, initially intended to clean up before climb but used during competitions as a way to lock the turret while the driver rotated the robot to regain vision data.
+```java
+driveXButton.whenPressed(new InstantCommand(turretSubsystem::toggleClimb));
+```
+##### [`RobotContainer` L169](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/RobotContainer.java#L169)
+
+Counteracting the error accumulated by `rtheta` could be attempted by applying offsets to `r` and `theta`, bound to the mech controller's POV (4 directional arrow buttons arranged in a cross). The `r` offset could be changed with the top and bottom buttons (0 and 180 degrees respectively), and the `theta` offset with the left and right buttons (90 and 270 degrees respectively).
+```java
+// Set turret offsets from mech controller POV input:
+// Top/bottom to increase/decrease hub distance offset,
+// right/left to increase/decrease theta offset.
+turretSubsystem.setDefaultCommand(new RunCommand(() -> {
+    switch (mechController.getPOV()) {
+        case 0: turretSubsystem.changeDistanceOffset(1.5); break;
+        case 90: turretSubsystem.changeTurntableOffset(Math.toRadians(3)); break;
+        case 180: turretSubsystem.changeDistanceOffset(-1.5); break;
+        case 270: turretSubsystem.changeTurntableOffset(Math.toRadians(-3)); break;
+        default: break;
+    }
+
+    turretSubsystem.setFreeze(driveController.getLeftTriggerAxis() > 0.2);
+}, turretSubsystem));
+```
+##### [`RobotContainer` L204-217](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/RobotContainer.java#L204-L217)
+
+Finally, the turret could be frozen entirely while the drive controller's left trigger. The turret saves the values of `r` and `theta` when the trigger is initially pressed and references the "frozen" values instead of the new states while the trigger is held.
+```java
+public void setFreeze(boolean frozen) {
+    if (frozen && !this.frozen) {
+        this.frozenR = this.rFeedForward;
+        this.frozenTheta = this.thetaFeedForward;
+    }
+    this.frozen = frozen;
+}
+```
+##### [`TurretSubsystem` L760-766](https://github.com/grt192/GRT2022/blob/develop/src/main/java/frc/robot/subsystems/TurretSubsystem.java#L760-L766)
+
+[...]
 
 ### Other features (lazy tracking, [...])
 While internals doesn't have a ball ready to shoot, the turntable can be less aggressive in staying aligned. To accomplish this, the maximum output power of the turntable PID is set every loop depending on whether a ball is ready.
